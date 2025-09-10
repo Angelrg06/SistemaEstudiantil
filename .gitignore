@@ -1,0 +1,21 @@
+# Node.js
+node_modules/
+dist/
+.env
+
+# Angular
+.angular/
+dist/
+out-tsc/
+
+# Logs
+logs/
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Prisma
+prisma/migrations/
