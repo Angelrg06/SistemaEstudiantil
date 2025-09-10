@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 // Importamos rutas
-import estudiantesRoutes from './routes/estudiantes.js';
+import userRoutes from './routes/user.routes';
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(helmet());
 
 // Rutas
-app.use('/estudiantes', estudiantesRoutes);
+app.use('/user.routes', userRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
