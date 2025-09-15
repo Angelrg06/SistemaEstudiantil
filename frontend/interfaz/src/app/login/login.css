@@ -1,0 +1,111 @@
+/* src/app/login/login.css - Estilos complementarios */
+
+/* Solo añadimos estilos específicos que no están en el styles.css global */
+
+/* Animación del logo */
+.fa-graduation-cap {
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-5px) rotate(2deg); 
+  }
+}
+
+/* Efecto hover para el logo del colegio */
+.card .fa-graduation-cap:hover {
+  animation: logoSpin 0.7s ease-in-out;
+}
+
+@keyframes logoSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mejora el foco en inputs */
+.input-field:focus {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Animación de entrada para el card */
+.card {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mejora los botones secundarios */
+button[type="button"] {
+  transition: all 0.2s ease;
+}
+
+button[type="button"]:hover {
+  transform: translateY(-1px);
+}
+
+/* Efecto de escritura en labels */
+label {
+  transition: color 0.2s ease;
+}
+
+.input-field:focus + label,
+label:has(+ .input-field:focus) {
+  color: #2563eb;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .card {
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  .input-field,
+  .btn-primary {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.5rem 1.25rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .fa-graduation-cap {
+    font-size: 2.5rem !important;
+  }
+  
+  .w-24.h-24 {
+    width: 5rem;
+    height: 5rem;
+  }
+}
+
+/* Dark mode support (si lo implementas después) */
+@media (prefers-color-scheme: dark) {
+  /* Los estilos oscuros irían aquí */
+}
