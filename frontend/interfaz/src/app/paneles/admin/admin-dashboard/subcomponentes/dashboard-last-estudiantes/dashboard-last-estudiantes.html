@@ -1,0 +1,86 @@
+<!-- src/app/paneles/admin/admin-dashboard/subcomponentes/dashboard-last-estudiantes/dashboard-last-estudiantes.html -->
+<div class="mt-4 bg-gray-50 rounded-lg p-4">
+  <div class="flex items-center justify-between mb-4">
+    <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+      <i class="fas fa-user-graduate text-green-500 mr-2"></i>
+      Últimos Estudiantes
+    </h4>
+    <span class="text-sm text-gray-500">Últimos 5 registros</span>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-8">
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    <p class="text-gray-600 mt-2">Cargando estudiantes...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="text-center py-8">
+    <i class="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
+    <p class="text-red-600">{{ error }}</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading && !error">
+    <!-- Empty State -->
+    <div *ngIf="estudiantes.length === 0" class="text-center py-8">
+      <i class="fas fa-user-graduate text-gray-400 text-3xl mb-2"></i>
+      <p class="text-gray-500">No hay estudiantes registrados</p>
+    </div>
+
+    <!-- Estudiantes List -->
+    <div *ngIf="estudiantes.length > 0" class="space-y-3">
+      <div 
+        *ngFor="let estudiante of estudiantes; trackBy: trackByEstudiante"
+        class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+      >
+        <!-- Avatar -->
+        <div class="flex-shrink-0 mr-3">
+          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <span class="text-green-600 font-semibold text-sm">
+              {{ getInitials(estudiante.nombre || estudiante.usuario?.nombre || 'NN') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate">
+            {{ estudiante.nombre || estudiante.usuario?.nombre || 'Sin nombre' }}
+          </p>
+          <p class="text-xs text-gray-500 truncate">
+            {{ estudiante.email || estudiante.usuario?.email || 'Sin email' }}
+          </p>
+          <div class="flex items-center mt-1 space-x-2 text-xs text-gray-400">
+            <span *ngIf="estudiante.seccion">
+              <i class="fas fa-users mr-1"></i>{{ estudiante.seccion }}
+            </span>
+            <span>
+              <i class="fas fa-calendar mr-1"></i>{{ formatFecha(estudiante.fechaIngreso) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Status Badge -->
+        <div class="flex-shrink-0">
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <i class="fas fa-check-circle mr-1"></i>
+            Activo
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ver Más Button -->
+    <div *ngIf="estudiantes.length > 0" class="mt-4 text-center">
+      <button 
+        type="button"
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        (click)="verTodos()"
+      >
+        <i class="fas fa-external-link-alt mr-2"></i>
+        Ver todos los estudiantes
+      </button>
+    </div>
+  </div>
+</div>

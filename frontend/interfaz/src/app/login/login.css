@@ -1,111 +1,140 @@
-/* src/app/login/login.css - Estilos complementarios */
+@import "tailwindcss";
 
-/* Solo añadimos estilos específicos que no están en el styles.css global */
-
-/* Animación del logo */
-.fa-graduation-cap {
-  animation: logoFloat 3s ease-in-out infinite;
+/* =======================
+   Estilos globales
+   ======================= */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-@keyframes logoFloat {
-  0%, 100% { 
-    transform: translateY(0px) rotate(0deg); 
-  }
-  50% { 
-    transform: translateY(-5px) rotate(2deg); 
-  }
-}
-
-/* Efecto hover para el logo del colegio */
-.card .fa-graduation-cap:hover {
-  animation: logoSpin 0.7s ease-in-out;
-}
-
-@keyframes logoSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Mejora el foco en inputs */
-.input-field:focus {
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-/* Animación de entrada para el card */
+/* =======================
+   Tarjeta principal
+   ======================= */
 .card {
-  animation: slideInUp 0.6s ease-out;
+    background-color: white;
+    border-radius: 1rem; /* 16px */
+    padding: 2rem; /* 32px */
+    max-width: 28rem; /* 448px */
+    width: 100%;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 10;
+    transition: none; /* Sin animación al hover */
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.card:hover {
+    transform: none;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
 
-/* Mejora los botones secundarios */
-button[type="button"] {
-  transition: all 0.2s ease;
+/* =======================
+   Input fields
+   ======================= */
+.input-field {
+    width: 100%;
+    padding: 0.5rem 0.75rem; /* 8px 12px */
+    border: 1px solid #d1d5db; /* gris claro */
+    border-radius: 0.5rem; /* 8px */
+    outline: none;
+    transition: box-shadow 0.3s ease;
 }
 
-button[type="button"]:hover {
-  transform: translateY(-1px);
+.input-field:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* resalta al enfocar */
 }
 
-/* Efecto de escritura en labels */
-label {
-  transition: color 0.2s ease;
+/* =======================
+   Botón principal
+   ======================= */
+.btn-primary {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: #2563eb; /* azul */
+    color: white;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-.input-field:focus + label,
-label:has(+ .input-field:focus) {
-  color: #2563eb;
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }
 
-/* Responsive improvements */
-@media (max-width: 640px) {
-  .card {
-    margin: 1rem;
-    padding: 2rem 1.5rem;
-    max-width: calc(100vw - 2rem);
-  }
-  
-  h1 {
-    font-size: 1.75rem;
-  }
-  
-  .input-field,
-  .btn-primary {
-    padding: 1rem;
-    font-size: 1rem;
-  }
+/* =======================
+   Animación de fondo (olas)
+   ======================= */
+.wave {
+    animation: wave 35s linear infinite;
 }
 
-@media (max-width: 480px) {
-  .card {
-    padding: 1.5rem 1.25rem;
-  }
-  
-  h1 {
-    font-size: 1.5rem;
-  }
-  
-  .fa-graduation-cap {
-    font-size: 2.5rem !important;
-  }
-  
-  .w-24.h-24 {
-    width: 5rem;
-    height: 5rem;
-  }
+@keyframes wave {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
 
-/* Dark mode support (si lo implementas después) */
-@media (prefers-color-scheme: dark) {
-  /* Los estilos oscuros irían aquí */
+/* =======================
+   Mensajes de error / éxito
+   ======================= */
+.message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+}
+
+.message.error {
+    background-color: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+}
+
+.message.success {
+    background-color: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #16A34A;
+}
+
+.message i {
+    margin-right: 8px;
+}
+
+/* =======================
+   Loading icon
+   ======================= */
+/* Icono del logo girando continuamente */
+.logo-icon {
+    display: inline-block;
+
+}
+
+/* La misma animación que usamos para loading */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+.btn-secondary {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #d1d5db; /* gris */
+    border-radius: 0.5rem;
+    background-color: white;
+    color: #374151; /* gris oscuro */
+    width: 100%;
+    padding: 0.75rem 1rem;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    background-color: #f3f4f6; /* gris claro al hover */
 }

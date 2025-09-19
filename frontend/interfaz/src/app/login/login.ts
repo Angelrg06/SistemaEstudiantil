@@ -1,8 +1,7 @@
-// src/app/login/login.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../service/auth.service';
+import { AuthService } from '../services/auth.service';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
@@ -13,60 +12,78 @@ import { Router, RouterModule } from '@angular/router';
   styleUrls: ['./login.css']
 })
 export class Login {
-  email = '';
+  correo = '';
   password = '';
   errorMessage = '';
   successMessage = '';
   isLoading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) { }
 
   login() {
     this.errorMessage = '';
     this.successMessage = '';
 
-    if (!this.email || !this.password) {
+    if (!this.correo || !this.password) {
       this.errorMessage = 'Por favor completa todos los campos';
       return;
     }
 
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.email)) {
-      this.errorMessage = 'Por favor ingresa un email válido';
+    const correoRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!correoRegex.test(this.correo)) {
+      this.errorMessage = 'Por favor ingresa un correo válido';
       return;
     }
 
     this.isLoading = true;
-    const credentials = { email: this.email, password: this.password };
-    
+
+    const credentials = { correo: this.correo, password: this.password };
+
     this.authService.login(credentials).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        this.successMessage = '¡Bienvenido! Redirigiendo...';
+      next: (res: any) => {
         this.isLoading = false;
-        
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 1000);
+
+        if (res.token && res.usuario) {
+          this.successMessage = '¡Bienvenido! Redirigiendo...';
+
+          // Guardar el usuario en AuthService ya lo hace el servicio, aquí solo redirigimos
+          setTimeout(() => {
+            switch (res.usuario.rol) {
+              case 'admin':
+                this.router.navigate(['/admin']);
+                break;
+              case 'docente':
+                this.router.navigate(['/docente']);
+                break;
+              case 'estudiante':
+                this.router.navigate(['/estudiante']);
+                break;
+              default:
+                this.router.navigate(['/']);
+            }
+          }, 1000);
+        } else {
+          this.errorMessage = 'Respuesta inválida del servidor';
+        }
       },
       error: (err) => {
-        console.error('Error en login:', err);
-        this.errorMessage = err.error?.message || 'Credenciales incorrectas. Verifica tu email y contraseña.';
         this.isLoading = false;
+        this.errorMessage = err.error?.error || 'Credenciales incorrectas';
+        console.error('Error en login:', err);
       }
     });
+
   }
-clearMessages() {
+
+  clearMessages() {
     this.errorMessage = '';
     this.successMessage = '';
   }
 
-  // Controla si mostrar el botón de registro
-  allowRegistration = false; // Cambia a true si permites solicitudes
-
   requestPasswordReset() {
-    // Por ahora solo muestra un alert, después puedes implementar la funcionalidad
-    alert('Contacta al administrador del sistema para recuperar tu contraseña.\n\nTel: (01) 234-5678\nEmail: soporte@colegio.edu.pe');
+    alert(
+      'Contacta al administrador del sistema para recuperar tu contraseña.\n\n' +
+      'Tel: (01) 234-5678\nEmail: soporte@colegio.edu.pe'
+    );
   }
 }

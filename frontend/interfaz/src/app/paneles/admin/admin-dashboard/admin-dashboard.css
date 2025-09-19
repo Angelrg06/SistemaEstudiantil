@@ -1,0 +1,121 @@
+/* src/app/paneles/admin/admin-dashboard/admin-dashboard.css */
+
+/* Animación de entrada para paneles expandidos */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Transiciones suaves para todos los elementos interactivos */
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+.transition-colors {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Hover effects mejorados para las cards */
+.hover\:shadow-xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Estilos para botones de estadísticas */
+button[type="button"] {
+  transition: all 0.2s ease-in-out;
+}
+
+button[type="button"]:hover {
+  transform: translateY(-1px);
+}
+
+button[type="button"]:active {
+  transform: translateY(0);
+}
+
+/* Estilos para iconos de chevron */
+.fas.fa-chevron-down,
+.fas.fa-chevron-up {
+  margin-right: 8px;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Espaciado mejorado para paneles expandidos */
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.5rem;
+}
+
+/* Estilos para el botón de cerrar */
+button[type="button"] .fa-times:hover {
+  transform: rotate(90deg);
+}
+
+/* Mejoras visuales para las cards */
+.border-l-4 {
+  position: relative;
+}
+
+.border-l-4::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(to bottom, currentColor, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.border-l-4:hover::before {
+  opacity: 0.3;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem;
+  }
+  
+  .text-3xl {
+    font-size: 1.875rem;
+  }
+}
+
+/* Estados de focus mejorados */
+button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

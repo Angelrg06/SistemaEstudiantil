@@ -7,14 +7,182 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ======================
+// MODELO USUARIO
+// ======================
+model Usuario {
+  id_usuario  Int      @id @default(autoincrement())
+  correo      String   @unique
+  password    String
+  rol         String   // admin, docente, estudiante
 
-  @@map("users")
+  // Relaciones
+  docentes    Docente[]
+  estudiantes Estudiante[]
+  mensajes    Mensaje[]
+
+  @@map("usuarios")
 }
 
+// ======================
+// MODELO ESTUDIANTE
+// ======================
+model Estudiante {
+  id_estudiante Int    @id @default(autoincrement())
+  codigo        String @unique     // matrícula interna
+  dni           String @unique     // documento de identidad
+  nombre        String
+  apellido      String
+
+  id_usuario    Int
+  id_seccion    Int?
+
+  usuario       Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+  seccion       Seccion? @relation(fields: [id_seccion], references: [id_seccion])
+  entregas      Entrega[]
+
+  @@map("estudiantes")
+}
+
+// ======================
+// MODELO DOCENTE
+// ======================
+model Docente {
+  id_docente Int    @id @default(autoincrement())
+  codigo     String @unique   // código institucional
+  dni        String @unique   // documento de identidad
+  nombre     String
+  apellido   String
+  id_usuario Int
+  usuario    Usuario @relation(fields: [id_usuario], references: [id_usuario])
+
+  actividades       Actividad[]
+  notificaciones    Notificacion[]
+  retroalimentaciones Retroalimentacion[]
+
+  @@map("docentes")
+}
+
+// ======================
+// MODELO SECCION
+// ======================
+model Seccion {
+  id_seccion Int    @id @default(autoincrement())
+  nombre     String
+
+  estudiantes Estudiante[]
+  grupos      Grupo[]
+  actividades Actividad[]
+
+  @@map("secciones")
+}
+
+// ======================
+// MODELO GRUPO
+// ======================
+model Grupo {
+  id_grupo   Int    @id @default(autoincrement())
+  nombre     String
+  id_seccion Int
+
+  seccion   Seccion  @relation(fields: [id_seccion], references: [id_seccion])
+  mensajes  Mensaje[]
+
+  @@map("grupos")
+}
+
+// ======================
+// MODELO ACTIVIDAD
+// ======================
+model Actividad {
+  id_actividad  Int     @id @default(autoincrement())
+  titulo        String
+  descripcion   String?
+  tipo          String?
+  fecha_inicio  DateTime?
+  fecha_fin     DateTime?
+  estado        String?
+  fecha_entrega DateTime?
+
+  id_docente    Int
+  id_seccion    Int?
+
+  docente      Docente  @relation(fields: [id_docente], references: [id_docente])
+  seccion      Seccion? @relation(fields: [id_seccion], references: [id_seccion])
+
+  entregas     Entrega[]
+  notificaciones Notificacion[]
+  retroalimentaciones Retroalimentacion[]
+
+  @@map("actividades")
+}
+
+// ======================
+// MODELO ENTREGA
+// ======================
+model Entrega {
+  id_entrega    Int    @id @default(autoincrement())
+  archivo       String?
+  fecha_entrega DateTime?
+  calificacion  Float?
+
+  id_actividad  Int
+  id_estudiante Int
+
+  actividad   Actividad  @relation(fields: [id_actividad], references: [id_actividad])
+  estudiante  Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+
+  @@map("entregas")
+}
+
+// ======================
+// MODELO NOTIFICACION
+// ======================
+model Notificacion {
+  id_notificacion Int      @id @default(autoincrement())
+  mensaje         String
+  fecha_envio     DateTime @default(now())
+  tipo            String?
+
+  id_actividad    Int?
+  id_docente      Int?
+
+  actividad       Actividad? @relation(fields: [id_actividad], references: [id_actividad])
+  docente         Docente?   @relation(fields: [id_docente], references: [id_docente])
+
+  @@map("notificaciones")
+}
+
+// ======================
+// MODELO RETROALIMENTACION
+// ======================
+model Retroalimentacion {
+  id_retroalimentacion Int      @id @default(autoincrement())
+  comentario           String
+  fecha                DateTime @default(now())
+
+  id_actividad Int
+  id_docente   Int
+
+  actividad    Actividad @relation(fields: [id_actividad], references: [id_actividad])
+  docente      Docente   @relation(fields: [id_docente], references: [id_docente])
+
+  @@map("retroalimentaciones")
+}
+
+// ======================
+// MODELO MENSAJE
+// ======================
+model Mensaje {
+  id_mensaje  Int      @id @default(autoincrement())
+  contenido   String
+  fecha_envio DateTime @default(now())
+
+  id_grupo    Int
+  id_usuario  Int
+
+  grupo    Grupo   @relation(fields: [id_grupo], references: [id_grupo])
+  usuario  Usuario @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("mensajes")
+}

@@ -1,0 +1,37 @@
+<div class="min-h-screen bg-gray-100 p-6">
+  <!-- Navigation Menu -->
+  <div class="mb-8">
+    <div class="bg-black-100 rounded-xl shadow-lg p-6">
+      <div class="flex flex-wrap justify-center gap-4">
+        <button class="px-6 py-3 bg-black-600 text-blue rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-md" 
+                (click)="loadSection('dashboard')">
+          <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+        </button>
+        <button class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold shadow-md" 
+                (click)="loadSection('docentes')">
+          <i class="fas fa-chalkboard-teacher mr-2"></i>Docentes
+        </button>
+        <button class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold shadow-md" 
+                (click)="loadSection('estudiantes')">
+          <i class="fas fa-user-graduate mr-2"></i>Estudiantes
+        </button>
+        <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all font-semibold shadow-md" 
+                (click)="loadSection('notificaciones')">
+          <i class="fas fa-bell mr-2"></i>Notificaciones
+        </button>
+        <button class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold shadow-md" 
+                (click)="loadSection('usuarios')">
+          <i class="fas fa-users mr-2"></i>Usuarios
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <app-admin-dashboard *ngIf="currentSection === 'dashboard'"></app-admin-dashboard>
+  <!-- Other Sections -->
+  <app-admin-docentes *ngIf="currentSection === 'docentes'"></app-admin-docentes>
+  <app-admin-estudiantes *ngIf="currentSection === 'estudiantes'"></app-admin-estudiantes>
+  <app-admin-notificaciones *ngIf="currentSection === 'notificaciones'"></app-admin-notificaciones>
+  <app-admin-usuarios *ngIf="currentSection === 'usuarios'"></app-admin-usuarios>
+</div>

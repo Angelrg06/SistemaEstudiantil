@@ -1,26 +1,30 @@
+// src/app.js
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
-import helmet from 'helmet';
-
-// Importamos rutas
-import userRoutes from './routes/user.routes';
+import dotenv from 'dotenv';
+import adminRoutes from './routes/admin.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/usuarios.routes.js';
+import panelRoutes from './routes/panel.routes.js';
+import { authMiddleware } from './middlewares/auth.middleware.js';
 
 dotenv.config();
 
 const app = express();
 
 // Middlewares
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_URL }));
-app.use(helmet());
 
-// Rutas
-app.use('/user.routes', userRoutes);
+// Health check
+app.get('/healthz', (req, res) => res.send('ok'));
 
-// Ruta de prueba
-app.get('/', (req, res) => {
-    res.send('Servidor funcionando correctamente!');
-});
+// Rutas públicas
+app.use('/api/auth', authRoutes);
+
+// Rutas protegidas
+app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/panel', panelRoutes);
+app.use('/api/admin', adminRoutes);
 
 export default app;
