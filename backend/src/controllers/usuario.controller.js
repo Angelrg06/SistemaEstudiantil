@@ -12,6 +12,7 @@ export const getAllUsers = async (req, res) => {
         rol: true
       }
     });
+
     res.json(usuarios);
   } catch (error) {
     console.error("Error en getAllUsers:", error);

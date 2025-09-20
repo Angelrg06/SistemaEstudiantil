@@ -34,8 +34,12 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
 })
 export class Admin implements OnInit {
   currentUser: any;
-  currentSection = 'dashboard'; // Inicializamos en dashboard
-  stats: any = {};              // Estadísticas que se pasarán a AdminDashboard
+  currentSection = 'dashboard';
+  stats: any = {};
+
+  // VARIABLES NUEVAS PARA HEADER
+  showMobileMenu = false; // para el menú hamburguesa
+  showUserMenu = false;   // para el dropdown de usuario
 
   constructor(
     private authService: AuthService, 
@@ -44,22 +48,17 @@ export class Admin implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Verificar que el usuario esté logueado y sea admin
     this.currentUser = this.authService.getCurrentUser();
     if (!this.currentUser || this.currentUser.rol !== 'admin') {
       this.router.navigate(['/login']);
     }
 
-    // Cargar estadísticas para el dashboard
     this.loadStats();
   }
 
-  // Carga estadísticas desde el backend usando AdminService
   loadStats() {
     this.adminService.getDashboardStats().subscribe({
-      next: (data) => {
-        this.stats = data; // se pasa como Input al dashboard
-      },
+      next: (data) => { this.stats = data; },
       error: (error) => {
         console.error('Error loading stats:', error);
         this.stats = { docentes: 0, estudiantes: 0, notificaciones: 0, actividades: 0 };
@@ -67,14 +66,23 @@ export class Admin implements OnInit {
     });
   }
 
-  // Cambia la sección activa
   loadSection(section: string) {
     this.currentSection = section;
+    // Cerrar menú móvil al cambiar sección
+    this.showMobileMenu = false;
   }
 
-  // Cierra sesión
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  // NUEVOS MÉTODOS PARA HEADER
+  toggleMobileMenu() {
+    this.showMobileMenu = !this.showMobileMenu;
+  }
+
+  toggleUserMenu() {
+    this.showUserMenu = !this.showUserMenu;
   }
 }

@@ -92,4 +92,23 @@ export class AdminDocentes implements OnInit {
       });
     }
   }
+ currentPage = 1;
+pageSize = 10; // muestra hasta doc009 por página
+
+get totalPages() {
+  return Math.ceil(this.docentes.length / this.pageSize);
+}
+
+prevPage() {
+  if (this.currentPage > 1) this.currentPage--;
+}
+
+nextPage() {
+  if (this.currentPage < this.totalPages) this.currentPage++;
+}
+
+goToPage(page: number) {
+  this.currentPage = page;
+}
+
 }
