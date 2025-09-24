@@ -12,9 +12,17 @@ import { AdminService } from '../../../services/admin.service';
 })
 export class AdminDocentes implements OnInit {
   docentes: any[] = [];
+  docentesFiltrados: any[] = [];
   selectedDocente: any = null;
   isEditing = false;
   showModal = false;
+
+  // Variables para filtros y paginación
+  searchTerm: string = '';
+  selectedDepartamento: string = '';
+  paginaActual: number = 1;
+  registrosPorPagina: number = 5;
+  totalPaginas: number = 1;
 
   constructor(private adminService: AdminService) {}
 
@@ -26,6 +34,7 @@ export class AdminDocentes implements OnInit {
     this.adminService.getDocentes().subscribe({
       next: (data) => {
         this.docentes = data;
+        this.aplicarFiltros();
       },
       error: (error) => {
         console.error('Error loading docentes:', error);
@@ -33,6 +42,76 @@ export class AdminDocentes implements OnInit {
     });
   }
 
+  // Lógica de filtros
+  aplicarFiltros() {
+    let filtrados = [...this.docentes];
+
+    // Buscar por código, DNI, nombre, apellido o correo
+    if (this.searchTerm.trim() !== '') {
+      const termino = this.searchTerm.toLowerCase().trim();
+      filtrados = filtrados.filter(d => 
+        d.codigo.toLowerCase().includes(termino) ||
+        d.dni.toLowerCase().includes(termino) ||
+        d.nombre.toLowerCase().includes(termino) ||
+        d.apellido.toLowerCase().includes(termino) ||
+        (d.usuario?.correo && d.usuario.correo.toLowerCase().includes(termino))
+      );
+    }
+
+    // Filtrar por departamento
+    if (this.selectedDepartamento.trim() !== '') {
+      filtrados = filtrados.filter(d => 
+        d.departamento === this.selectedDepartamento
+      );
+    }
+
+    // Calcular paginación
+    this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina);
+    if (this.totalPaginas === 0) this.totalPaginas = 1;
+    
+    if (this.paginaActual > this.totalPaginas) {
+      this.paginaActual = this.totalPaginas;
+    }
+
+    const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
+    const fin = inicio + this.registrosPorPagina;
+    this.docentesFiltrados = filtrados.slice(inicio, fin);
+  }
+
+  // Métodos de filtro
+  buscarDocentes() {
+    this.paginaActual = 1;
+    this.aplicarFiltros();
+  }
+
+  filtrarPorDepartamento() {
+    this.paginaActual = 1;
+    this.aplicarFiltros();
+  }
+
+  // Navegación de páginas
+  paginaAnterior() {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.aplicarFiltros();
+    }
+  }
+
+  paginaSiguiente() {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+      this.aplicarFiltros();
+    }
+  }
+
+  // Filas vacías para altura fija
+  filasVacias(): number[] {
+    const usuariosEnPagina = this.docentesFiltrados.length;
+    const filasVaciasCount = Math.max(0, this.registrosPorPagina - usuariosEnPagina);
+    return new Array(filasVaciasCount).fill(0);
+  }
+
+  // Métodos originales (sin cambios)
   openModal(docente?: any) {
     this.isEditing = !!docente;
     this.selectedDocente = docente ? { ...docente } : {
@@ -92,23 +171,4 @@ export class AdminDocentes implements OnInit {
       });
     }
   }
- currentPage = 1;
-pageSize = 10; // muestra hasta doc009 por página
-
-get totalPages() {
-  return Math.ceil(this.docentes.length / this.pageSize);
-}
-
-prevPage() {
-  if (this.currentPage > 1) this.currentPage--;
-}
-
-nextPage() {
-  if (this.currentPage < this.totalPages) this.currentPage++;
-}
-
-goToPage(page: number) {
-  this.currentPage = page;
-}
-
 }

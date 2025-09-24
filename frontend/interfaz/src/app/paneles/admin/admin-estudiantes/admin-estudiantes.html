@@ -1,128 +1,169 @@
 <!-- Panel de Estudiantes -->
-<div class="card bg-white rounded-xl shadow-lg mb-6">
+<div class="bg-white rounded-xl shadow-lg mb-6 max-w-[1200px] mx-auto">
   <!-- Header panel -->
-  <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+  <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <h2 class="text-xl font-semibold text-gray-800">Gestión de Estudiantes</h2>
-    <button class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow hover:shadow-lg transition"
-            (click)="openModal()">
-      <i class="fas fa-plus mr-2"></i> Agregar Estudiante
-    </button>
+
+    <div class="flex flex-col md:flex-row gap-3">
+      <!-- Filtros -->
+      <input type="text" placeholder="Buscar estudiante..."
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+        [(ngModel)]="searchTerm" (input)="buscarEstudiantes()" />
+
+      <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+        [(ngModel)]="selectedSeccion" (change)="filtrarPorSeccion()">
+        <option value="">Todas las secciones</option>
+        <option value="A">Sección A</option>
+        <option value="B">Sección B</option>
+        <option value="C">Sección C</option>
+      </select>
+
+      <!-- Botón Agregar -->
+      <button
+        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow hover:shadow-lg transition"
+        (click)="openModal()">
+        <i class="fas fa-plus mr-2"></i> Agregar Estudiante
+      </button>
+    </div>
   </div>
-  
-  <!-- Tabla -->
+
+  <!-- Tabla con altura fija -->
   <div class="p-6">
-    <div class="overflow-x-auto">
-      <table class="w-full table-auto rounded-xl overflow-hidden shadow">
+    <div class="border border-gray-200 rounded-lg overflow-hidden" style="min-height: 335px;">
+      <table class="table-fixed w-full">
         <thead class="bg-gray-100 text-gray-600">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Código</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">DNI</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Nombre</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Apellido</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Sección</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Usuario</th>
-            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
+            <th class="w-20 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Código</th>
+            <th class="w-24 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">DNI</th>
+            <th class="px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Nombre</th>
+            <th class="px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Apellido</th>
+            <th class="w-24 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Sección</th>
+            <th class="w-32 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Acciones</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          @for (estudiante of estudiantes; track estudiante.id_estudiante) {
-            <tr class="hover:bg-gray-50 transition">
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.codigo }}</td>
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.dni }}</td>
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.nombre }}</td>
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.apellido }}</td>
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.seccion?.nombre || 'Sin sección' }}</td>
-              <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.usuario?.correo }}</td>
-              <td class="px-6 py-4 text-sm font-medium">
-                <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="openModal(estudiante)">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="text-red-600 hover:text-red-900" (click)="deleteEstudiante(estudiante.id_estudiante)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          }
+          <!-- Estudiantes reales -->
+          <tr *ngFor="let estudiante of estudiantesFiltrados" class="h-14">
+            <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.codigo }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.dni }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 truncate">{{ estudiante.nombre }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 truncate">{{ estudiante.apellido }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">{{ estudiante.seccion?.nombre || 'Sin sección' }}</td>
+            <td class="px-6 py-4 text-sm font-medium">
+              <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="openModal(estudiante)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="text-red-600 hover:text-red-900" (click)="deleteEstudiante(estudiante.id_estudiante)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Filas vacías para mantener altura fija -->
+          <tr *ngFor="let _ of filasVacias()" class="h-14">
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+          </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Footer simplificado -->
+    <div class="flex flex-col md:flex-row items-center justify-between mt-6 gap-3">
+      <div class="text-sm text-gray-600">
+        Página {{ paginaActual }} de {{ totalPaginas }}
+      </div>
+
+      <div class="flex space-x-2">
+        <button
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaAnterior()" [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+
+        <button
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Modal Estudiantes -->
-@if (showModal) {
-  <div class="fixed inset-0 z-50 flex items-start justify-center pt-24"
-       style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
+<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-start justify-center pt-24"
+  style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
+  <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
 
-      <!-- Header Modal -->
-      <div class="p-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg rounded-t-xl flex justify-between items-center">
-        <h3 class="text-lg font-semibold text-gray-800">
-          {{ isEditing ? 'Editar Estudiante' : 'Agregar Estudiante' }}
-        </h3>
-        <button class="text-gray-600 text-3xl font-bold hover:text-gray-800" (click)="closeModal()">&times;</button>
-      </div>
-
-      <!-- Formulario Modal -->
-      <div class="p-6 bg-white rounded-b-xl">
-        <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-            <input type="text"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                   [(ngModel)]="selectedEstudiante.codigo" name="codigo" required>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
-            <input type="text"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                   [(ngModel)]="selectedEstudiante.dni" name="dni" required>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-            <input type="text"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                   [(ngModel)]="selectedEstudiante.nombre" name="nombre" required>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
-            <input type="text"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                   [(ngModel)]="selectedEstudiante.apellido" name="apellido" required>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-            <input type="email"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                   [(ngModel)]="selectedEstudiante.usuario.correo" name="correo" required>
-          </div>
-
-          @if (!isEditing) {
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-              <input type="password"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                     [(ngModel)]="selectedEstudiante.usuario.password" name="password" required>
-            </div>
-          }
-        </form>
-      </div>
-
-      <!-- Footer Modal -->
-      <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white rounded-b-xl">
-        <button class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" (click)="closeModal()">
-          Cancelar
-        </button>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                (click)="saveEstudiante()">
-          Guardar
-        </button>
-      </div>
+    <!-- Header Modal -->
+    <div
+      class="p-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg rounded-t-xl flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-800">
+        {{ isEditing ? 'Editar Estudiante' : 'Agregar Estudiante' }}
+      </h3>
+      <button class="text-gray-600 text-3xl font-bold hover:text-gray-800" (click)="closeModal()">&times;</button>
     </div>
+
+    <!-- Formulario Modal -->
+    <div class="p-6 bg-white rounded-b-xl">
+      <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.codigo" name="codigo" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.dni" name="dni" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.nombre" name="nombre" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.apellido" name="apellido" required>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+          <input type="email"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.usuario.correo" name="correo" required>
+        </div>
+
+        <div class="md:col-span-2" *ngIf="!isEditing">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+          <input type="password"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedEstudiante.usuario.password" name="password" required>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer Modal -->
+    <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white rounded-b-xl">
+      <button class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" (click)="closeModal()">
+        Cancelar
+      </button>
+      <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+        (click)="saveEstudiante()">
+        Guardar
+      </button>
+    </div>
+
   </div>
-}
+</div>

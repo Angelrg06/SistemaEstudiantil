@@ -12,10 +12,18 @@ import { AdminService } from '../../../services/admin.service';
 })
 export class AdminEstudiantes implements OnInit {
   estudiantes: any[] = [];
+  estudiantesFiltrados: any[] = [];
   selectedEstudiante: any = null;
   isEditing = false;
   showModal = false;
   secciones: any[] = [];
+
+  // AGREGADO: Variables para filtros y paginación
+  searchTerm: string = '';
+  selectedSeccion: string = '';
+  paginaActual: number = 1;
+  registrosPorPagina: number = 5;
+  totalPaginas: number = 1;
 
   constructor(private adminService: AdminService) {}
 
@@ -26,10 +34,11 @@ export class AdminEstudiantes implements OnInit {
 
   loadEstudiantes() {
     this.adminService.getEstudiantes().subscribe({
-      next: (data) => { // CORREGIDO: añadido =>
+      next: (data) => {
         this.estudiantes = data;
+        this.aplicarFiltros(); // AGREGADO: Aplicar filtros después de cargar
       },
-      error: (error) => { // CORREGIDO: añadido =>
+      error: (error) => {
         console.error('Error loading estudiantes:', error);
       }
     });
@@ -44,6 +53,76 @@ export class AdminEstudiantes implements OnInit {
     ];
   }
 
+  // AGREGADO: Lógica de filtros
+  aplicarFiltros() {
+    let filtrados = [...this.estudiantes];
+
+    // Buscar por código, DNI, nombre, apellido o correo
+    if (this.searchTerm.trim() !== '') {
+      const termino = this.searchTerm.toLowerCase().trim();
+      filtrados = filtrados.filter(e => 
+        e.codigo.toLowerCase().includes(termino) ||
+        e.dni.toLowerCase().includes(termino) ||
+        e.nombre.toLowerCase().includes(termino) ||
+        e.apellido.toLowerCase().includes(termino) ||
+        (e.usuario?.correo && e.usuario.correo.toLowerCase().includes(termino))
+      );
+    }
+
+    // Filtrar por sección
+    if (this.selectedSeccion.trim() !== '') {
+      filtrados = filtrados.filter(e => 
+        e.seccion?.nombre === this.selectedSeccion
+      );
+    }
+
+    // Calcular paginación
+    this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina);
+    if (this.totalPaginas === 0) this.totalPaginas = 1;
+    
+    if (this.paginaActual > this.totalPaginas) {
+      this.paginaActual = this.totalPaginas;
+    }
+
+    const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
+    const fin = inicio + this.registrosPorPagina;
+    this.estudiantesFiltrados = filtrados.slice(inicio, fin);
+  }
+
+  // AGREGADO: Métodos de filtro
+  buscarEstudiantes() {
+    this.paginaActual = 1;
+    this.aplicarFiltros();
+  }
+
+  filtrarPorSeccion() {
+    this.paginaActual = 1;
+    this.aplicarFiltros();
+  }
+
+  // AGREGADO: Navegación de páginas
+  paginaAnterior() {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.aplicarFiltros();
+    }
+  }
+
+  paginaSiguiente() {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+      this.aplicarFiltros();
+    }
+  }
+
+  // AGREGADO: Filas vacías para altura fija
+  filasVacias(): number[] {
+    const usuariosEnPagina = this.estudiantesFiltrados.length;
+    const filasVaciasCount = Math.max(0, this.registrosPorPagina - usuariosEnPagina);
+    return new Array(filasVaciasCount).fill(0);
+  }
+
+  // TUS MÉTODOS ORIGINALES (sin cambios)
   openModal(estudiante?: any) {
     this.isEditing = !!estudiante;
     this.selectedEstudiante = estudiante ? { ...estudiante } : {
@@ -70,22 +149,22 @@ export class AdminEstudiantes implements OnInit {
     if (this.isEditing) {
       this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, this.selectedEstudiante)
         .subscribe({
-          next: () => { // CORREGIDO: añadido =>
-            this.loadEstudiantes();
+          next: () => {
+            this.loadEstudiantes(); // Esto llamará aplicarFiltros()
             this.closeModal();
           },
-          error: (error) => { // CORREGIDO: añadido =>
+          error: (error) => {
             console.error('Error updating estudiante:', error);
           }
         });
     } else {
       this.adminService.createEstudiante(this.selectedEstudiante)
         .subscribe({
-          next: () => { // CORREGIDO: añadido =>
-            this.loadEstudiantes();
+          next: () => {
+            this.loadEstudiantes(); // Esto llamará aplicarFiltros()
             this.closeModal();
           },
-          error: (error) => { // CORREGIDO: añadido =>
+          error: (error) => {
             console.error('Error creating estudiante:', error);
           }
         });
@@ -95,10 +174,10 @@ export class AdminEstudiantes implements OnInit {
   deleteEstudiante(id: number) {
     if (confirm('¿Está seguro de eliminar este estudiante?')) {
       this.adminService.deleteEstudiante(id).subscribe({
-        next: () => { // CORREGIDO: añadido =>
-          this.loadEstudiantes();
+        next: () => {
+          this.loadEstudiantes(); // Esto llamará aplicarFiltros()
         },
-        error: (error) => { // CORREGIDO: añadido =>
+        error: (error) => {
           console.error('Error deleting estudiante:', error);
         }
       });

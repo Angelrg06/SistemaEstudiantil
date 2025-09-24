@@ -22,7 +22,7 @@
 
   <!-- Tabla con altura fija -->
   <div class="p-6">
-    <div class="border border-gray-200 rounded-lg overflow-hidden" style="min-height: 335px;">
+   <div class="border border-gray-200 rounded-lg overflow-hidden" style="min-height: 335px;">
       <table class="table-fixed w-full">
         <thead class="bg-gray-100 text-gray-600">
           <tr>
@@ -33,24 +33,20 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <!-- Usuarios reales -->
-          @for (usuario of usuariosFiltrados; track usuario.id_usuario) {
-          <tr class="h-14">
+          <tr *ngFor="let usuario of usuariosFiltrados" class="h-14">
             <td class="px-6 py-4 text-sm text-gray-900 text-center">{{ usuario.id_usuario }}</td>
             <td class="px-6 py-4 text-sm text-gray-900 text-center truncate">{{ usuario.correo }}</td>
             <td class="px-6 py-4 text-sm text-gray-900 text-center">
               {{ usuario.rol }}
             </td>
           </tr>
-          }
 
-          @for (_ of filasVacias(); track $index) {
-          <tr class="h-14">
+          <!-- Filas vacías para mantener altura fija -->
+          <tr *ngFor="let _ of filasVacias()" class="h-14">
             <td class="px-6 py-4">&nbsp;</td>
             <td class="px-6 py-4">&nbsp;</td>
             <td class="px-6 py-4">&nbsp;</td>
           </tr>
-          }
-
         </tbody>
       </table>
     </div>
@@ -76,4 +72,4 @@
       </div>
     </div>
   </div>
-</div>
+</div> 
