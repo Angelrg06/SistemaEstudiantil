@@ -1,11 +1,11 @@
 <!-- Panel Docentes -->
 <div class="card bg-white rounded-xl shadow-lg mb-6 w-full max-w-4xl mx-auto">
-  
+
   <!-- Header Panel -->
   <div class="p-6 border-b border-gray-200 flex justify-between items-center">
     <h2 class="text-xl font-semibold text-gray-800">Gestión de Docentes</h2>
     <button class="btn-primary px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-            (click)="openModal()">
+      (click)="openModal()">
       <i class="fas fa-plus mr-2"></i> Agregar Docente
     </button>
   </div>
@@ -24,104 +24,99 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr *ngFor="let docente of docentes" class="hover:bg-gray-50 transition-colors">
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.codigo }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.dni }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.nombre }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.apellido }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.usuario?.correo }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="openModal(docente)">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900" (click)="deleteDocente(docente.id_docente)">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
+        @for (docente of docentes; track docente.id_docente) {
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.codigo }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.dni }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.nombre }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.apellido }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ docente.usuario?.correo }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="openModal(docente)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="text-red-600 hover:text-red-900" (click)="deleteDocente(docente.id_docente)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        }
       </tbody>
     </table>
   </div>
 </div>
 
 
-  <!-- Modal Docente -->
-<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-start justify-center pt-24"
-     style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
+<!-- Modal Docente -->
+@if (showModal) {
+  <div class="fixed inset-0 z-50 flex items-start justify-center pt-24"
+    style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
-  <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
 
-    <!-- Header Modal (igual al header principal) -->
-    <div class="p-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg rounded-t-xl flex justify-between items-center">
-      <h3 class="text-lg font-semibold text-gray">{{ isEditing ? 'Editar' : 'Agregar' }} Docente</h3>
-      <button class="text-gray text-3xl font-bold" (click)="closeModal()">&times;</button>
+      <!-- Header Modal -->
+      <div
+        class="p-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg rounded-t-xl flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray">{{ isEditing ? 'Editar' : 'Agregar' }} Docente</h3>
+        <button class="text-gray text-3xl font-bold" (click)="closeModal()">&times;</button>
+      </div>
+
+      <!-- Formulario Modal -->
+      <div class="p-6 bg-white rounded-b-xl">
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              [(ngModel)]="selectedDocente.codigo" name="codigo" required>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              [(ngModel)]="selectedDocente.dni" name="dni" required>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              [(ngModel)]="selectedDocente.nombre" name="nombre" required>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              [(ngModel)]="selectedDocente.apellido" name="apellido" required>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+            <input type="email"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              [(ngModel)]="selectedDocente.usuario.correo" name="correo" required>
+          </div>
+
+          @if (!isEditing) {
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+              <input type="password"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                [(ngModel)]="selectedDocente.usuario.password" name="password" required>
+            </div>
+          }
+        </form>
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white rounded-b-xl">
+        <button class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" (click)="closeModal()">
+          Cancelar
+        </button>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+          (click)="saveDocente()">
+          Guardar
+        </button>
+      </div>
+
     </div>
-
-    <!-- Formulario Modal -->
-    <div class="p-6 bg-white rounded-b-xl">
-      <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-          <input type="text"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.codigo" name="codigo" required>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
-          <input type="text"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.dni" name="dni" required>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-          <input type="text"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.nombre" name="nombre" required>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
-          <input type="text"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.apellido" name="apellido" required>
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-          <input type="email"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.usuario.correo" name="correo" required>
-        </div>
-
-        <div class="md:col-span-2" *ngIf="!isEditing">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-          <input type="password"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                 [(ngModel)]="selectedDocente.usuario.password" name="password" required>
-        </div>
-      </form>
-    </div>
-
-    <!-- Footer Modal -->
-    <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white rounded-b-xl">
-      <button class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" (click)="closeModal()">
-        Cancelar
-      </button>
-      <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-              (click)="saveDocente()">
-        Guardar
-      </button>
-    </div>
-
   </div>
-</div>
-
-<style>
-  /* Bloquear scroll de la página mientras el modal está abierto */
-  body.modal-open {
-    overflow: hidden;
-  }
-</style>
-
+}

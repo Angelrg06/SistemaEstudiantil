@@ -23,6 +23,11 @@ model Usuario {
   @@map("usuarios")
 }
 
+// =======================
+// MODELO VALIDACION_LOGIN
+// =======================
+
+
 // ======================
 // MODELO ESTUDIANTE
 // ======================

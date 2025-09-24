@@ -25,7 +25,7 @@ app.get('/healthz', (req, res) => res.send('ok'));
 app.use('/api/auth', authRoutes);
 
 // Rutas protegidas
-app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/usuarios', authMiddleware, userRoutes);
 app.use('/api/panel', panelRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/secciones", seccionesRoutes); // Aquí montamos la ruta de secciones

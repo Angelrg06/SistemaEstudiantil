@@ -15,7 +15,7 @@ import { AdminService } from '../../services/admin.service';
 // Subcomponentes del panel admin
 import { AdminDocentes } from './admin-docentes/admin-docentes';
 import { AdminEstudiantes } from './admin-estudiantes/admin-estudiantes';
-import { AdminNotificaciones } from './admin-notificaciones/admin-notificaciones';
+
 import { AdminUsuarios } from './admin-usuarios/admin-usuarios';
 import { AdminDashboard } from './admin-dashboard/admin-dashboard';
 
@@ -27,7 +27,7 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
     AdminDashboard,       // Dashboard separado
     AdminDocentes,
     AdminEstudiantes,
-    AdminNotificaciones,
+
     AdminUsuarios
   ],
   templateUrl: './admin.html'

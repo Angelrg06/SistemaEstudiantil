@@ -1,5 +1,5 @@
 // backend/src/controllers/admin.controller.js
-import bcrypt from 'bcrypt';
+
 import { prisma } from '../config/db.js';
 
 // ===============================
@@ -13,7 +13,7 @@ export const createDocente = async (req, res) => {
     const usuario = await prisma.usuario.create({
       data: {
         correo,
-        password: await bcrypt.hash(password, 10),
+        password: password,
         rol: 'docente'
       }
     });
@@ -293,4 +293,7 @@ export const deleteEstudiante = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 
