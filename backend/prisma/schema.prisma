@@ -19,7 +19,6 @@ model Usuario {
   // Relaciones
   docentes    Docente[]
   estudiantes Estudiante[]
-  mensajes    Mensaje[]
 
   @@map("usuarios")
 }
@@ -30,7 +29,7 @@ model Usuario {
 model Estudiante {
   id_estudiante Int    @id @default(autoincrement())
   codigo        String @unique     // matrícula interna
-  dni           String @unique     // documento de identidad
+  dni           String @unique
   nombre        String
   apellido      String
 
@@ -85,10 +84,24 @@ model Grupo {
   nombre     String
   id_seccion Int
 
-  seccion   Seccion  @relation(fields: [id_seccion], references: [id_seccion])
-  mensajes  Mensaje[]
+  seccion  Seccion @relation(fields: [id_seccion], references: [id_seccion])
+  foro     Foro?   // Relación 1:1 (la FK está en Foro)
 
   @@map("grupos")
+}
+
+// ======================
+// MODELO FORO
+// ======================
+model Foro {
+  id_foro     Int    @id @default(autoincrement())
+  id_grupo    Int    @unique // 1:1, FK hacia Grupo
+  tema        String
+  descripcion String?
+
+  grupo       Grupo @relation(fields: [id_grupo], references: [id_grupo])
+
+  @@map("foros")
 }
 
 // ======================
@@ -103,14 +116,16 @@ model Actividad {
   fecha_fin     DateTime?
   estado        String?
   fecha_entrega DateTime?
+  id_curso      Int?      // nuevo
+  curso         String?   // nuevo
 
   id_docente    Int
   id_seccion    Int?
 
-  docente      Docente  @relation(fields: [id_docente], references: [id_docente])
-  seccion      Seccion? @relation(fields: [id_seccion], references: [id_seccion])
+  docente       Docente  @relation(fields: [id_docente], references: [id_docente])
+  seccion       Seccion? @relation(fields: [id_seccion], references: [id_seccion])
 
-  entregas     Entrega[]
+  entregas       Entrega[]
   notificaciones Notificacion[]
   retroalimentaciones Retroalimentacion[]
 
@@ -121,18 +136,41 @@ model Actividad {
 // MODELO ENTREGA
 // ======================
 model Entrega {
-  id_entrega    Int    @id @default(autoincrement())
+  id_entrega    Int      @id @default(autoincrement())
   archivo       String?
   fecha_entrega DateTime?
-  calificacion  Float?
 
   id_actividad  Int
   id_estudiante Int
 
-  actividad   Actividad  @relation(fields: [id_actividad], references: [id_actividad])
-  estudiante  Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+  actividad     Actividad  @relation(fields: [id_actividad], references: [id_actividad])
+  estudiante    Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+
+  // Relaciones 1:1 (FK en Retroalimentacion y Notificacion)
+  retroalimentacion Retroalimentacion?
+  notificacion      Notificacion?
 
   @@map("entregas")
+}
+
+// ======================
+// MODELO RETROALIMENTACION
+// ======================
+model Retroalimentacion {
+  id_retroalimentacion Int      @id @default(autoincrement())
+  comentario           String
+  calificacion         Float?
+  fecha                DateTime @default(now())
+
+  id_actividad Int
+  id_docente   Int
+  id_entrega   Int   @unique  // FK 1:1 hacia Entrega
+
+  actividad    Actividad @relation(fields: [id_actividad], references: [id_actividad])
+  docente      Docente   @relation(fields: [id_docente], references: [id_docente])
+  entrega      Entrega   @relation(fields: [id_entrega], references: [id_entrega])
+
+  @@map("retroalimentaciones")
 }
 
 // ======================
@@ -146,43 +184,11 @@ model Notificacion {
 
   id_actividad    Int?
   id_docente      Int?
+  id_entrega      Int   @unique // FK 1:1 hacia Entrega
 
   actividad       Actividad? @relation(fields: [id_actividad], references: [id_actividad])
   docente         Docente?   @relation(fields: [id_docente], references: [id_docente])
+  entrega         Entrega    @relation(fields: [id_entrega], references: [id_entrega])
 
   @@map("notificaciones")
-}
-
-// ======================
-// MODELO RETROALIMENTACION
-// ======================
-model Retroalimentacion {
-  id_retroalimentacion Int      @id @default(autoincrement())
-  comentario           String
-  fecha                DateTime @default(now())
-
-  id_actividad Int
-  id_docente   Int
-
-  actividad    Actividad @relation(fields: [id_actividad], references: [id_actividad])
-  docente      Docente   @relation(fields: [id_docente], references: [id_docente])
-
-  @@map("retroalimentaciones")
-}
-
-// ======================
-// MODELO MENSAJE
-// ======================
-model Mensaje {
-  id_mensaje  Int      @id @default(autoincrement())
-  contenido   String
-  fecha_envio DateTime @default(now())
-
-  id_grupo    Int
-  id_usuario  Int
-
-  grupo    Grupo   @relation(fields: [id_grupo], references: [id_grupo])
-  usuario  Usuario @relation(fields: [id_usuario], references: [id_usuario])
-
-  @@map("mensajes")
 }

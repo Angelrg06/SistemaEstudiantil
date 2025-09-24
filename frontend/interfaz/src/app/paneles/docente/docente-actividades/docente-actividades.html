@@ -1,1 +1,65 @@
-<p>docente-actividades works!</p>
+<div
+  class="min-h-screen w-full p-8 bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-700 text-white"
+>
+  <!-- Botón de retroceso -->
+  <div class="mb-6">
+    <button
+      [routerLink]="['/docente']"
+      class="flex items-center px-4 py-2 bg-white/20 rounded-lg shadow-md hover:bg-white/30 transition-all"
+    >
+      <i class="fas fa-arrow-left mr-2"></i> Volver al Panel Docente
+    </button>
+  </div>
+
+  <!-- Título -->
+  <h2 class="text-3xl font-bold mb-8 text-center">📚 Actividades de la Sección {{ idSeccion }}</h2>
+
+  <!-- Lista de actividades -->
+  <div
+    *ngIf="actividades.length > 0; else sinActividades"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+  >
+    <div
+      *ngFor="let act of actividades"
+      class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:scale-105 hover:shadow-2xl transition transform text-gray-900"
+    >
+      <!-- Título -->
+      <h3 class="text-xl font-bold mb-2 flex items-center text-gray-900">
+        <i class="fas fa-tasks mr-2 text-cyan-600"></i> {{ act.titulo }}
+      </h3>
+
+      <!-- Descripción -->
+      <p class="text-gray-700 text-md mb-4">{{ act.descripcion }}</p>
+
+      <!-- Info -->
+      <div class="space-y-2 text-md text-gray-800">
+        <p><span class="font-semibold text-cyan-600">📌 Tipo:</span> {{ act.tipo }}</p>
+        <p>
+          <span class="font-semibold text-cyan-600">📅 Inicio:</span> {{ act.fecha_inicio | date }}
+        </p>
+        <p><span class="font-semibold text-cyan-600">⏳ Fin:</span> {{ act.fecha_fin | date }}</p>
+        <p><span class="font-semibold text-cyan-600">✅ Estado:</span> {{ act.estado }}</p>
+        <p>
+          <span class="font-semibold text-cyan-600">📤 Entrega:</span>
+          {{ act.fecha_entrega | date }}
+        </p>
+      </div>
+
+      <!-- Botón acción -->
+      <div class="mt-4 text-center">
+        <button
+          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-cyan-600 transition-all"
+        >
+          Detalles
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sin actividades -->
+  <ng-template #sinActividades>
+    <p class="text-center text-blue-200 mt-10 text-lg">
+      ⚠️ No hay actividades registradas para esta sección.
+    </p>
+  </ng-template>
+</div>

@@ -6,6 +6,8 @@ import adminRoutes from './routes/admin.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/usuarios.routes.js';
 import panelRoutes from './routes/panel.routes.js';
+import seccionesRoutes from './routes/secciones.routes.js'; // importamos secciones
+import actividadesRoutes from "./routes/actividades.routes.js"; // importamos actividades
 import { authMiddleware } from './middlewares/auth.middleware.js';
 
 dotenv.config();
@@ -26,5 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/panel', panelRoutes);
 app.use('/api/admin', adminRoutes);
+app.use("/api/secciones", seccionesRoutes); // Aquí montamos la ruta de secciones
+app.use("/api/actividades", actividadesRoutes); // Aquí montamos la ruta de act
 
 export default app;

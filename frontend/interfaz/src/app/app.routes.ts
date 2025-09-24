@@ -5,32 +5,35 @@ import { Login } from './login/login';
 import { Admin } from './paneles/admin/admin';
 import { Docente } from './paneles/docente/docente';
 import { Estudiante } from './paneles/estudiante/estudiante';
+import { Actividades } from './paneles/docente/docente-actividades/docente-actividades';
 import { AuthRoleGuard } from './guards/authRole.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
- 
 
-  { 
-    path: 'admin', 
+  {
+    path: 'admin',
     component: Admin,
     canActivate: [AuthRoleGuard],
-    data: { role: 'admin' }
+    data: { role: 'admin' },
   },
-  { 
-    path: 'docente', 
+  {
+    path: 'docente',
     component: Docente,
     canActivate: [AuthRoleGuard],
-    data: { role: 'docente' }
+    data: { role: 'docente' },
   },
-  { 
-    path: 'estudiante', 
+  {
+    path: 'estudiante',
     component: Estudiante,
     canActivate: [AuthRoleGuard],
-    data: { role: 'estudiante' }
+    data: { role: 'estudiante' },
+  },
+  { path: 'actividades/:id',
+    component: Actividades
   },
 
   // Ruta fallback
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'login' },
 ];
