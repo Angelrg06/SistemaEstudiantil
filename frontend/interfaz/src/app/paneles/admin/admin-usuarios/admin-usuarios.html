@@ -1,39 +1,79 @@
-<div class="card bg-white rounded-xl shadow-lg">
-  <div class="p-6 border-b border-gray-200">
+<!-- Panel de Usuarios -->
+<div class="card bg-white rounded-xl shadow-lg mb-6 max-w-[920px] mx-auto">
+  <!-- Header -->
+  <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <h2 class="text-xl font-semibold text-gray-800">Gestión de Usuarios</h2>
+
+    <!-- Filtros -->
+    <div class="flex flex-col md:flex-row gap-3">
+      <input type="text" placeholder="Buscar usuario"
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+        [(ngModel)]="searchTerm" (input)="buscarUsuarios()" />
+
+      <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+        [(ngModel)]="selectedRol" (change)="filtrarPorRol()">
+        <option value="">Todos</option>
+        <option value="admin">Admin</option>
+        <option value="Docente">Docente</option>
+        <option value="Estudiante">Estudiante</option>
+      </select>
+    </div>
   </div>
+
+  <!-- Tabla con altura fija -->
   <div class="p-6">
-    <div class="overflow-x-auto">
-      <table class="w-full table-auto">
-        <thead>
-          <tr class="bg-gray-50">
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+    <div class="border border-gray-200 rounded-lg overflow-hidden" style="min-height: 335px;">
+      <table class="table-fixed w-full">
+        <thead class="bg-gray-100 text-gray-600">
+          <tr>
+            <th class="w-1/3 px-6 py-4 text-xs font-medium uppercase tracking-wider text-center">ID</th>
+            <th class="w-1/3 px-6 py-4 text-xs font-medium uppercase tracking-wider text-center">Correo</th>
+            <th class="w-1/3 px-6 py-4 text-xs font-medium uppercase tracking-wider text-center">Rol</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr *ngFor="let usuario of usuarios" class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ usuario.id_usuario }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ usuario.correo }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              <select class="input-field px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                      [value]="usuario.rol"
-                      (change)="onRolChange(usuario, $any($event.target).value)">
-                <option value="admin">Administrador</option>
-                <option value="docente">Docente</option>
-                <option value="estudiante">Estudiante</option>
-              </select>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button class="text-red-600 hover:text-red-900" (click)="eliminarUsuario(usuario.id_usuario)">
-                <i class="fas fa-trash"></i>
-              </button>
+          <!-- Usuarios reales -->
+          @for (usuario of usuariosFiltrados; track usuario.id_usuario) {
+          <tr class="h-14">
+            <td class="px-6 py-4 text-sm text-gray-900 text-center">{{ usuario.id_usuario }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 text-center truncate">{{ usuario.correo }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 text-center">
+              {{ usuario.rol }}
             </td>
           </tr>
+          }
+
+          @for (_ of filasVacias(); track $index) {
+          <tr class="h-14">
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+            <td class="px-6 py-4">&nbsp;</td>
+          </tr>
+          }
+
         </tbody>
       </table>
+    </div>
+
+    <!-- Footer simplificado -->
+    <div class="flex flex-col md:flex-row items-center justify-between mt-6 gap-3">
+      <div class="text-sm text-gray-600">
+        Página {{ paginaActual }} de {{ totalPaginas }}
+      </div>
+
+      <div class="flex space-x-2">
+        <button
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaAnterior()" [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+
+        <button
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </div>

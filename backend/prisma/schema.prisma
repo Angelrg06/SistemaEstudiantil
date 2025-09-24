@@ -20,9 +20,14 @@ model Usuario {
   docentes    Docente[]
   estudiantes Estudiante[]
   mensajes    Mensaje[]
-
+   
   @@map("usuarios")
 }
+
+// =======================
+// MODELO VALIDACION_LOGIN
+// =======================
+
 
 // ======================
 // MODELO ESTUDIANTE

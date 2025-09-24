@@ -48,9 +48,8 @@ export class AdminService {
   }
 
   getUsuarios(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/usuarios`);
-  }
-
+  return this.http.get(`http://localhost:4000/api/usuarios`);
+}
   updateRol(id: number, rol: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/usuarios/${id}/rol`, { rol });
   }

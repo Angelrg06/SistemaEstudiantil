@@ -33,4 +33,6 @@ router.get('/notificaciones', adminController.getNotificaciones);
 // Dashboard stats
 router.get('/stats', adminController.getDashboardStats);
 
+//Rutas de usuarios 
+
 export default router;
