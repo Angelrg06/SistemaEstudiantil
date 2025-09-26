@@ -1,12 +1,8 @@
-<div
-  class="min-h-screen w-full p-8 bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-700 text-white"
->
+<div class="min-h-screen w-full p-8 bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-700 text-white">
   <!-- Botón de retroceso -->
   <div class="mb-6">
-    <button
-      [routerLink]="['/docente']"
-      class="flex items-center px-4 py-2 bg-white/20 rounded-lg shadow-md hover:bg-white/30 transition-all"
-    >
+    <button [routerLink]="['/docente']"
+      class="flex items-center px-4 py-2 bg-white/20 rounded-lg shadow-md hover:bg-white/30 transition-all">
       <i class="fas fa-arrow-left mr-2"></i> Volver al Panel Docente
     </button>
   </div>
@@ -14,15 +10,101 @@
   <!-- Título -->
   <h2 class="text-3xl font-bold mb-8 text-center">📚 Actividades de la Sección {{ idSeccion }}</h2>
 
+  <!-- Sin actividades -->
+  <ng-template #sinActividades>
+    <p class="text-center text-blue-200 mt-10 text-lg">
+      ⚠️ No hay actividades registradas para esta sección.
+    </p>
+  </ng-template>
+
+  <!-- Botón para crear nuevas actividades -->
+  <div class="mb-5">
+    <button (click)="mostrarFormActividad()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 
+           text-white font-semibold rounded-xl shadow-lg 
+           hover:from-green-700 hover:to-emerald-600 
+           transition-all duration-200 flex items-center gap-2">
+      <span class="text-lg">+</span> Nueva Actividad
+    </button>
+  </div>
+
+  <!-- Formulario para crear nueva actividad -->
+  <div *ngIf="nuevaActividad" class="fixed inset-0 flex items-center justify-center z-50">
+    <div class="bg bg-white rounded-2xl shadow-xl w-[50%] p-8">
+      <!-- Header -->
+      <div class="flex justify-between items-center border-b pb-2 mb-4">
+        <h2 class="text-4xl font-bold text-black">Nueva Actividad</h2>
+        <!-- Cerrar -->
+        <button class="text-red-500 hover:text-red-700" (click)="cerrarFormActividad()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Formulario -->
+      <div class="container">
+
+        <!-- Curso -->
+        <div class="flex flex-col">
+          <label class="form-label text-black">Curso</label>
+          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso" id="">
+            <option value="defecto">Seleccione un curso...</option>
+            <option value="historia">Historia</option>
+            <option value="ciencias">Ciencias</option>
+            <option value="matematicas">Matemáticas</option>
+          </select>
+        </div>
+
+        <!-- Titulo de la Actividad-->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Título de la Actividad</label>
+          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" name="titulo">
+        </div>
+
+        <!-- Descripción -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Descripción de la actividad</label>
+          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" name="descripcion"></textarea>
+        </div>
+
+        <!-- Tipo de Actividad -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Tipo de Actividad</label>
+          <select class="form-control bg-gray-200 text-black rounded p-3" name="tipo">
+            <option value="defecto">Seleccione una opción...</option>
+            <option value="Tarea">Tarea</option>
+            <option value="Proyecto">Proyecto</option>
+          </select>
+        </div>
+
+        <!-- Fecha inicio -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Desde:</label>
+          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" name="f-inicio">
+        </div>
+
+        <!-- Fecha final -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Hasta:</label>
+          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" name="f-final">
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-4 flex justify-end gap-2">
+        <button class="px-8 py-2 bg-green-500 rounded hover:bg-green-700">
+          Subir Actividad
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lista de actividades -->
-  <div
-    *ngIf="actividades.length > 0; else sinActividades"
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-  >
-    <div
-      *ngFor="let act of actividades"
-      class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:scale-105 hover:shadow-2xl transition transform text-gray-900"
-    >
+  <div *ngIf="actividades.length > 0; else sinActividades" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let act of actividades; let i = index"
+      class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:scale-105 hover:shadow-2xl transition transform text-gray-900">
       <!-- Título -->
       <h3 class="text-xl font-bold mb-2 flex items-center text-gray-900">
         <i class="fas fa-tasks mr-2 text-cyan-600"></i> {{ act.titulo }}
@@ -47,19 +129,77 @@
 
       <!-- Botón acción -->
       <div class="mt-4 text-center">
-        <button
-          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-cyan-600 transition-all"
-        >
+        <button (click)="abrirModal(i)"
+          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-cyan-600 transition-all">
           Detalles
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Sin actividades -->
-  <ng-template #sinActividades>
-    <p class="text-center text-blue-200 mt-10 text-lg">
-      ⚠️ No hay actividades registradas para esta sección.
-    </p>
-  </ng-template>
+  <!-- Modal por actividad -->
+  <div *ngIf="actividadSeleccionada !== null" class="fixed inset-0 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+
+      <!-- Header -->
+      <div class="flex justify-between items-center text-black border-b px-4 py-2">
+        <h2 class="text-xl font-bold">Editar Actividad</h2>
+
+        <!-- Cerrar Modal -->
+        <button class="text-red-500 hover:text-red-700" (click)="cerrarModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo Formulario -->
+      <div class="p-4">
+
+        <form class="flex flex-col">
+          <!-- Tipo -->
+          <div class="mb-5 flex flex-col">
+            <label class="text-black mb-2" for="tipoTarea">Tipo de Actividad</label>
+            <select class="form-control rounded bg-gray-200 p-2 text-black" name=""
+              id="tipoTarea" [(ngModel)]="tipo_actividad" name="tipo">
+              <option value="Tarea">Tarea</option>
+              <option value="Proyecto">Proyecto</option>
+            </select>
+          </div>
+
+          <!-- Fecha Inicio -->
+          <div class="mb-5 flex flex-col">
+            <label class="text-black mb-2" for="actividadFechaInicio">Fecha inicial</label>
+            <input type="datetime-local"
+              class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaInicio"
+              [ngModel]="actividades[actividadSeleccionada].fecha_inicio | datetimeLocal"
+              (ngModelChange)="fecha_temporal_inicio = $event" name="fechaIncio">
+          </div>
+
+          <!-- Fecha Final -->
+          <div class="mb-5 flex flex-col">
+            <label class="text-black mb-2" for="actividadFechaFinal">Fecha final</label>
+            <input type="datetime-local"
+              class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaFinal"
+              [ngModel]="actividades[actividadSeleccionada].fecha_fin | datetimeLocal"
+              (ngModelChange)="fecha_temporal_final = $event" name="fechaFinal">
+          </div>
+
+        </form>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-4 flex justify-end gap-2">
+        <button class="px-8 py-2 bg-red-500 rounded hover:bg-gray-400">
+          Eliminar
+        </button>
+        <button class="px-8 py-2 bg-green-500 rounded hover:bg-gray-400">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
