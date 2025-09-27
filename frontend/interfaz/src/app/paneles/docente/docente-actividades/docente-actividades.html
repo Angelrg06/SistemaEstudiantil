@@ -37,7 +37,7 @@
         <button class="text-red-500 hover:text-red-700" (click)="cerrarFormActividad()">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
             class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -139,7 +139,7 @@
 
   <!-- Modal por actividad -->
   <div *ngIf="actividadSeleccionada !== null" class="fixed inset-0 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+    <div class="bg bg-white rounded-2xl shadow-xl w-[50%] p-8">
 
       <!-- Header -->
       <div class="flex justify-between items-center text-black border-b px-4 py-2">
@@ -155,43 +155,63 @@
       </div>
 
       <!-- Cuerpo Formulario -->
-      <div class="p-4">
+      <div class="container">
 
-        <form class="flex flex-col">
-          <!-- Tipo -->
-          <div class="mb-5 flex flex-col">
-            <label class="text-black mb-2" for="tipoTarea">Tipo de Actividad</label>
-            <select class="form-control rounded bg-gray-200 p-2 text-black" name=""
-              id="tipoTarea" [(ngModel)]="tipo_actividad" name="tipo">
-              <option value="Tarea">Tarea</option>
-              <option value="Proyecto">Proyecto</option>
-            </select>
-          </div>
+        <!-- Curso -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Curso</label>
+          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso" id="">
+            <option value="defecto">Seleccione un curso...</option>
+            <option value="historia">Historia</option>
+            <option value="ciencias">Ciencias</option>
+            <option value="matematicas">Matemáticas</option>
+          </select>
+        </div>
 
-          <!-- Fecha Inicio -->
-          <div class="mb-5 flex flex-col">
-            <label class="text-black mb-2" for="actividadFechaInicio">Fecha inicial</label>
-            <input type="datetime-local"
-              class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaInicio"
-              [ngModel]="actividades[actividadSeleccionada].fecha_inicio | datetimeLocal"
-              (ngModelChange)="fecha_temporal_inicio = $event" name="fechaIncio">
-          </div>
+        <!-- Titulo de la Actividad-->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Título de la Actividad</label>
+          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" 
+          [ngModel] = "actividades[actividadSeleccionada].titulo" name="titulo">
+        </div>
 
-          <!-- Fecha Final -->
-          <div class="mb-5 flex flex-col">
-            <label class="text-black mb-2" for="actividadFechaFinal">Fecha final</label>
-            <input type="datetime-local"
-              class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaFinal"
-              [ngModel]="actividades[actividadSeleccionada].fecha_fin | datetimeLocal"
-              (ngModelChange)="fecha_temporal_final = $event" name="fechaFinal">
-          </div>
+        <!-- Descripción -->
+        <div class="flex flex-col mt-5">
+          <label class="form-label text-black">Descripción de la actividad</label>
+          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" 
+          [ngModel] = "actividades[actividadSeleccionada].descripcion" name="descripcion"></textarea>
+        </div>
 
-        </form>
+        <!-- Tipo -->
+        <div class="mb-5 flex flex-col">
+          <label class="text-black mb-2" for="tipoTarea">Tipo de Actividad</label>
+          <select class="form-control rounded bg-gray-200 p-2 text-black" name="" id="tipoTarea"
+            [(ngModel)]="tipo_actividad" name="tipo">
+            <option value="Tarea">Tarea</option>
+            <option value="Proyecto">Proyecto</option>
+          </select>
+        </div>
+
+        <!-- Fecha Inicio -->
+        <div class="mb-5 flex flex-col">
+          <label class="text-black mb-2" for="actividadFechaInicio">Fecha inicial</label>
+          <input type="datetime-local" class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaInicio"
+            [ngModel]="actividades[actividadSeleccionada].fecha_inicio | datetimeLocal"
+            (ngModelChange)="fecha_temporal_inicio = $event" name="fechaIncio">
+        </div>
+
+        <!-- Fecha Final -->
+        <div class="mb-10 flex flex-col">
+          <label class="text-black mb-2" for="actividadFechaFinal">Fecha final</label>
+          <input type="datetime-local" class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaFinal"
+            [ngModel]="actividades[actividadSeleccionada].fecha_fin | datetimeLocal"
+            (ngModelChange)="fecha_temporal_final = $event" name="fechaFinal">
+        </div>
 
       </div>
 
       <!-- Footer -->
-      <div class="mt-4 flex justify-end gap-2">
+      <div class="mt-5 flex justify-end gap-2">
         <button class="px-8 py-2 bg-red-500 rounded hover:bg-gray-400">
           Eliminar
         </button>
