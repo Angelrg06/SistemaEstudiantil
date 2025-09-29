@@ -48,7 +48,7 @@
         <!-- Curso -->
         <div class="flex flex-col">
           <label class="form-label text-black">Curso</label>
-          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso" id="">
+          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso">
             <option value="defecto">Seleccione un curso...</option>
             <option value="historia">Historia</option>
             <option value="ciencias">Ciencias</option>
@@ -59,20 +59,20 @@
         <!-- Titulo de la Actividad-->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Título de la Actividad</label>
-          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" name="titulo">
+          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" [(ngModel)] = "titulo_nuevo" name="titulo">
         </div>
 
         <!-- Descripción -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Descripción de la actividad</label>
-          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" name="descripcion"></textarea>
+          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" [(ngModel)] = "descripcion_nuevo" name="descripcion"></textarea>
         </div>
 
         <!-- Tipo de Actividad -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Tipo de Actividad</label>
-          <select class="form-control bg-gray-200 text-black rounded p-3" name="tipo">
-            <option value="defecto">Seleccione una opción...</option>
+          <select class="form-control bg-gray-200 text-black rounded p-3" [(ngModel)] = "tipo_nuevo" name="tipo">
+            <option value="" disabled selected>Seleccione una opción...</option>
             <option value="Tarea">Tarea</option>
             <option value="Proyecto">Proyecto</option>
           </select>
@@ -81,20 +81,20 @@
         <!-- Fecha inicio -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Desde:</label>
-          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" name="f-inicio">
+          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" [(ngModel)] = "fecha_ini_nuevo" name="f-inicio">
         </div>
 
         <!-- Fecha final -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Hasta:</label>
-          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" name="f-final">
+          <input type="datetime-local" class="form-control bg-gray-200 rounded p-3 text-black" [(ngModel)] = "fecha_fini_nuevo" name="f-final">
         </div>
 
       </div>
 
       <!-- Footer -->
       <div class="mt-4 flex justify-end gap-2">
-        <button class="px-8 py-2 bg-green-500 rounded hover:bg-green-700">
+        <button (click)="crearActividad()" class="px-8 py-2 bg-green-500 rounded hover:bg-green-700">
           Subir Actividad
         </button>
       </div>
@@ -172,14 +172,14 @@
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Título de la Actividad</label>
           <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" 
-          [ngModel] = "actividades[actividadSeleccionada].titulo" name="titulo">
+          [(ngModel)] = "titulo_temporal" name="titulo">
         </div>
 
         <!-- Descripción -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Descripción de la actividad</label>
           <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" 
-          [ngModel] = "actividades[actividadSeleccionada].descripcion" name="descripcion"></textarea>
+          [(ngModel)] = "descripcion_temporal" name="descripcion"></textarea>
         </div>
 
         <!-- Tipo -->
@@ -196,26 +196,24 @@
         <div class="mb-5 flex flex-col">
           <label class="text-black mb-2" for="actividadFechaInicio">Fecha inicial</label>
           <input type="datetime-local" class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaInicio"
-            [ngModel]="actividades[actividadSeleccionada].fecha_inicio | datetimeLocal"
-            (ngModelChange)="fecha_temporal_inicio = $event" name="fechaIncio">
+            [(ngModel)]="fecha_temporal_inicio" name="fechaIncio">
         </div>
 
         <!-- Fecha Final -->
         <div class="mb-10 flex flex-col">
           <label class="text-black mb-2" for="actividadFechaFinal">Fecha final</label>
           <input type="datetime-local" class="form-control rounded bg-gray-200 p-2 text-black" id="actividadFechaFinal"
-            [ngModel]="actividades[actividadSeleccionada].fecha_fin | datetimeLocal"
-            (ngModelChange)="fecha_temporal_final = $event" name="fechaFinal">
+            [ngModel]="fecha_temporal_final" name="fechaFinal">
         </div>
 
       </div>
 
       <!-- Footer -->
       <div class="mt-5 flex justify-end gap-2">
-        <button class="px-8 py-2 bg-red-500 rounded hover:bg-gray-400">
+        <button (click)="eliminarActividad()" class="px-8 py-2 bg-red-500 rounded hover:bg-gray-400">
           Eliminar
         </button>
-        <button class="px-8 py-2 bg-green-500 rounded hover:bg-gray-400">
+        <button (click)="actualizarActividad()" class="px-8 py-2 bg-green-500 rounded hover:bg-gray-400">
           Guardar
         </button>
       </div>
