@@ -1,0 +1,67 @@
+[33mcommit 074bfc80a32d66c2d72b49fcfb43d3602cc44807[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Tue Sep 23 22:42:37 2025 -0500
+
+    Cambios panel admin
+
+[33mcommit 136902d44c4cb0c472a87cbbd9a758a7a8cd2657[m
+Merge: 6f0ed42 02c0eb5
+Author: adriana0-0 <U23202658@utp.edu.pe>
+Date:   Tue Sep 23 21:36:21 2025 -0500
+
+    t
+    Merge branch 'main' of https://github.com/Angelrg06/SistemaEstudiantil
+
+[33mcommit 6f0ed42fc1bff7af844e563a3c7d3e64478b3449[m
+Author: adriana0-0 <U23202658@utp.edu.pe>
+Date:   Tue Sep 23 21:25:50 2025 -0500
+
+    paneles y activiades docente 2309
+
+[33mcommit 02c0eb5f7ee24ec423c90c9851a68d4d1ef87a97[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Tue Sep 23 21:10:51 2025 -0500
+
+    Cambios
+
+[33mcommit 7eeac7487d4f5c160272fcf7f7f24f58d1737cb6[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Fri Sep 19 22:03:14 2025 -0500
+
+    angular.json
+
+[33mcommit fec3bc35591369a5ddad0b110076baf697eff642[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Fri Sep 19 03:47:37 2025 -0500
+
+    cabios generales
+
+[33mcommit 029d3d8443da39ec884a5ec0e4009f72c7b80ebf[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Sun Sep 14 23:09:31 2025 -0500
+
+    cambios de .json
+
+[33mcommit 2f743259d041093400fe2943f5046f43aa031979[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Fri Sep 12 00:04:11 2025 -0500
+
+    cambios de .json
+
+[33mcommit fb156a1414436eb933b02d38f59e4e040902c625[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Wed Sep 10 17:12:28 2025 -0500
+
+    Cambio en app.js
+
+[33mcommit d7ab211c92bb579c8d752851518ec5398d192700[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Tue Sep 9 23:16:58 2025 -0500
+
+    Mensaje describiendo los cambios
+
+[33mcommit 732793eb6ce244a6375871016ff58277e79e7c61[m
+Author: Angelrg06 <samirrojasgamonal@gmail.com>
+Date:   Tue Sep 9 21:59:21 2025 -0500
+
+    Primer commit: proyecto limpio sin node_modules ni dist
