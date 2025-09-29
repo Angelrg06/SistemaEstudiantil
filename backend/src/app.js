@@ -9,7 +9,6 @@ import panelRoutes from './routes/panel.routes.js';
 import seccionesRoutes from './routes/secciones.routes.js'; // importamos secciones
 import actividadesRoutes from "./routes/actividades.routes.js"; // importamos actividades
 import { authMiddleware } from './middlewares/auth.middleware.js';
-
 dotenv.config();
 
 const app = express();

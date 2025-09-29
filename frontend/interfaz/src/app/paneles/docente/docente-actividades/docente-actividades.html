@@ -28,7 +28,7 @@
   </div>
 
   <!-- Formulario para crear nueva actividad -->
-  <div *ngIf="nuevaActividad" class="fixed inset-0 flex items-center justify-center z-50">
+  <div *ngIf="nuevaActividad" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
     <div class="bg bg-white rounded-2xl shadow-xl w-[50%] p-8">
       <!-- Header -->
       <div class="flex justify-between items-center border-b pb-2 mb-4">
@@ -48,11 +48,13 @@
         <!-- Curso -->
         <div class="flex flex-col">
           <label class="form-label text-black">Curso</label>
-          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso">
-            <option value="defecto">Seleccione un curso...</option>
+          <select class="form-control bg-gray-200 text-black rounded p-3" [(ngModel)] = "curso_nuevo" name="curso">
+            <option value="" disabled selected>Seleccione un curso...</option>
             <option value="historia">Historia</option>
             <option value="ciencias">Ciencias</option>
             <option value="matematicas">Matemáticas</option>
+            <option value="literatura">Literatura</option>
+            <option value="religion">Religión</option>
           </select>
         </div>
 
@@ -138,7 +140,7 @@
   </div>
 
   <!-- Modal por actividad -->
-  <div *ngIf="actividadSeleccionada !== null" class="fixed inset-0 flex items-center justify-center z-50">
+  <div *ngIf="actividadSeleccionada !== null" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
     <div class="bg bg-white rounded-2xl shadow-xl w-[50%] p-8">
 
       <!-- Header -->
@@ -160,11 +162,13 @@
         <!-- Curso -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Curso</label>
-          <select class="form-control bg-gray-200 text-black rounded p-3" name="curso" id="">
-            <option value="defecto">Seleccione un curso...</option>
+          <select class="form-control bg-gray-200 text-black rounded p-3" [(ngModel)] = "curso_temporal" name="curso" id="">
+            <option value="" disabled selected>Seleccione un curso...</option>
             <option value="historia">Historia</option>
             <option value="ciencias">Ciencias</option>
             <option value="matematicas">Matemáticas</option>
+            <option value="literatura">Literatura</option>
+            <option value="religion">Religión</option>
           </select>
         </div>
 

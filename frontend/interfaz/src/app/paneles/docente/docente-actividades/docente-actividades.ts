@@ -4,12 +4,11 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { DatetimeLocalPipe } from '../../../pipes/datetime-local-pipe';
 
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule, DatetimeLocalPipe],
+  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule],
   templateUrl: './docente-actividades.html',
 })
 export class Actividades implements OnInit {
@@ -52,16 +51,19 @@ export class Actividades implements OnInit {
   tipo_nuevo: string = '';
   titulo_nuevo: string = '';
   descripcion_nuevo: string = '';
+  curso_nuevo: String = '';
 
   fecha_temporal_inicio: string = '';
   fecha_temporal_final: string = '';
   tipo_actividad: string = '';
   titulo_temporal: string = '';
   descripcion_temporal: string = '';
+  curso_temporal: string = '';
   isModalOpen = false;
 
   abrirModal(index: number) {
     this.actividadSeleccionada = index;
+    this.curso_temporal = this.actividades[index].curso;
     this.titulo_temporal = this.actividades[index].titulo;
     this.descripcion_temporal = this.actividades[index].descripcion; 
     this.tipo_actividad = this.actividades[index].tipo;
@@ -88,6 +90,7 @@ export class Actividades implements OnInit {
 
   crearActividad() {
     const nuevaActividad = {
+      curso: this.curso_nuevo,
       titulo: this.titulo_nuevo,
       descripcion: this.descripcion_nuevo,
       tipo: this.tipo_nuevo,
@@ -102,7 +105,7 @@ export class Actividades implements OnInit {
         ? new Date(this.fecha_fini_nuevo).toISOString()
         : null,
       id_docente: 1,
-      id_seccion: 1
+      id_seccion: this.idSeccion,
     }
 
     this.http.post('http://localhost:4000/api/actividades', nuevaActividad).subscribe({
@@ -117,6 +120,7 @@ export class Actividades implements OnInit {
 
   actualizarActividad() {
     const actividadActualizada = {
+      curso: this.curso_temporal || null,
       titulo: this.titulo_temporal || null,
       descripcion: this.descripcion_temporal || null,
       tipo: this.tipo_actividad || null,
