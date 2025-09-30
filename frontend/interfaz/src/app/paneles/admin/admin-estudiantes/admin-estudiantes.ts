@@ -144,32 +144,36 @@ export class AdminEstudiantes implements OnInit {
     this.showModal = false;
     this.selectedEstudiante = null;
   }
+saveEstudiante() {
+  const { usuario, ...estudianteData } = this.selectedEstudiante;
 
-  saveEstudiante() {
-    if (this.isEditing) {
-      this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, this.selectedEstudiante)
-        .subscribe({
-          next: () => {
-            this.loadEstudiantes(); // Esto llamará aplicarFiltros()
-            this.closeModal();
-          },
-          error: (error) => {
-            console.error('Error updating estudiante:', error);
-          }
-        });
-    } else {
-      this.adminService.createEstudiante(this.selectedEstudiante)
-        .subscribe({
-          next: () => {
-            this.loadEstudiantes(); // Esto llamará aplicarFiltros()
-            this.closeModal();
-          },
-          error: (error) => {
-            console.error('Error creating estudiante:', error);
-          }
-        });
-    }
+  if (this.isEditing) {
+    const updateData = { ...estudianteData, correo: usuario?.correo };
+    this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, updateData)
+      .subscribe({
+        next: () => {
+          this.loadEstudiantes();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating estudiante:', error);
+        }
+      });
+  } else {
+    const createData = { ...estudianteData, correo: usuario?.correo, password: usuario?.password };
+    this.adminService.createEstudiante(createData)
+      .subscribe({
+        next: () => {
+          this.loadEstudiantes();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error creating estudiante:', error);
+        }
+      });
   }
+}
+
 
   deleteEstudiante(id: number) {
     if (confirm('¿Está seguro de eliminar este estudiante?')) {

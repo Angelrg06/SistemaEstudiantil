@@ -133,31 +133,50 @@ export class AdminDocentes implements OnInit {
     this.selectedDocente = null;
   }
 
-  saveDocente() {
-    if (this.isEditing) {
-      this.adminService.updateDocente(this.selectedDocente.id_docente, this.selectedDocente)
-        .subscribe({
-          next: () => {
-            this.loadDocentes();
-            this.closeModal();
-          },
-          error: (error) => {
-            console.error('Error updating docente:', error);
-          }
-        });
-    } else {
-      this.adminService.createDocente(this.selectedDocente)
-        .subscribe({
-          next: () => {
-            this.loadDocentes();
-            this.closeModal();
-          },
-          error: (error) => {
-            console.error('Error creating docente:', error);
-          }
-        });
+saveDocente() {
+  const { usuario, ...docenteData } = this.selectedDocente;
+
+  // Validación antes de crear o actualizar
+  if (!docenteData.codigo || !docenteData.dni || !docenteData.nombre || !docenteData.apellido) {
+    alert('Todos los campos del docente son obligatorios');
+    return;
+  }
+
+  if (!this.isEditing) {
+    if (!usuario?.correo || !usuario?.password) {
+      alert('Correo y password son obligatorios para crear un docente');
+      return;
     }
   }
+
+  if (this.isEditing) {
+    // Actualizar docente
+    const updateData = { ...docenteData, correo: usuario?.correo };
+    this.adminService.updateDocente(this.selectedDocente.id_docente, updateData)
+      .subscribe({
+        next: () => {
+          this.loadDocentes();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating docente:', error);
+        }
+      });
+  } else {
+    // Crear docente
+    const createData = { ...docenteData, correo: usuario.correo, password: usuario.password };
+    this.adminService.createDocente(createData)
+      .subscribe({
+        next: () => {
+          this.loadDocentes();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error creating docente:', error);
+        }
+      });
+  }
+}
 
   deleteDocente(id: number) {
     if (confirm('¿Está seguro de eliminar este docente?')) {
