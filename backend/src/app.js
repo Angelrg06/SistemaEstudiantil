@@ -9,7 +9,7 @@ import panelRoutes from './routes/panel.routes.js';
 import seccionesRoutes from './routes/secciones.routes.js'; // importamos secciones
 import actividadesRoutes from "./routes/actividades.routes.js"; // importamos actividades
 import { authMiddleware } from './middlewares/auth.middleware.js';
-
+import docenteRoutes from './routes/docentes.routes.js';
 dotenv.config();
 
 const app = express();
@@ -30,5 +30,6 @@ app.use('/api/panel', panelRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/secciones", seccionesRoutes); // Aquí montamos la ruta de secciones
 app.use("/api/actividades", actividadesRoutes); // Aquí montamos la ruta de act
+app.use('/api/docente', docenteRoutes);
 
 export default app;

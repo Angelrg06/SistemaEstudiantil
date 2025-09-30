@@ -32,8 +32,6 @@ export const crearActividad = async (req, res) => {
 export const actualizarActividad = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    console.log("📥 ID recibido:", id);
-    console.log("📥 Body recibido:", req.body);
     const actualizada = await actividadService.actualizar(id, req.body);
     res.json(actualizada);
   } catch (error) {
