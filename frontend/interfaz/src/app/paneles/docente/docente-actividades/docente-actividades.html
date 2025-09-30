@@ -19,9 +19,9 @@
 
   <!-- Botón para crear nuevas actividades -->
   <div class="mb-5">
-    <button (click)="mostrarFormActividad()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 
-           text-white font-semibold rounded-xl shadow-lg 
-           hover:from-green-700 hover:to-emerald-600 
+    <button (click)="mostrarFormActividad()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500
+           text-white font-semibold rounded-xl shadow-lg
+           hover:from-green-700 hover:to-emerald-600
            transition-all duration-200 flex items-center gap-2">
       <span class="text-lg">+</span> Nueva Actividad
     </button>
@@ -175,14 +175,14 @@
         <!-- Titulo de la Actividad-->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Título de la Actividad</label>
-          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black" 
+          <input type="text" class="form-control rounded bg-gray-200 p-2 text-black"
           [(ngModel)] = "titulo_temporal" name="titulo">
         </div>
 
         <!-- Descripción -->
         <div class="flex flex-col mt-5">
           <label class="form-label text-black">Descripción de la actividad</label>
-          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4" 
+          <textarea class="form-control rounded bg-gray-200 p-2 text-black" rows="4"
           [(ngModel)] = "descripcion_temporal" name="descripcion"></textarea>
         </div>
 
