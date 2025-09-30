@@ -9,7 +9,7 @@ import { DatetimeLocalPipe } from '../../../pipes/datetime-local-pipe';
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule, DatetimeLocalPipe],
+  imports: [CommonModule, HttpClientModule, RouterLink, FormsModule],
   templateUrl: './docente-actividades.html',
 })
 export class Actividades implements OnInit {
