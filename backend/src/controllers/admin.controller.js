@@ -8,16 +8,21 @@ import { prisma } from '../config/db.js';
 export const createDocente = async (req, res) => {
   try {
     const { codigo, dni, nombre, apellido, correo, password } = req.body;
-    
+
+    // Validación
+    if (!codigo || !dni || !nombre || !apellido || !correo || !password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
     // Crear usuario primero
     const usuario = await prisma.usuario.create({
       data: {
         correo,
-        password: password,
+        password,
         rol: 'docente'
       }
     });
-    
+
     // Crear docente
     const docente = await prisma.docente.create({
       data: {
@@ -29,12 +34,13 @@ export const createDocente = async (req, res) => {
       },
       include: { usuario: true }
     });
-    
+
     res.status(201).json(docente);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 export const getDocentes = async (req, res) => {
   try {
@@ -43,7 +49,9 @@ export const getDocentes = async (req, res) => {
     });
     res.json(docentes);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+   console.error('Error en createDocente:', error); // esto lo verás en la consola de Node
+res.status(500).json({ error: error.message, stack: error.stack });
+
   }
 };
 
@@ -53,16 +61,16 @@ export const getDocentes = async (req, res) => {
 export const createEstudiante = async (req, res) => {
   try {
     const { codigo, dni, nombre, apellido, correo, password, id_seccion } = req.body;
-    
+
     // Crear usuario primero
     const usuario = await prisma.usuario.create({
       data: {
         correo,
-        password: password,
+        password,
         rol: 'estudiante'
       }
     });
-    
+
     // Crear estudiante
     const estudiante = await prisma.estudiante.create({
       data: {
@@ -73,31 +81,28 @@ export const createEstudiante = async (req, res) => {
         id_usuario: usuario.id_usuario,
         id_seccion: id_seccion ? parseInt(id_seccion) : null
       },
-      include: { 
-        usuario: true,
-        seccion: true 
-      }
+      include: { usuario: true, seccion: true }
     });
-    
+
     res.status(201).json(estudiante);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error en createEstudiante:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 };
 
 export const getEstudiantes = async (req, res) => {
   try {
     const estudiantes = await prisma.estudiante.findMany({
-      include: { 
-        usuario: true,
-        seccion: true 
-      }
+      include: { usuario: true, seccion: true }
     });
     res.json(estudiantes);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error en getEstudiantes:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 };
+
 
 // ===============================
 // CONTROLADORES DE SECCIONES
