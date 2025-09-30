@@ -16,12 +16,29 @@ export class Actividades implements OnInit {
   idSeccion!: number;
   actividadSeleccionada: number | null = null;
   id_actual: number | null = null;
+  id_docente_logeado: number = 0;
 
   constructor(private route: ActivatedRoute, private http: HttpClient) { }
 
   ngOnInit(): void {
     this.idSeccion = Number(this.route.snapshot.paramMap.get('id'));
     this.cargarActividades();
+    this.getIdDocente();
+  }
+
+  getIdDocente(): void {
+    const token = localStorage.getItem('token');
+    this.http.get<any>('http://localhost:4000/api/docente/mi-docente', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).subscribe({
+      next: (data) => {
+        console.log("📌 Respuesta de /mi-docente:", data);
+        this.id_docente_logeado = data.id_docente;
+      },
+      error: (err) => {
+        console.error("❌ Error obteniendo id_docente", err);
+      }
+    })
   }
 
   cargarActividades() {
@@ -65,7 +82,7 @@ export class Actividades implements OnInit {
     this.actividadSeleccionada = index;
     this.curso_temporal = this.actividades[index].curso;
     this.titulo_temporal = this.actividades[index].titulo;
-    this.descripcion_temporal = this.actividades[index].descripcion; 
+    this.descripcion_temporal = this.actividades[index].descripcion;
     this.tipo_actividad = this.actividades[index].tipo;
     this.id_actual = this.actividades[index].id_actividad;
     this.isModalOpen = true;
@@ -104,10 +121,11 @@ export class Actividades implements OnInit {
       fecha_entrega: this.fecha_fini_nuevo
         ? new Date(this.fecha_fini_nuevo).toISOString()
         : null,
-      id_docente: 1,
+      id_docente: this.id_docente_logeado,
       id_seccion: this.idSeccion,
     }
 
+    console.log(nuevaActividad);
     this.http.post('http://localhost:4000/api/actividades', nuevaActividad).subscribe({
       next: (data) => {
         alert("✅ Actividad creada correctamente");
