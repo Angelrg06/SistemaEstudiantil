@@ -16,6 +16,8 @@ router.get('/docentes', adminController.getDocentes);
 router.put('/docentes/:id', adminController.updateDocente);
 router.delete('/docentes/:id', adminController.deleteDocente);
 
+
+
 // Rutas de estudiantes
 router.post('/estudiantes', adminController.createEstudiante);
 router.get('/estudiantes', adminController.getEstudiantes);

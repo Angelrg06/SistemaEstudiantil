@@ -24,8 +24,15 @@ export class AdminEstudiantes implements OnInit {
   paginaActual: number = 1;
   registrosPorPagina: number = 5;
   totalPaginas: number = 1;
+  errors: any = {};
+  mostrarPassword: boolean = false;
+  loading: boolean = false;
 
-  constructor(private adminService: AdminService) {}
+  successMessage: string = '';
+ highlightedEstudianteId: number | null = null;
+
+
+  constructor(private adminService: AdminService) { }
 
   ngOnInit() {
     this.loadEstudiantes();
@@ -45,14 +52,15 @@ export class AdminEstudiantes implements OnInit {
   }
 
   loadSecciones() {
-    // Simular secciones - deberías obtenerlas de tu API
-    this.secciones = [
-      { id_seccion: 1, nombre: 'Sección A' },
-      { id_seccion: 2, nombre: 'Sección B' },
-      { id_seccion: 3, nombre: 'Sección C' }
-    ];
+    this.adminService.getSecciones().subscribe({
+      next: (data) => {
+        this.secciones = data; // [{id_seccion: 1, nombre: 'A'}, ...]
+      },
+      error: (error) => {
+        console.error('Error cargando secciones:', error);
+      }
+    });
   }
-
   // AGREGADO: Lógica de filtros
   aplicarFiltros() {
     let filtrados = [...this.estudiantes];
@@ -60,7 +68,7 @@ export class AdminEstudiantes implements OnInit {
     // Buscar por código, DNI, nombre, apellido o correo
     if (this.searchTerm.trim() !== '') {
       const termino = this.searchTerm.toLowerCase().trim();
-      filtrados = filtrados.filter(e => 
+      filtrados = filtrados.filter(e =>
         e.codigo.toLowerCase().includes(termino) ||
         e.dni.toLowerCase().includes(termino) ||
         e.nombre.toLowerCase().includes(termino) ||
@@ -71,7 +79,7 @@ export class AdminEstudiantes implements OnInit {
 
     // Filtrar por sección
     if (this.selectedSeccion.trim() !== '') {
-      filtrados = filtrados.filter(e => 
+      filtrados = filtrados.filter(e =>
         e.seccion?.nombre === this.selectedSeccion
       );
     }
@@ -79,7 +87,7 @@ export class AdminEstudiantes implements OnInit {
     // Calcular paginación
     this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina);
     if (this.totalPaginas === 0) this.totalPaginas = 1;
-    
+
     if (this.paginaActual > this.totalPaginas) {
       this.paginaActual = this.totalPaginas;
     }
@@ -144,35 +152,123 @@ export class AdminEstudiantes implements OnInit {
     this.showModal = false;
     this.selectedEstudiante = null;
   }
-saveEstudiante() {
-  const { usuario, ...estudianteData } = this.selectedEstudiante;
-
-  if (this.isEditing) {
-    const updateData = { ...estudianteData, correo: usuario?.correo };
-    this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, updateData)
-      .subscribe({
-        next: () => {
-          this.loadEstudiantes();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error updating estudiante:', error);
-        }
-      });
-  } else {
-    const createData = { ...estudianteData, correo: usuario?.correo, password: usuario?.password };
-    this.adminService.createEstudiante(createData)
-      .subscribe({
-        next: () => {
-          this.loadEstudiantes();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error creating estudiante:', error);
-        }
-      });
+  resetModal() {
+    this.selectedEstudiante = {
+      codigo: '',
+      dni: '',
+      nombre: '',
+      apellido: '',
+      id_seccion: null,
+      usuario: { correo: '', password: '', rol: 'estudiante' }
+    };
+    this.isEditing = false;
+    this.errors = {};
+    this.successMessage = '';
   }
-}
+  validateEstudiante(): boolean {
+    this.errors = {};
+    const { dni, nombre, apellido, usuario, id_seccion } = this.selectedEstudiante;
+
+    if (!/^\d{8}$/.test(dni)) this.errors.dni = '* DNI inválido';
+
+    const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
+    const maxWords = 3;
+
+    const nombreWords = nombre?.trim().split(/\s+/) || [];
+    if (nombreWords.length > maxWords || !nombreWords.every((w: string) => nameRegex.test(w))) {
+      this.errors.nombre = '* Nombre inválido';
+    }
+
+    const apellidoWords = apellido?.trim().split(/\s+/) || [];
+    if (apellidoWords.length > maxWords || !apellidoWords.every((w: string) => nameRegex.test(w))) {
+      this.errors.apellido = '* Apellido inválido';
+    }
+    // Corregido: convertir id_seccion a número antes de comparar
+    const selectedId = Number(id_seccion);
+    if (!selectedId || !this.secciones.find(s => s.id_seccion === selectedId)) {
+      this.errors.id_seccion = '* Sección inválida';
+    } else {
+      this.selectedEstudiante.id_seccion = selectedId;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!usuario?.correo || !emailRegex.test(usuario.correo)) {
+      this.errors.correo = '* Correo inválido';
+    }
+
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!this.isEditing && (!usuario?.password || !passRegex.test(usuario.password))) {
+      this.errors.password = '* Contraseña inválida';
+    }
+
+    const isValid = Object.keys(this.errors).length === 0;
+
+    if (!isValid) {
+      setTimeout(() => {
+        const firstErrorEl = document.querySelector('.text-red-600');
+        if (firstErrorEl) firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
+    }
+
+    return isValid;
+  }
+  validateName(str: string): boolean {
+    if (!str) return false;
+    const spaceCount = (str.match(/\s/g) || []).length;
+    if (spaceCount > 2) return false; // máximo 2 espacios
+    const words = str.trim().split(/\s+/);
+    const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
+    return words.every(w => nameRegex.test(w));
+  }
+  // Corregido: asegurar usuario al enviar datos
+  saveEstudiante() {
+    if (!this.selectedEstudiante || this.loading) return;
+    if (!this.validateEstudiante()) return;
+
+    this.loading = true;
+    const { usuario, ...estudianteData } = this.selectedEstudiante;
+
+    const dataToSend = {
+      ...estudianteData,
+      id_seccion: estudianteData.id_seccion,
+      usuario: {
+        correo: usuario?.correo || '',
+        password: usuario?.password || '',
+        rol: 'estudiante'
+      }
+    };
+    if (this.isEditing) {
+      this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, dataToSend)
+        .subscribe({
+          next: () => {
+            this.loadEstudiantes();
+            this.successMessage = 'Estudiante actualizado correctamente ✅';
+            setTimeout(() => { this.successMessage = ''; this.loading = false; }, 1500);
+          },
+          error: (error) => {
+            console.error('Error updating estudiante:', error);
+            this.successMessage = error.error?.error || 'Ocurrió un error al actualizar';
+            this.loading = false;
+          }
+        });
+    } else {
+      this.adminService.createEstudiante(dataToSend)
+        .subscribe({
+          next: () => {
+            this.loadEstudiantes();
+            this.successMessage = 'Estudiante registrado correctamente ✅';
+            setTimeout(() => { this.resetModal(); this.successMessage = ''; this.loading = false; }, 1500);
+          },
+          error: (error) => {
+            console.error('Error creating estudiante:', error);
+            this.successMessage = error.error?.error || 'Ocurrió un error al registrar';
+            this.loading = false;
+          }
+        });
+    }
+  }
+
+
 
 
   deleteEstudiante(id: number) {

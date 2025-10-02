@@ -16,7 +16,7 @@ export class AdminDocentes implements OnInit {
   selectedDocente: any = null;
   isEditing = false;
   showModal = false;
-
+  errors: any = {};
   // Variables para filtros y paginación
   searchTerm: string = '';
   selectedDepartamento: string = '';
@@ -24,7 +24,12 @@ export class AdminDocentes implements OnInit {
   registrosPorPagina: number = 5;
   totalPaginas: number = 1;
 
-  constructor(private adminService: AdminService) {}
+  mostrarPassword: boolean = false;
+  loading: boolean = false;
+successMessage: string = '';
+highlightedDocenteId: number | null = null;
+
+  constructor(private adminService: AdminService) { }
 
   ngOnInit() {
     this.loadDocentes();
@@ -49,7 +54,7 @@ export class AdminDocentes implements OnInit {
     // Buscar por código, DNI, nombre, apellido o correo
     if (this.searchTerm.trim() !== '') {
       const termino = this.searchTerm.toLowerCase().trim();
-      filtrados = filtrados.filter(d => 
+      filtrados = filtrados.filter(d =>
         d.codigo.toLowerCase().includes(termino) ||
         d.dni.toLowerCase().includes(termino) ||
         d.nombre.toLowerCase().includes(termino) ||
@@ -60,7 +65,7 @@ export class AdminDocentes implements OnInit {
 
     // Filtrar por departamento
     if (this.selectedDepartamento.trim() !== '') {
-      filtrados = filtrados.filter(d => 
+      filtrados = filtrados.filter(d =>
         d.departamento === this.selectedDepartamento
       );
     }
@@ -68,7 +73,7 @@ export class AdminDocentes implements OnInit {
     // Calcular paginación
     this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina);
     if (this.totalPaginas === 0) this.totalPaginas = 1;
-    
+
     if (this.paginaActual > this.totalPaginas) {
       this.paginaActual = this.totalPaginas;
     }
@@ -111,83 +116,155 @@ export class AdminDocentes implements OnInit {
     return new Array(filasVaciasCount).fill(0);
   }
 
-  // Métodos originales (sin cambios)
+
   openModal(docente?: any) {
     this.isEditing = !!docente;
-    this.selectedDocente = docente ? { ...docente } : {
-      codigo: '',
-      dni: '',
-      nombre: '',
-      apellido: '',
-      usuario: {
-        correo: '',
-        password: '',
-        rol: 'docente'
-      }
-    };
+
+    if (docente) {
+      // Copia profunda para evitar referencias
+      this.selectedDocente = JSON.parse(JSON.stringify(docente));
+    } else {
+      // Nuevo docente: inicializar todos los campos
+      this.selectedDocente = {
+        codigo: '',
+        dni: '',
+        nombre: '',
+        apellido: '',
+        usuario: { correo: '', password: '', rol: 'docente' }
+      };
+    }
+
+    this.errors = {};
     this.showModal = true;
+    this.loading = false; // aseguramos que no bloquee
   }
 
   closeModal() {
     this.showModal = false;
-    this.selectedDocente = null;
+    this.selectedDocente = null; // opcional, o puedes llamar resetModal() aquí
+    this.errors = {};
+    this.loading = false;
   }
 
-saveDocente() {
+  resetModal() {
+    this.selectedDocente = {
+      codigo: '',
+      dni: '',
+      nombre: '',
+      apellido: '',
+      usuario: { correo: '', password: '', rol: 'docente' }
+    };
+    this.isEditing = false;
+    this.errors = {};
+  }
+
+ validateFields(): boolean {
+  this.errors = {};
+  const { dni, nombre, apellido, usuario } = this.selectedDocente;
+
+  if (!/^\d{8}$/.test(dni)) this.errors.dni = '* DNI inválido';
+  const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
+  if (!nameRegex.test(nombre)) this.errors.nombre = '* Nombre inválido';
+  if (!nameRegex.test(apellido)) this.errors.apellido = '* Apellido inválido';
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!usuario?.correo || !emailRegex.test(usuario.correo)) this.errors.correo = '* Correo inválido';
+
+  const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  if (!this.isEditing && (!usuario?.password || !passRegex.test(usuario.password)))
+    this.errors.password = '* Contraseña inválida';
+
+  const isValid = Object.keys(this.errors).length === 0;
+
+  if (!isValid) {
+    // Hace scroll al primer error visible
+    setTimeout(() => {
+      const firstErrorEl = document.querySelector('.text-red-600');
+      if (firstErrorEl) {
+        firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 0);
+  }
+
+  return isValid;
+}
+
+  saveDocente() {
+  if (!this.validateFields() || this.loading) return;
+
+  this.loading = true;  // bloquea botones
+
   const { usuario, ...docenteData } = this.selectedDocente;
 
-  // Validación antes de crear o actualizar
-  if (!docenteData.codigo || !docenteData.dni || !docenteData.nombre || !docenteData.apellido) {
-    alert('Todos los campos del docente son obligatorios');
-    return;
-  }
-
-  if (!this.isEditing) {
-    if (!usuario?.correo || !usuario?.password) {
-      alert('Correo y password son obligatorios para crear un docente');
-      return;
-    }
-  }
-
   if (this.isEditing) {
-    // Actualizar docente
-    const updateData = { ...docenteData, correo: usuario?.correo };
-    this.adminService.updateDocente(this.selectedDocente.id_docente, updateData)
-      .subscribe({
-        next: () => {
-          this.loadDocentes();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error updating docente:', error);
-        }
-      });
+    // Editar docente existente
+    this.adminService.updateDocente(this.selectedDocente.id_docente, {
+      ...docenteData,
+      correo: usuario.correo,
+      password: usuario.password
+    }).subscribe({
+      next: () => {
+        this.loadDocentes();  // refresca la tabla
+        this.successMessage = 'Docente actualizado correctamente ✅';
+
+        // Dejamos que el usuario vea el mensaje un momento
+        setTimeout(() => {
+          this.showModal = false;       // cierra modal
+          this.successMessage = '';     // limpia mensaje
+          this.resetModal();            // limpia campos
+          this.loading = false;         // desbloquea botones
+        }, 1500); // 1.5 segundos
+      },
+      error: (err) => {
+        console.error('Error updating docente:', err);
+        this.loading = false; // desbloquea botones
+        if (err?.error?.error) {
+          const msg = err.error.error.toLowerCase();
+          if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
+          else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
+          else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
+          else this.successMessage = err.error.error; // mostramos mensaje en modal
+        } else this.successMessage = 'Ocurrió un error inesperado';
+      }
+    });
   } else {
-    // Crear docente
-    const createData = { ...docenteData, correo: usuario.correo, password: usuario.password };
-    this.adminService.createDocente(createData)
-      .subscribe({
-        next: () => {
-          this.loadDocentes();
-          this.closeModal();
-        },
-        error: (error) => {
-          console.error('Error creating docente:', error);
-        }
-      });
+    // Crear nuevo docente
+    this.adminService.createDocente({
+      ...docenteData,
+      correo: usuario.correo,
+      password: usuario.password
+    }).subscribe({
+      next: () => {
+        this.loadDocentes();
+        this.resetModal();               // limpio campos para otro registro
+        this.successMessage = 'Docente registrado correctamente ✅';
+        this.loading = false;
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: (err) => {
+        console.error('Error creating docente:', err);
+        this.loading = false;
+        if (err?.error?.error) {
+          const msg = err.error.error.toLowerCase();
+          if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
+          else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
+          else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
+          else alert(err.error.error);
+        } else alert('Ocurrió un error inesperado');
+      }
+    });
   }
 }
 
+
+
   deleteDocente(id: number) {
-    if (confirm('¿Está seguro de eliminar este docente?')) {
-      this.adminService.deleteDocente(id).subscribe({
-        next: () => {
-          this.loadDocentes();
-        },
-        error: (error) => {
-          console.error('Error deleting docente:', error);
-        }
-      });
-    }
+    if (!confirm('¿Está seguro de eliminar este docente?')) return;
+
+    this.adminService.deleteDocente(id).subscribe({
+      next: () => this.loadDocentes(),
+      error: (err) => console.error('Error deleting docente:', err)
+    });
   }
+
 }

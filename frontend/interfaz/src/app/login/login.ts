@@ -17,7 +17,7 @@ export class Login {
   errorMessage = '';
   successMessage = '';
   isLoading = false;
-
+  errors: any = {};
   constructor(private authService: AuthService, private router: Router) { }
 
   login() {
