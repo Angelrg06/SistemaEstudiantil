@@ -14,11 +14,23 @@ import { Router, RouterModule } from '@angular/router';
 export class Login {
   correo = '';
   password = '';
+  rememberMe = false; // ← nuevo
   errorMessage = '';
   successMessage = '';
   isLoading = false;
-  errors: any = {};
-  constructor(private authService: AuthService, private router: Router) { }
+
+  constructor(private authService: AuthService, private router: Router) {
+    this.loadRememberedUser(); // Cargar usuario guardado al iniciar
+  }
+
+  // Función para cargar el usuario guardado
+  loadRememberedUser() {
+    const savedCorreo = localStorage.getItem('rememberedCorreo');
+    if (savedCorreo) {
+      this.correo = savedCorreo;
+      this.rememberMe = true;
+    }
+  }
 
   login() {
     this.errorMessage = '';
@@ -36,7 +48,6 @@ export class Login {
     }
 
     this.isLoading = true;
-
     const credentials = { correo: this.correo, password: this.password };
 
     this.authService.login(credentials).subscribe({
@@ -46,7 +57,13 @@ export class Login {
         if (res.token && res.usuario) {
           this.successMessage = '¡Bienvenido! Redirigiendo...';
 
-          // Guardar el usuario en AuthService ya lo hace el servicio, aquí solo redirigimos
+          // Guardar o borrar correo según el checkbox
+          if (this.rememberMe) {
+            localStorage.setItem('rememberedCorreo', this.correo);
+          } else {
+            localStorage.removeItem('rememberedCorreo');
+          }
+
           setTimeout(() => {
             switch (res.usuario.rol) {
               case 'admin':
@@ -72,7 +89,6 @@ export class Login {
         console.error('Error en login:', err);
       }
     });
-
   }
 
   clearMessages() {
