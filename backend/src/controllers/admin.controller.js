@@ -231,12 +231,11 @@ export const getEstudiantes = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 // UPDATE ESTUDIANTE
 export const updateEstudiante = async (req, res) => {
   try {
     const { id } = req.params;
-    let { nombre, apellido, dni, correo, id_seccion } = req.body;
+    let { nombre, apellido, dni, id_seccion, usuario } = req.body; // Recibimos usuario como objeto
 
     // Validaciones
     if (!nombre || !apellido || !dni)
@@ -266,12 +265,18 @@ export const updateEstudiante = async (req, res) => {
       include: { usuario: true, seccion: true }
     });
 
-    // Actualizar correo del usuario
-    if (correo) {
-      await prisma.usuario.update({
-        where: { id_usuario: estudiante.id_usuario },
-        data: { correo }
-      });
+    // Actualizar usuario (correo y contraseña) si se envían
+    if (usuario) {
+      const updateData = {};
+      if (usuario.correo && usuario.correo.trim() !== '') updateData.correo = usuario.correo.trim();
+      if (usuario.password && usuario.password.trim() !== '') updateData.password = usuario.password.trim();
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.usuario.update({
+          where: { id_usuario: estudiante.id_usuario },
+          data: updateData
+        });
+      }
     }
 
     res.json({ message: 'Estudiante actualizado', estudiante });
@@ -280,6 +285,7 @@ export const updateEstudiante = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // DELETE ESTUDIANTE
 export const deleteEstudiante = async (req, res) => {

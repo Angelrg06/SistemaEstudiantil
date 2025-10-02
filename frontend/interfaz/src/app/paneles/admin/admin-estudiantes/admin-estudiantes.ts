@@ -220,55 +220,55 @@ export class AdminEstudiantes implements OnInit {
     const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
     return words.every(w => nameRegex.test(w));
   }
-  // Corregido: asegurar usuario al enviar datos
-  saveEstudiante() {
-    if (!this.selectedEstudiante || this.loading) return;
-    if (!this.validateEstudiante()) return;
+saveEstudiante() {
+  if (!this.selectedEstudiante || this.loading) return;
+  if (!this.validateEstudiante()) return;
 
-    this.loading = true;
-    const { usuario, ...estudianteData } = this.selectedEstudiante;
+  this.loading = true;
+  const { usuario, ...estudianteData } = this.selectedEstudiante;
 
-    const dataToSend = {
-      ...estudianteData,
-      id_seccion: estudianteData.id_seccion,
-      usuario: {
-        correo: usuario?.correo || '',
-        password: usuario?.password || '',
-        rol: 'estudiante'
-      }
-    };
-    if (this.isEditing) {
-      this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, dataToSend)
-        .subscribe({
-          next: () => {
-            this.loadEstudiantes();
-            this.successMessage = 'Estudiante actualizado correctamente ✅';
-            setTimeout(() => { this.successMessage = ''; this.loading = false; }, 1500);
-          },
-          error: (error) => {
-            console.error('Error updating estudiante:', error);
-            this.successMessage = error.error?.error || 'Ocurrió un error al actualizar';
-            this.loading = false;
-          }
-        });
-    } else {
-      this.adminService.createEstudiante(dataToSend)
-        .subscribe({
-          next: () => {
-            this.loadEstudiantes();
-            this.successMessage = 'Estudiante registrado correctamente ✅';
-            setTimeout(() => { this.resetModal(); this.successMessage = ''; this.loading = false; }, 1500);
-          },
-          error: (error) => {
-            console.error('Error creating estudiante:', error);
-            this.successMessage = error.error?.error || 'Ocurrió un error al registrar';
-            this.loading = false;
-          }
-        });
-    }
+  const dataToSend: any = {
+    ...estudianteData,
+    id_seccion: estudianteData.id_seccion
+  };
+
+  // Solo enviar usuario si hay datos reales
+  if (usuario) {
+    dataToSend.usuario = {};
+    if (usuario.correo?.trim() !== '') dataToSend.usuario.correo = usuario.correo.trim();
+    if (!this.isEditing && usuario.password?.trim() !== '') dataToSend.usuario.password = usuario.password;
   }
 
-
+  if (this.isEditing) {
+    this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, dataToSend)
+      .subscribe({
+        next: () => {
+          this.loadEstudiantes();
+          this.successMessage = 'Estudiante actualizado correctamente ✅';
+          setTimeout(() => { this.successMessage = ''; this.loading = false; }, 1500);
+        },
+        error: (error) => {
+          console.error('Error updating estudiante:', error);
+          this.successMessage = error.error?.error || 'Ocurrió un error al actualizar';
+          this.loading = false;
+        }
+      });
+  } else {
+    this.adminService.createEstudiante(dataToSend)
+      .subscribe({
+        next: () => {
+          this.loadEstudiantes();
+          this.successMessage = 'Estudiante registrado correctamente ✅';
+          setTimeout(() => { this.resetModal(); this.successMessage = ''; this.loading = false; }, 1500);
+        },
+        error: (error) => {
+          console.error('Error creating estudiante:', error);
+          this.successMessage = error.error?.error || 'Ocurrió un error al registrar';
+          this.loading = false;
+        }
+      });
+  }
+}
 
 
   deleteEstudiante(id: number) {
