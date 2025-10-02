@@ -1,4 +1,4 @@
-<div class="min-h-screen w-full flex flex-col"
+<div class="min-h-screen w-full flex flex-col" 
      style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
   <!-- Header -->
@@ -21,11 +21,38 @@
 
         <!-- Usuario -->
         <div class="flex items-center space-x-3 relative">
-          <button
-            type="button"
+          <!-- Botón de usuario -->
+          <button (click)="toggleUserMenu()"
             class="flex items-center text-sm text-white transition-all duration-300 rounded-xl px-3 py-2 hover:bg-white/10 border border-white/20">
-            <i class="fas fa-user-tie mr-2 text-lg"></i> Docente
+            <i class="fas fa-user-tie mr-2 text-lg"></i>
+            <span class="hidden md:inline">Docente</span>
           </button>
+
+          <!-- Overlay -->
+          <div *ngIf="showUserMenu" class="fixed inset-0 z-40" (click)="showUserMenu = false"></div>
+
+          <!-- Menú desplegable -->
+          <div *ngIf="showUserMenu"
+            class="absolute right-0 top-12 w-60 bg-white rounded-xl shadow-2xl py-4 z-[9999] border border-gray-200">
+
+            <!-- Info usuario -->
+            <div class="px-4 py-3 border-b border-gray-100">
+              <p class="font-bold text-gray-800 text-lg flex items-center">
+                <i class="fas fa-user-tie mr-2 text-blue-600"></i> Docente
+              </p>
+              <p class="text-xs text-gray-600 mt-1">
+                {{ currentUser?.email }}
+              </p>
+            </div>
+
+            <!-- Botón logout -->
+            <div class="py-2 px-4">
+              <button (click)="logout()"
+                class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg">
+                <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> Cerrar sesión
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -39,10 +66,11 @@
     <!-- Grid de cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       <div *ngFor="let seccion of secciones"
-           class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl p-6 flex flex-col items-center text-center transition transform hover:scale-105 hover:shadow-2xl hover:bg-white/30">
+        class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl p-6 flex flex-col items-center text-center transition transform hover:scale-105 hover:shadow-2xl hover:bg-white/30">
 
         <!-- Icono circular -->
-        <div class="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg mb-4">
+        <div
+          class="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg mb-4">
           <i class="fas fa-book-open text-white text-2xl"></i>
         </div>
 
@@ -53,9 +81,7 @@
         <p class="text-blue-100 text-sm mb-6">Curso asignado</p>
 
         <!-- Botón -->
-        <button
-          type="button"
-          [routerLink]="['/actividades', seccion.id_seccion]"
+        <button type="button" [routerLink]="['/actividades', seccion.id_seccion]"
           class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all duration-300">
           Ver Detalles
         </button>
