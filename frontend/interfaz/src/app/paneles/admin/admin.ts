@@ -1,10 +1,10 @@
-//src/app/paneles/admin/admin.ts
-// Este es el componente principal del panel de admin.
-// Se encarga de:
-// 1. Validar que el usuario sea admin.
-// 2. Cargar las estadísticas desde el backend.
-// 3. Cambiar entre secciones: dashboard, docentes, estudiantes, notificaciones, usuarios.
-// 4. Renderizar los subcomponentes correspondientes.
+// src/app/paneles/admin/admin.ts
+// Componente principal del panel de admin
+// Controla:
+// 1. Validación de usuario admin
+// 2. Carga de estadísticas
+// 3. Cambio entre secciones
+// 4. Control de header responsive (menú móvil y dropdown de usuario)
 
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -15,7 +15,6 @@ import { AdminService } from '../../services/admin.service';
 // Subcomponentes del panel admin
 import { AdminDocentes } from './admin-docentes/admin-docentes';
 import { AdminEstudiantes } from './admin-estudiantes/admin-estudiantes';
-
 import { AdminUsuarios } from './admin-usuarios/admin-usuarios';
 import { AdminDashboard } from './admin-dashboard/admin-dashboard';
 
@@ -24,10 +23,9 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
   standalone: true,
   imports: [
     CommonModule,
-    AdminDashboard,       // Dashboard separado
+    AdminDashboard,
     AdminDocentes,
     AdminEstudiantes,
-
     AdminUsuarios
   ],
   templateUrl: './admin.html'
@@ -37,25 +35,28 @@ export class Admin implements OnInit {
   currentSection = 'dashboard';
   stats: any = {};
 
-  // VARIABLES NUEVAS PARA HEADER
-  showMobileMenu = false; // para el menú hamburguesa
-  showUserMenu = false;   // para el dropdown de usuario
+  // VARIABLES HEADER RESPONSIVE
+  showMobileMenu = false; // menú hamburguesa en móvil
+  showUserMenu = false;   // dropdown usuario
 
   constructor(
-    private authService: AuthService, 
+    private authService: AuthService,
     private router: Router,
     private adminService: AdminService
   ) {}
 
   ngOnInit() {
+    // Validar usuario admin
     this.currentUser = this.authService.getCurrentUser();
     if (!this.currentUser || this.currentUser.rol !== 'admin') {
       this.router.navigate(['/login']);
     }
 
+    // Cargar estadísticas
     this.loadStats();
   }
 
+  // Cargar datos del dashboard
   loadStats() {
     this.adminService.getDashboardStats().subscribe({
       next: (data) => { this.stats = data; },
@@ -66,22 +67,25 @@ export class Admin implements OnInit {
     });
   }
 
+  // Cambiar sección del panel
   loadSection(section: string) {
     this.currentSection = section;
-    // Cerrar menú móvil al cambiar sección
+    // Cierra menú móvil al seleccionar sección
     this.showMobileMenu = false;
   }
 
+  // Cerrar sesión
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
 
-  // NUEVOS MÉTODOS PARA HEADER
+  // TOGGLE MENÚ MÓVIL
   toggleMobileMenu() {
     this.showMobileMenu = !this.showMobileMenu;
   }
 
+  // TOGGLE DROPDOWN USUARIO
   toggleUserMenu() {
     this.showUserMenu = !this.showUserMenu;
   }

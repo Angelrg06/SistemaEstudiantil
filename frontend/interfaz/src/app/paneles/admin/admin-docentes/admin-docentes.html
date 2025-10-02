@@ -1,56 +1,37 @@
 <!-- Panel de Docentes -->
-<div class="bg-white rounded-xl shadow-lg mb-6 max-w-[1200px] mx-auto">
-  <!-- Header panel -->
+<div class="bg-white rounded-xl shadow-lg mb-6 max-w-[1200px] mx-auto"> <!-- Header panel -->
   <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <h2 class="text-xl font-semibold text-gray-800">Gestión de Docentes</h2>
-
-    <div class="flex flex-col md:flex-row gap-3">
-      <!-- Filtros -->
-      <input type="text" placeholder="Buscar docente..."
+    <div class="flex flex-col md:flex-row gap-3"> <!-- Filtros --> <input type="text" placeholder="Buscar docente..."
         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
-        [(ngModel)]="searchTerm" (input)="buscarDocentes()" />
-
-      <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
-        [(ngModel)]="selectedDepartamento" (change)="filtrarPorDepartamento()">
-        <option value="">Todos los departamentos</option>
-        <option value="Matemáticas">Matemáticas</option>
-        <option value="Ciencias">Ciencias</option>
-        <option value="Lenguaje">Lenguaje</option>
-      </select>
-
-      <!-- Botón Agregar -->
-      <button
+        [(ngModel)]="searchTerm" (input)="buscarDocentes()" /> <!-- Botón Agregar --> <button
         class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow hover:shadow-lg transition"
-        (click)="openModal()">
-        <i class="fas fa-plus mr-2"></i> Agregar Docente
-      </button>
-    </div>
-  </div>
-
-  <!-- Tabla con altura fija -->
-  <div class="p-6">
-    <div class="border border-gray-200 rounded-lg overflow-hidden" style="min-height: 335px;">
-      <table class="table-fixed w-full">
+        (click)="openModal()"> <i class="fas fa-plus mr-2"></i> Agregar Docente </button> </div>
+  </div> <!-- Tabla con scroll horizontal -->
+  <div class="p-4 overflow-x-auto">
+    <div class="p-4 overflow-x-auto">
+      <table class="table-auto w-full border border-gray-200 rounded-lg">
         <thead class="bg-gray-100 text-gray-600">
           <tr>
-            <th class="w-20 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Código</th>
-            <th class="w-24 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">DNI</th>
-            <th class="px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Nombre</th>
-            <th class="px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Apellido</th>
-            <th class="w-48 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Usuario</th>
-            <th class="w-32 px-6 py-3 text-xs font-medium uppercase tracking-wider text-left">Acciones</th>
+            <th class="px-3 py- text-xs font-medium uppercase tracking-wider text-left">Código</th>
+            <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center">DNI</th>
+            <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center">Nombre</th>
+            <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center">Apellido</th>
+            <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center">Usuario</th>
+            <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center">Acciones</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <!-- Docentes reales -->
-          <tr *ngFor="let docente of docentesFiltrados" class="h-14">
-            <td class="px-6 py-4 text-sm text-gray-900">{{ docente.codigo }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900">{{ docente.dni }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 truncate">{{ docente.nombre }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 truncate">{{ docente.apellido }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 truncate">{{ docente.usuario?.correo }}</td>
-            <td class="px-6 py-4 text-sm font-medium">
-              <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="openModal(docente)">
+          <tr *ngFor="let docente of docentesFiltrados" 
+    [class.bg-yellow-200]="docente.id_docente === highlightedDocenteId" 
+    class="h-12">
+            <td class="px-3 py-2 text-sm text-gray-900">{{ docente.codigo }}</td>
+            <td class="px-3 py-2 text-sm text-gray-900 text-center">{{ docente.dni }}</td>
+            <td class="px-3 py-2 text-sm text-gray-900 text-center truncate">{{ docente.nombre }}</td>
+            <td class="px-3 py-2 text-sm text-gray-900 text-center truncate">{{ docente.apellido }}</td>
+            <td class="px-3 py-2 text-sm text-gray-900 text-center truncate">{{ docente.usuario?.correo }}</td>
+            <td class="px-3 py-2 text-sm font-medium text-center">
+              <button class="text-blue-600 hover:text-blue-900 mr-2" (click)="openModal(docente)">
                 <i class="fas fa-edit"></i>
               </button>
               <button class="text-red-600 hover:text-red-900" (click)="deleteDocente(docente.id_docente)">
@@ -58,45 +39,31 @@
               </button>
             </td>
           </tr>
-
-          <!-- Filas vacías para mantener altura fija -->
-          <tr *ngFor="let _ of filasVacias()" class="h-14">
-            <td class="px-6 py-4">&nbsp;</td>
-            <td class="px-6 py-4">&nbsp;</td>
-            <td class="px-6 py-4">&nbsp;</td>
-            <td class="px-6 py-4">&nbsp;</td>
-            <td class="px-6 py-4">&nbsp;</td>
-            <td class="px-6 py-4">&nbsp;</td>
+          <tr *ngFor="let _ of filasVacias()" class="h-12">
+            <td class="px-3 py-2">&nbsp;</td>
+            <td class="px-3 py-2">&nbsp;</td>
+            <td class="px-3 py-2">&nbsp;</td>
+            <td class="px-3 py-2">&nbsp;</td>
+            <td class="px-3 py-2">&nbsp;</td>
+            <td class="px-3 py-2">&nbsp;</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Footer simplificado -->
     <div class="flex flex-col md:flex-row items-center justify-between mt-6 gap-3">
-      <div class="text-sm text-gray-600">
-        Página {{ paginaActual }} de {{ totalPaginas }}
-      </div>
-
-      <div class="flex space-x-2">
-        <button
+      <div class="text-sm text-gray-600"> Página {{ paginaActual }} de {{ totalPaginas }} </div>
+      <div class="flex space-x-2"> <button
           class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          (click)="paginaAnterior()" [disabled]="paginaActual === 1">
-          Anterior
-        </button>
-
-        <button
+          (click)="paginaAnterior()" [disabled]="paginaActual === 1"> Anterior </button> <button
           class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas">
-          Siguiente
-        </button>
-      </div>
+          (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas"> Siguiente </button> </div>
     </div>
   </div>
 </div>
 
 <!-- Modal Docente -->
-<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-start justify-center pt-24"
+<div *ngIf="showModal" class="absolute inset-0 z-50 flex items-start justify-center pt-7 pb-155"
   style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
   <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
@@ -109,48 +76,71 @@
       </h3>
       <button class="text-gray-600 text-3xl font-bold hover:text-gray-800" (click)="closeModal()">&times;</button>
     </div>
+    <!-- Mensaje de éxito -->
+    <div *ngIf="successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+      {{ successMessage }}
+    </div>
 
     <!-- Formulario Modal -->
-    <div class="p-6 bg-white rounded-b-xl">
-      <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-6 bg-white rounded-b-xl max-h-[80vh] overflow-y-auto">
+  <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+        <!-- Código -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.codigo" name="codigo" required>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+            [(ngModel)]="selectedDocente.codigo" name="codigo" readonly placeholder="DOC" />
+          <p *ngIf="errors.codigo" class="text-red-600 text-sm mt-1">{{ errors.codigo }}</p>
         </div>
 
+        <!-- DNI -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">DNI</label>
           <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.dni" name="dni" required>
+            [(ngModel)]="selectedDocente.dni" name="dni" />
+          <p *ngIf="errors.dni" class="text-red-600 text-sm mt-1">{{ errors.dni }}</p>
         </div>
 
+        <!-- Nombre -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.nombre" name="nombre" required>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+          <input type="text"
+            class="w-full px-3 py-2 border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedDocente.nombre" name="nombre">
+          <p *ngIf="errors.nombre" class="text-red-600 text-sm mt-1">{{ errors.nombre }}</p>
         </div>
 
+        <!-- Apellido -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
-          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.apellido" name="apellido" required>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+          <input type="text"
+            class="w-full px-3 py-2 border   border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedDocente.apellido" name="apellido">
+          <p *ngIf="errors.apellido" class="text-red-600 text-sm mt-1">{{ errors.apellido }}</p>
         </div>
 
+
+        <!-- Correo -->
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
           <input type="email"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.usuario.correo" name="correo" required>
+            [(ngModel)]="selectedDocente.usuario.correo" name="correo" />
+          <p *ngIf="errors.correo" class="text-red-600 text-sm mt-1">{{ errors.correo }}</p>
         </div>
 
-        <div class="md:col-span-2" *ngIf="!isEditing">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-          <input type="password"
+        <div class="md:col-span-2 relative" *ngIf="!isEditing">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <input [type]="mostrarPassword ? 'text' : 'password'"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedDocente.usuario.password" name="password" required>
+            [(ngModel)]="selectedDocente.usuario.password" name="password">
+          <button type="button" class="absolute right-2 top-8 text-gray-500"
+            (click)="mostrarPassword = !mostrarPassword">
+            <i class="fas" [ngClass]="mostrarPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+          <p *ngIf="errors.password" class="text-red-600 text-sm mt-1">{{ errors.password }}</p>
         </div>
+
       </form>
     </div>
 
@@ -159,10 +149,11 @@
       <button class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" (click)="closeModal()">
         Cancelar
       </button>
-      <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-        (click)="saveDocente()">
-        Guardar
+      <button [disabled]="loading" (click)="saveDocente()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+        {{ loading ? (isEditing ? 'Actualizando...' : 'Guardando...') : (isEditing ? 'Actualizar' : 'Guardar ') }}
       </button>
+
     </div>
 
   </div>

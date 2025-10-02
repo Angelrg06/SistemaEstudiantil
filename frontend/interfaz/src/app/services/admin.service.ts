@@ -30,6 +30,7 @@
     deleteDocente(id: number): Observable<any> {
       return this.http.delete(`${this.apiUrl}/docentes/${id}`);
     }
+     
 
     getEstudiantes(): Observable<any> {
   return this.http.get(`${this.apiUrl}/estudiantes`);
