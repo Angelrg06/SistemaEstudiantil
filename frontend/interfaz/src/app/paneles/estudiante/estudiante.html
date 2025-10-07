@@ -1,1 +1,182 @@
-<p>panel de estudiantes !</p>
+<div class="min-h-screen w-full flex flex-col bg-gradient-to-tr from-neutral-200 to-neutral-300">
+
+    <!-- Cabecera -->
+    <header class="sticky top-0 z-50 border-b border-white/20 shadow-lg bg-gradient-to-tr from-blue-900 to-sky-500">
+
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+
+            <!-- Elementos -->
+            <div class="flex justify-between h-16 items-center">
+
+                <div class="flex items-center space-x-3">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0 flex items-center">
+                        <div
+                            class="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-3">
+                            <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                        </div>
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="hidden md:block">
+                        <h1 class="text-white font-bold text-x1 tracking-tight">Col. 10 Oct.</h1>
+                    </div>
+                    <div class="block md:hidden">
+                        <h1 class="text-white font-bold text-lg tracking-tight"></h1>
+                    </div>
+                </div>
+
+
+                <!-- Menú -->
+                <nav class="hidden sm:flex space-x-4">
+
+                    <!-- Cursos -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-book mr-2 text-sm"></i> Cursos
+                    </button>
+
+                    <!-- Actividades -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-newspaper mr-2 text-sm"></i> Actividades
+                    </button>
+
+                    <!-- Calendario -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-calendar mr-2 text-sm"></i> Calendario
+                    </button>
+
+                    <!-- Chat -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-comment mr-2 text-sm"></i> Chat
+                    </button>
+
+                    <!-- Notificaciones -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-bell mr-2 text-sm"></i> Notificaciones
+                    </button>
+
+                </nav>
+
+                <!-- Usuario -->
+                <div *ngFor="let dat of datos; let i = index" class="flex items-center space-x-3 relative">
+                    <button (click)="toggleUserMenu()"
+                        class="flex items-center text-white transition-all duration-300 rounded-xl px-3 py-2 hover:bg-white/20 border border-white/20">
+                        <i class="fas fa-circle-user"></i>
+                        <span class="hidden md:inline ml-2">{{ dat.nombre }} {{ dat.apellido }}</span>
+                    </button>
+
+                    <div *ngIf="showUserMenu"
+                        class="absolute right-0 top-12 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl py-4 z-50 border border-white/20">
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <p class="font-bold text-gray-800 text-lg flex items-center">
+                                <i class="fas fa-circle-user mr-2 text-blue-600"></i> {{ dat.nombre }} {{ dat.apellido }}
+                            </p>
+                            <p class="text-xs text-gray-600 mt-1">
+                                {{ dat.correo || 'usuario@sistema.com' }}
+                            </p>
+                        </div>
+                        <div class="py-2 px-4">
+                            <button (click)="logout()"
+                                class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-200 transition-all duration-300 rounded-lg">
+                                <i class="fas fa-sign-out-alt mr-3 text-red-500"></i> Cerrar sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+    <!-- Contenido -->
+    <main class="flex-1 pt-6 w-full px-4 sm:px-6 lg:px-8 relative z-10">
+
+        <!-- Contenedor -->
+        <div class="grid grid-cols-3 gap-4">
+
+            <!-- Cursos -->
+            <div class="col-span-2 flex flex-col">
+
+                <!-- Cabecera -->
+                <div class="flex items-center space-x-3 justify-between border-b">
+
+                    <!-- Texto -->
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div>
+                            <i class="fas fa-book text-3xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-2xl">Mis Cursos</h1>
+                        </div>
+                    </div>
+
+                    <!-- Filtrado -->
+                    <div>
+                        <label class="text-xl font-medium" for="filtrarBimestre">Bimestre</label>
+                        <select class="px-5 py-2 ml-5 border rounded-lg mb-3" name="" id="filtrarBimestre">
+                            <option value="" disabled selected>Bimestre actual</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Carga de Cursos -->
+                <div *ngIf="cursos.length > 0; else SinCursos"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                    <!-- Recorrer las actividades -->
+                    <div *ngFor="let curso of cursos; let i = index"
+                        class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:scale-105 hover:shadow-2xl transition transform text-gray-900 mt-8">
+                        <!-- Info -->
+                        <div class="space-y-2 text-md text-gray-800">
+                            <img src="https://winblog.s3.amazonaws.com/blog/wp-content/uploads/2022/09/Conoce-las-plataformas-de-cursos-online-que-necesitas.png"
+                                alt="Imagen curso">
+                            <div class="flex justify-center mt-5">
+                                <span class="text-2xl font-bold">{{ curso.curso }} </span>
+                            </div>
+
+                        </div>
+
+                        <!-- Botón acción -->
+                        <div class="mt-4 text-center">
+                            <button
+                                class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-cyan-600 transition-all">
+                                Actividades
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Sin cursos -->
+            <ng-template #SinCursos>
+                <p class="text-center text-black mt-10 text-lg">
+                    <i class="fas fa-circle-exclamation">No hay cursos asignados</i>
+                </p>
+            </ng-template>
+
+            <!-- Notificaciones -->
+            <div class="flex flex-col">
+                <!-- Cabecera -->
+                <div class="flex items-center space-x-3 border-b">
+                    <div>
+                        <i class="fas fa-bell text-3xl mb-4"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-2xl mb-4">Notificaciones</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</div>
