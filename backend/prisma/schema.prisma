@@ -113,6 +113,20 @@ model Seccion {
 }
 
 // ======================
+// SECCION-CURSO
+// ======================
+model SeccionCurso {
+  id_seccion Int
+  id_curso   Int
+
+  seccion Seccion @relation(fields: [id_seccion], references: [id_seccion])
+  curso   Curso   @relation(fields: [id_curso], references: [id_curso])
+
+  @@id([id_seccion, id_curso]) // Llave compuesta
+  @@map("secciones_cursos")
+}
+
+// ======================
 // GRUPO
 // ======================
 model Grupo {
@@ -152,6 +166,7 @@ model Actividad {
   fecha_fin     DateTime?
   estado        String?
   fecha_entrega DateTime?
+  archivo String?
 
   id_docente    Int
   id_seccion    Int?
