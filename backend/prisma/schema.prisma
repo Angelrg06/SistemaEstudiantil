@@ -85,7 +85,8 @@ model Bimestre {
 model Curso {
   id_curso   Int       @id @default(autoincrement())
   nombre     String
-  secciones  Seccion[]
+
+  secciones  Seccion[] @relation("CursoSecciones")
   chats      Chat[]    // chat relacionado a este curso
 
   @@map("cursos")
@@ -98,15 +99,14 @@ model Seccion {
   id_seccion  Int       @id @default(autoincrement())
   nombre      String
   id_bimestre Int?
-  id_curso    Int?
 
   bimestre    Bimestre? @relation(fields: [id_bimestre], references: [id_bimestre], onDelete: SetNull)
-  curso       Curso?    @relation(fields: [id_curso], references: [id_curso], onDelete: SetNull)
 
   estudiantes Estudiante[]
   grupos      Grupo[]
   actividades Actividad[]
   docentes    Docente[] @relation("DocenteSecciones") // relación N:N con Docente
+  cursos      Curso[]   @relation("CursoSecciones")   // relación N:N con Curso
   chats       Chat[]
 
   @@map("secciones")
@@ -119,8 +119,8 @@ model SeccionCurso {
   id_seccion Int
   id_curso   Int
 
-  seccion Seccion @relation(fields: [id_seccion], references: [id_seccion])
-  curso   Curso   @relation(fields: [id_curso], references: [id_curso])
+  seccion Seccion @relation("CursoSecciones", fields: [id_seccion], references: [id_seccion], onDelete: Cascade)
+  curso   Curso   @relation("CursoSecciones", fields: [id_curso], references: [id_curso], onDelete: Cascade)
 
   @@id([id_seccion, id_curso]) // Llave compuesta
   @@map("secciones_cursos")
