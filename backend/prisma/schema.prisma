@@ -86,8 +86,9 @@ model Curso {
   id_curso   Int       @id @default(autoincrement())
   nombre     String
 
-  secciones  Seccion[] @relation("CursoSecciones")
-  chats      Chat[]    // chat relacionado a este curso
+  // Relación N:N con Seccion a través de SeccionCurso
+  seccionesCurso SeccionCurso[]  // campo inverso de "curso"
+  chats          Chat[]
 
   @@map("cursos")
 }
@@ -105,8 +106,8 @@ model Seccion {
   estudiantes Estudiante[]
   grupos      Grupo[]
   actividades Actividad[]
-  docentes    Docente[] @relation("DocenteSecciones") // relación N:N con Docente
-  cursos      Curso[]   @relation("CursoSecciones")   // relación N:N con Curso
+  docentes    Docente[] @relation("DocenteSecciones")
+  seccionesCurso SeccionCurso[]   // campo inverso de "seccion"
   chats       Chat[]
 
   @@map("secciones")
@@ -119,10 +120,10 @@ model SeccionCurso {
   id_seccion Int
   id_curso   Int
 
-  seccion Seccion @relation("CursoSecciones", fields: [id_seccion], references: [id_seccion], onDelete: Cascade)
-  curso   Curso   @relation("CursoSecciones", fields: [id_curso], references: [id_curso], onDelete: Cascade)
+  seccion Seccion @relation(fields: [id_seccion], references: [id_seccion], onDelete: Cascade)
+  curso   Curso   @relation(fields: [id_curso], references: [id_curso], onDelete: Cascade)
 
-  @@id([id_seccion, id_curso]) // Llave compuesta
+  @@id([id_seccion, id_curso])
   @@map("secciones_cursos")
 }
 
