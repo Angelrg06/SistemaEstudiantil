@@ -280,7 +280,7 @@ model Mensaje {
   id_remitente  Int
 
   chat          Chat     @relation(fields: [id_chat], references: [id_chat], onDelete: Cascade)
-  remitente     Usuario  @relation(fields: [id_remitente], references: [id_usuario], onDelete: Cascade)
+  remitente Usuario @relation("MensajeRemitente", fields: [id_remitente], references: [id_usuario], onDelete: Cascade)
 
   @@map("mensajes")
 }
