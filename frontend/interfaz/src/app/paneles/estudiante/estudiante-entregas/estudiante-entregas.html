@@ -1,1 +1,373 @@
-<p>estudiante-entregas works!</p>
+<div class="min-h-screen w-full flex flex-col bg-gradient-to-tr from-neutral-200 to-neutral-300">
+    <!-- Cabecera -->
+    <header class="sticky top-0 z-50 border-b border-white/20 shadow-lg bg-gradient-to-tr from-blue-900 to-sky-500">
+
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+
+            <!-- Elementos -->
+            <div class="flex justify-between h-16 items-center">
+
+                <div class="flex items-center space-x-3">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0 flex items-center">
+                        <div
+                            class="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-3">
+                            <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                        </div>
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="hidden md:block">
+                        <h1 class="text-white font-bold text-x1 tracking-tight">Col. 10 Oct.</h1>
+                    </div>
+                    <div class="block md:hidden">
+                        <h1 class="text-white font-bold text-lg tracking-tight"></h1>
+                    </div>
+                </div>
+
+
+                <!-- Menú -->
+                <nav class="hidden sm:flex space-x-4">
+
+                    <!-- Cursos -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-book mr-2 text-sm"></i> Cursos
+                    </button>
+
+                    <!-- Actividades -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-newspaper mr-2 text-sm"></i> Actividades
+                    </button>
+
+                    <!-- Calendario -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-calendar mr-2 text-sm"></i> Calendario
+                    </button>
+
+                    <!-- Chat -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-comment mr-2 text-sm"></i> Chat
+                    </button>
+
+                    <!-- Notificaciones -->
+                    <button
+                        class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
+                        <i class="fas fa-bell mr-2 text-sm"></i> Notificaciones
+                    </button>
+
+                </nav>
+
+                <!-- Usuario -->
+                <div *ngFor="let dat of datos; let i = index" class="flex items-center space-x-3 relative">
+                    <button (click)="toggleUserMenu()"
+                        class="flex items-center text-white transition-all duration-300 rounded-xl px-3 py-2 hover:bg-white/20 border border-white/20">
+                        <i class="fas fa-circle-user"></i>
+                        <span class="hidden md:inline ml-2">{{ dat.nombre }} {{ dat.apellido }}</span>
+                    </button>
+
+                    <div *ngIf="showUserMenu"
+                        class="absolute right-0 top-12 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl py-4 z-50 border border-white/20">
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <p class="font-bold text-gray-800 text-lg flex items-center">
+                                <i class="fas fa-circle-user mr-2 text-blue-600"></i> {{ dat.nombre }} {{ dat.apellido
+                                }}
+                            </p>
+                            <p class="text-xs text-gray-600 mt-1">
+                                {{ dat.correo || 'usuario@sistema.com' }}
+                            </p>
+                        </div>
+                        <div class="py-2 px-4">
+                            <button (click)="logout()"
+                                class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-200 transition-all duration-300 rounded-lg">
+                                <i class="fas fa-sign-out-alt mr-3 text-red-500"></i> Cerrar sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+    <!-- Contenido -->
+    <main class="flex-1 pt-6 w-full px-4 sm:px-6 lg:px-8 relative z-10">
+
+        <!-- Contenido de actividades -->
+        <div class="flex flex-col mb-10">
+
+            <!-- Volver a  cursos-->
+            <div>
+                <button [routerLink]="['/estudiante']"
+                    class="py-3 px-5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-cyan-600">
+                    <i class="fas fa-arrow-left mr-3"></i>
+                    <span class="text-lg text-white">Volver a cursos</span>
+                </button>
+            </div>
+
+            <div *ngIf="actividades.length > 0; else SinActividades" class="flex flex-col">
+
+                <!-- Recorrer actividades -->
+                <div *ngFor="let act of actividades; let i = index"
+                    class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition transform mt-8">
+
+                    <!-- Info -->
+                    <div>
+                        <div>
+
+                            <!-- Titulo -->
+                            <div class="flex justify-between">
+                                <div>
+                                    <i class="fas fa-list fa-xl mr-3"></i>
+                                    <span class="text-2xl font-bold">{{ act.titulo }}</span>
+                                </div>
+
+                                <div>
+                                    <i class="fas fa-bookmark fa-lg text-blue-900 mr-3"></i>
+                                    <span class="text-lg text-blue-900">Tipo: {{ act.tipo }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="mt-3">
+                                <i class="fas fa-minus mr-2"></i>
+                                <span class="text-lg">{{ act.descripcion }}</span>
+                            </div>
+
+                            <!-- Fechas -->
+                            <div class="flex flex-col mt-2">
+                                <div>
+                                    <span class="font-bold">Desde: </span>
+                                    <i class="fas fa-calendar-days mr-2"></i>
+                                    <span class="font-bold">{{ act.fecha_inicio }}</span>
+                                </div>
+                                <div>
+                                    <span class="font-bold">Vence: </span>
+                                    <i class="fas fa-calendar-days mr-2"></i>
+                                    <span class="text-red-600 font-bold">{{ act.fecha_fin }}</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mt-3">
+                        <button (click)="abrirModal(act.id_actividad)"
+                            class="py-3 px-5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg shadow hover:from-green-700 hover:to-green-600">
+                            <i class="fas fa-arrow-right mr-3"></i>
+                            Entregar
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Modal para entregas -->
+            <div *ngIf="actividadSeleccionada !== null && modalAbierto"
+                class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+
+                <!-- Fondo de formulario -->
+                <div class="bg-white rounded-2xl shadow-xl w-[50%] p-8 max-h-[90vh] overflow-y-auto">
+
+                    <!-- Header -->
+                    <div class="flex justify-between items-center text-black px-4 py-2">
+
+                        <!-- Título -->
+                        <h3 class="text-xl font-bold">Entregar Actividad</h3>
+
+                        <!-- Cerrar Modal -->
+                        <button type="button" (click)="cerrarModal()" class="text-red-500 hover:text-red-700 text-xl">
+                            <i class="fa-solid fa-xmark fa-lg"></i>
+                        </button>
+
+                    </div>
+
+                    <!-- Cuerpo -->
+                    <div *ngFor="let act of actividad; let i = index">
+
+                        <!-- Cabecera -->
+                        <div class="border-b border-gray-300 mb-5 pb-3">
+                            <div class="flex justify-center">
+                                <span class="text-xl font-bold text-gray-800">{{ act.titulo }}</span>
+                            </div>
+                            <div class="mb-2 text-center">
+                                <span class="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
+                                    {{ act.tipo }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Fechas -->
+                        <div class="grid grid-cols-2 gap-4 border-b border-gray-300 pb-4">
+
+                            <!-- Fecha inicio -->
+                            <div class="text-center border border-gray-200 rounded-lg px-4 py-2">
+                                <i class="fas fa-calendar mr-2 text-blue-500"></i>
+                                <span class="font-bold text-blue-500">Fecha inicial:</span>
+                                <div>
+                                    <span class="text-sm">{{ act.fecha_inicio }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Fecha Final -->
+                            <div class="text-center border border-gray-200 rounded-lg px-4 py-2">
+                                <i class="fas fa-calendar mr-2 text-red-500"></i>
+                                <span class="font-bold text-red-500">Fecha límite:</span>
+                                <div>
+                                    <span class="text-sm">{{ act.fecha_fin }}</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Contenido -->
+                        <div class="flex flex-col mt-4">
+
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-pen mr-2 text-gray-600"></i>
+                                <span class="font-bold text-lg text-gray-700">Descripción</span>
+                            </div>
+
+                            <div class="pl-6">
+                                <p class="text-gray-600 leading-relaxed">{{ act.descripcion }}</p>
+                            </div>
+
+                        </div>
+
+                        <!-- Contenido adicional -->
+                        <div class="flex flex-col mt-4" *ngIf="act.archivo">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-list mr-2 text-gray-600"></i>
+                                <span class="font-bold text-lg text-gray-700">Material adicional</span>
+                            </div>
+
+                            <div class="pl-6">
+                                <i class="fas fa-minus mr-3 text-gray-500"></i>
+                                <span class="text-gray-600">{{ act.archivo }}</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Cargar actividad -->
+                    <div class="flex flex-col mt-6">
+
+                        <!-- Subir actividad -->
+                        <div class="flex justify-center mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-paper-plane mr-2 text-green-600"></i>
+                                <span class="text-lg font-semibold text-gray-700">Subir Actividad</span>
+                            </div>
+                        </div>
+
+                        <!-- Seleccionar actividad -->
+                        <div class="flex justify-center">
+                            <div class="mb-4 w-full max-w-md">
+                                <input type="file" (change)="onFileSelected($event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg
+                                file:border-0
+                                file:text-sm file:font-semibold file:bg-green-500 file:text-white
+                                hover:file:bg-green-600
+                                cursor-pointer transition duration-200">
+                                <p class="text-xs text-gray-500 mt-2 text-center">
+                                    Formatos aceptados: PDF, DOC, DOCX, ZIP (Máx. 5MB)
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Archivo seleccionado -->
+                        <div *ngIf="archivoSeleccionado"
+                            class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file text-green-600 mr-2"></i>
+                                    <span class="text-sm font-medium text-green-800">
+                                        {{ archivoSeleccionado.name }}
+                                    </span>
+                                </div>
+                                <button (click)="removerArchivo()" class="text-red-500 hover:text-red-700 text-sm">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-green-600 mt-1">
+                                Tamaño: {{ (archivoSeleccionado.size / 1024 / 1024).toFixed(2) }} MB
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex flex-row-reverse mt-6">
+
+                        <!-- Entregar -->
+                        <button (click)="enviarEntrega()" [disabled]="!archivoSeleccionado || subiendo" class="py-3 px-8 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg shadow
+                            hover:from-green-700 hover:to-green-600 disabled:from-gray-400 disabled:to-gray-500
+                            disabled:cursor-not-allowed transition duration-200 flex items-center">
+
+                            <i class="fas fa-spinner fa-spin mr-2" *ngIf="subiendo"></i>
+                            <i class="fas fa-paper-plane mr-2" *ngIf="!subiendo"></i>
+
+                            {{ subiendo ? 'Enviando...' : 'Entregar' }}
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+            
+            <!-- Sin cursos -->
+            <ng-template #SinActividades>
+                <p class="text-center text-black mt-10 text-lg">
+                    <i class="fas fa-circle-exclamation">No hay actividades</i>
+                </p>
+            </ng-template>
+
+            <!-- Temporal por el momento -->
+            <!-- SECCIÓN DE MIS ENTREGAS -->
+            <div class="mt-8" *ngIf="entregasRealizadas.length > 0">
+                <h3 class="text-xl font-bold mb-4">📦 Mis Entregas Realizadas</h3>
+
+                <div *ngFor="let entrega of entregasRealizadas" class="bg-white p-4 rounded-lg shadow border mb-3">
+
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">{{ entrega.actividad?.titulo }}</h4>
+                            <p class="text-sm text-gray-600">
+                                Entregado: {{ entrega.fecha_entrega | date:'medium' }}
+                            </p>
+                            <p class="text-sm text-gray-500" *ngIf="entrega.comentario">
+                                Comentario: {{ entrega.comentario }}
+                            </p>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <!-- Botón para descargar MI entrega -->
+                            <button (click)="descargarMiEntrega(entrega)"
+                                class="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                                <i class="fas fa-download mr-2"></i>
+                                Descargar Mi Entrega
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Mensaje si no hay entregas -->
+            <div *ngIf="entregasRealizadas.length === 0" class="mt-8 text-center py-8 bg-gray-50 rounded-lg">
+                <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                <p class="text-gray-500">Aún no has realizado entregas en este curso</p>
+            </div>
+
+        </div>
+
+    </main>
+
+</div>

@@ -11,6 +11,8 @@ import actividadesRoutes from "./routes/actividades.routes.js"; // importamos ac
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import docenteRoutes from './routes/docentes.routes.js';
 import estudianteRoutes from './routes/estudiantes.routes.js';
+import entregaRoutes from './routes/entregas.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -33,5 +35,6 @@ app.use("/api/secciones", seccionesRoutes); // Aquí montamos la ruta de seccion
 app.use("/api/actividades", actividadesRoutes); // Aquí montamos la ruta de act
 app.use('/api/docente', docenteRoutes);
 app.use('/api/estudiante', estudianteRoutes);
+app.use('/api/entregas', authMiddleware, entregaRoutes); 
 
 export default app;
