@@ -163,6 +163,7 @@ model Actividad {
   titulo        String
   descripcion   String?
   tipo          String?
+  max_intentos   Int?     @default(3)
   fecha_inicio  DateTime?
   fecha_fin     DateTime?
   estado        String?
