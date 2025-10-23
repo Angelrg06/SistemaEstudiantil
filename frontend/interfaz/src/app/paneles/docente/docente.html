@@ -1,91 +1,419 @@
 <div class="min-h-screen w-full flex flex-col" 
      style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-50 bg-gradient-to-r from-blue-800 to-cyan-600 border-b border-white/20 shadow-lg">
-    <div class="w-full px-4 sm:px-6 lg:px-8">
+  <!-- 🟢 Header -->
+  <header class="sticky top-0 z-50 bg-gradient-to-r from-blue-800 to-cyan-600 border-b border-white/20 shadow-lg backdrop-blur-sm">
+    <div class="w-full px-3 sm:px-4 md:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
 
-        <!-- Logo -->
-        <div class="flex items-center">
+        <!-- Logo y navegación -->
+        <div class="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
           <div class="flex-shrink-0 flex items-center">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-3">
-              <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-2 sm:mr-3">
+              <i class="fas fa-chalkboard-teacher text-lg sm:text-xl md:text-2xl text-white"></i>
             </div>
-            <div class="hidden md:block">
-              <h1 class="text-white font-bold text-xl tracking-tight">Panel Docente</h1>
+            <div class="hidden sm:block">
+              <h1 class="text-white font-bold text-lg sm:text-xl tracking-tight">Panel Docente</h1>
+              <p class="text-blue-100 text-xs mt-0.5 hidden md:block">Gestión académica integral</p>
             </div>
           </div>
+          
+          <!-- Navegación principal -->
+          <nav class="hidden lg:flex items-center space-x-1 ml-2 md:ml-4 lg:ml-6">
+            <a class="px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2"
+               routerLink="/docente">
+              <i class="fas fa-tachometer-alt text-xs"></i>
+              Inicio
+            </a>
+            <button (click)="toggleChat()"
+              class="px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2 relative"
+              [class.bg-white/20]="showChat"
+              [class.text-white]="showChat">
+              <i class="fas fa-comments text-xs"></i>
+              Chat
+              <span *ngIf="unreadMessages > 0" 
+                    class="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                {{ unreadMessages > 99 ? '99+' : unreadMessages }}
+              </span>
+            </button>
+          </nav>
         </div>
 
-        <!-- Usuario -->
-        <div class="flex items-center space-x-3 relative">
+        <!-- Usuario y notificaciones -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+<!-- Botón de notificaciones -->
+<button (click)="toggleNotificaciones()"
+        class="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 border border-white/20"
+        [class.bg-white/20]="showNotificaciones"
+        [class.text-white]="showNotificaciones">
+  <i class="fas fa-bell text-base sm:text-lg"></i>
+</button>
+          
           <!-- Botón de usuario -->
-          <button (click)="toggleUserMenu()"
-            class="flex items-center text-sm text-white transition-all duration-300 rounded-xl px-3 py-2 hover:bg-white/10 border border-white/20">
-            <i class="fas fa-user-tie mr-2 text-lg"></i>
-            <span class="hidden md:inline">Docente</span>
-          </button>
+          <div class="relative">
+            <button (click)="toggleUserMenu()"
+              class="flex items-center text-sm text-white transition-all duration-300 rounded-xl px-2 py-1.5 sm:px-4 sm:py-2.5 hover:bg-white/10 border border-white/20"
+              [class.bg-white/20]="showUserMenu">
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                {{ getUserDisplayName().charAt(0) || 'D' }}
+              </div>
+              <div class="hidden sm:block text-left ml-2">
+                <p class="font-medium text-xs sm:text-sm">Docente</p>
+                <p class="text-xs text-blue-100 truncate max-w-20 sm:max-w-32">
+                  {{ getUserEmail() }}
+                </p>
+              </div>
+              <i class="fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform duration-300" 
+                 [class.rotate-180]="showUserMenu"></i>
+            </button>
 
-          <!-- Overlay -->
-          <div *ngIf="showUserMenu" class="fixed inset-0 z-40" (click)="showUserMenu = false"></div>
+            <!-- Overlay -->
+            <div *ngIf="showUserMenu" class="fixed inset-0 z-40" (click)="showUserMenu = false"></div>
 
-          <!-- Menú desplegable -->
-          <div *ngIf="showUserMenu"
-            class="absolute right-0 top-12 w-60 bg-white rounded-xl shadow-2xl py-4 z-[9999] border border-gray-200">
+            <!-- Menú desplegable -->
+            <div *ngIf="showUserMenu"
+              class="absolute right-0 top-12 sm:top-14 w-64 sm:w-72 bg-white rounded-xl shadow-2xl py-4 z-[9999] border border-gray-200 animate-fade-in">
 
-            <!-- Info usuario -->
-            <div class="px-4 py-3 border-b border-gray-100">
-              <p class="font-bold text-gray-800 text-lg flex items-center">
-                <i class="fas fa-user-tie mr-2 text-blue-600"></i> Docente
-              </p>
-              <p class="text-xs text-gray-600 mt-1">
-                {{ currentUser?.email }}
-              </p>
-            </div>
+              <!-- Información del docente -->
+              <div class="py-2 space-y-1">
+                <!-- Tarjeta de información del docente -->
+                <div class="flex items-center w-full px-4 sm:px-5 py-3 sm:py-4 bg-blue-50 rounded-lg border border-blue-100 mx-2">
+                  <div class="flex-shrink-0 mr-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <i class="fas fa-user-graduate text-white text-sm sm:text-base"></i>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-semibold text-gray-900 truncate">
+                      {{ getUserDisplayName() }}
+                    </h3>
+                    <p class="text-xs text-gray-600 truncate mt-1">
+                      {{ getUserEmail() }}
+                    </p>
+                    <p class="text-xs text-blue-600 font-medium mt-1">
+                      {{ currentUser.rol || 'Docente' }}
+                    </p>
+                  </div>
+                </div>
 
-            <!-- Botón logout -->
-            <div class="py-2 px-4">
-              <button (click)="logout()"
-                class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg">
-                <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> Cerrar sesión
-              </button>
+                <!-- Información adicional del docente -->
+                <div class="grid grid-cols-2 gap-2 px-4 py-3 text-xs text-gray-600">
+                  <div class="text-center">
+                    <div class="font-semibold text-blue-600">{{ secciones.length }}</div>
+                    <div>Secciones</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="font-semibold text-green-600">{{ getTotalEstudiantes() }}</div>
+                    <div>Estudiantes</div>
+                  </div>
+                </div>
+
+                <!-- Separador -->
+                <div class="border-t border-gray-200 mx-2 my-2"></div>
+
+                <!-- Acciones rápidas -->
+                
+                <a class="flex items-center w-full px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+                   (click)="refreshSecciones(); showUserMenu = false">
+                  <i class="fas fa-sync-alt mr-3 text-blue-500 text-sm sm:text-base"></i>
+                  Actualizar secciones
+                </a>
+                <!-- Enlaces de ayuda -->
+                <a class="flex items-center w-full px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 transition-all duration-300"
+                   routerLink="/ayuda"
+                   (click)="showUserMenu = false">
+                  <i class="fas fa-question-circle mr-3 text-purple-500 text-sm sm:text-base"></i>
+                  Centro de Ayuda
+                </a>
+              </div>
+
+              <!-- Separador -->
+              <div class="border-t border-gray-100 my-2"></div>
+
+              <!-- Botón logout -->
+              <div class="px-4 sm:px-5 py-2">
+                <button (click)="logout()"
+                  class="flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg font-medium">
+                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> 
+                  Cerrar sesión
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
       </div>
+    </div>
+    
+    <!-- Navegación móvil -->
+    <div class="lg:hidden border-t border-white/10 py-2 px-3 sm:px-4">
+      <nav class="flex justify-around">
+        <a class="flex flex-col items-center text-white/80 hover:text-white transition-all duration-300 text-xs py-1"
+           routerLink="/docente">
+          <i class="fas fa-tachometer-alt text-sm mb-1"></i>
+          <span>Inicio</span>
+        </a>
+        <button (click)="toggleChat()"
+          class="flex flex-col items-center text-white/80 hover:text-white transition-all duration-300 text-xs py-1 relative"
+          [class.text-white]="showChat">
+          <i class="fas fa-comments text-sm mb-1"></i>
+          <span>Chat</span>
+          <span *ngIf="unreadMessages > 0" 
+                class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+        </button>
+      </nav>
     </div>
   </header>
 
-  <!-- Contenido principal -->
-  <main class="flex-1 pt-8 w-full px-6 sm:px-10 lg:px-16 text-white">
-    <h2 class="text-2xl font-bold mb-8 text-center">Secciones Asignadas</h2>
+  <!-- 🟢 Overlay para el chat -->
+  <div *ngIf="showChat" 
+       class="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm transition-all duration-300"
+       (click)="closeChat()">
+  </div>
 
-    <!-- Grid de cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div *ngFor="let seccion of secciones"
-        class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl p-6 flex flex-col items-center text-center transition transform hover:scale-105 hover:shadow-2xl hover:bg-white/30">
+  <!-- 🟢 Componente de Chat - VERSIÓN CORREGIDA (SIN DUPLICADOS) -->
+  <div *ngIf="showChat" 
+       class="fixed inset-0 z-[9999] bg-white overflow-hidden animate-scale-in">
+    
+    <!-- Header del chat modal -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-comments text-white text-lg"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">Mensajes con Estudiantes</h2>
+          <p class="text-gray-600 text-sm">Comunícate con tus alumnos</p>
+        </div>
+      </div>
+      <button (click)="closeChat()" 
+              class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
 
-        <!-- Icono circular -->
-        <div
-          class="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg mb-4">
-          <i class="fas fa-book-open text-white text-2xl"></i>
+    <!-- Componente DocenteChat importado - CON ALTURA COMPLETA -->
+    <div class="h-[calc(100vh-80px)]">
+      <app-docente-chat 
+        [seccionesDesdePadre]="secciones"
+        (seccionesActualizadas)="onSeccionesActualizadas($event)"
+        class="h-full w-full">
+      </app-docente-chat>
+    </div>
+  </div>
+
+  <!-- 🟢 Componente de Notificaciones -->
+<app-docente-notificaciones 
+  *ngIf="showNotificaciones"
+  [idDocente]="currentUser?.id_docente"
+  (cerrar)="cerrarNotificaciones()">
+</app-docente-notificaciones>
+
+  <!-- 🟢 Contenido principal -->
+  <main class="flex-1 pt-6 pb-6 sm:pt-8 sm:pb-8 w-full px-3 sm:px-4 md:px-6 lg:px-8 text-white" 
+        [class.opacity-30]="showChat"
+        [class.pointer-events-none]="showChat">
+    
+    <!-- Encabezado de la página -->
+    <div class="max-w-7xl mx-auto mb-6 sm:mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-2xl sm:text-3xl font-bold mb-2">Mis Secciones Asignadas</h2>
+          <p class="text-blue-100 text-base sm:text-lg max-w-2xl">
+            Gestiona tus cursos, actividades y comunicación con estudiantes desde un solo lugar.
+          </p>
+        </div>
+        
+        <div class="mt-4 md:mt-0 flex space-x-2 sm:space-x-3 flex-shrink-0">
+          <button (click)="refreshSecciones()"
+                  class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2 text-sm"
+                  [disabled]="showChat">
+            <i class="fas fa-sync-alt text-xs" [class.animate-spin]="false"></i>
+            Actualizar
+          </button>
+          <button class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm"
+                  [disabled]="showChat">
+            <i class="fas fa-plus text-xs"></i>
+            Nueva Actividad
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🟢 Estado de carga -->
+    <div *ngIf="isLoading" class="max-w-7xl mx-auto">
+      <div class="flex flex-col items-center justify-center py-12 sm:py-16 text-center">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-4 sm:mb-6">
+          <i class="fas fa-spinner fa-spin text-2xl sm:text-3xl text-white/70"></i>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-bold mb-2">Cargando secciones...</h3>
+        <p class="text-blue-100 text-base max-w-md">
+          Obteniendo información de {{ getUserDisplayName() }}
+        </p>
+      </div>
+    </div>
+
+    <!-- 🟢 Estado de error -->
+    <div *ngIf="errorMessage && !isLoading" class="max-w-7xl mx-auto">
+      <div class="bg-red-500/20 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-red-400/30">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-300 text-lg sm:text-xl"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-white font-semibold mb-1 text-sm sm:text-base">Error al cargar secciones</h4>
+            <p class="text-blue-100 text-xs sm:text-sm">
+              {{ errorMessage }}
+            </p>
+          </div>
+          <button (click)="refreshSecciones()" 
+                  class="px-3 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 text-sm">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🟢 Grid de cards de secciones -->
+    <div class="max-w-7xl mx-auto" *ngIf="!isLoading && !errorMessage">
+      <!-- Estado vacío -->
+      <div *ngIf="secciones.length === 0" 
+           class="flex flex-col items-center justify-center py-12 sm:py-16 text-center">
+        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-4 sm:mb-6">
+          <i class="fas fa-book-open text-2xl sm:text-3xl text-white/70"></i>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-bold mb-2">No tienes secciones asignadas</h3>
+        <p class="text-blue-100 text-base max-w-md mb-4 sm:mb-6">
+          Actualmente {{ getUserDisplayName() }} no tiene secciones asignadas para este período académico.
+        </p>
+        <button class="px-4 py-2.5 sm:px-6 sm:py-3 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm">
+          <i class="fas fa-envelope text-xs"></i>
+          Contactar administración
+        </button>
+      </div>
+
+      <!-- 🟢 Grid de secciones -->
+      <div *ngIf="secciones.length > 0" 
+           class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+        <div *ngFor="let seccion of secciones; trackBy: trackBySeccionId"
+          class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 flex flex-col transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:bg-white/20 border border-white/10 group">
+
+          <!-- Icono y título -->
+          <div class="flex items-center mb-3 sm:mb-4">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg mr-3 sm:mr-4 group-hover:scale-110 transition-transform duration-300">
+              <i class="fas fa-book-open text-white text-lg sm:text-xl"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-lg sm:text-xl font-bold text-white truncate">{{ seccion.nombre || 'Sin nombre' }}</h3>
+              <p class="text-blue-100 text-xs sm:text-sm truncate">{{ seccion.curso || 'Curso general' }}</p>
+            </div>
+          </div>
+
+          <!-- Información de la sección -->
+          <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6 flex-1">
+            <div class="flex justify-between text-xs sm:text-sm">
+              <span class="text-blue-100">Estudiantes:</span>
+              <span class="text-white font-medium">{{ seccion._count?.estudiantes || 0 }}</span>
+            </div>
+            <div class="flex justify-between text-xs sm:text-sm">
+              <span class="text-blue-100">Actividades:</span>
+              <span class="text-white font-medium">{{ seccion._count?.actividades || 0 }}</span>
+            </div>
+            <div class="flex justify-between text-xs sm:text-sm">
+              <span class="text-blue-100">Estado:</span>
+              <span class="text-green-300 font-medium">Activa</span>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex space-x-2 sm:space-x-3">
+            <button type="button" [routerLink]="['/actividades', seccion.id_seccion]"
+              class="flex-1 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all duration-300 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2"
+              [disabled]="showChat">
+              <i class="fas fa-tasks text-xs"></i>
+              Gestionar
+            </button>
+            <button class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white/20 rounded-lg border border-white/30 text-white hover:bg-white/30 transition-all duration-300"
+                    [disabled]="showChat">
+              <i class="fas fa-ellipsis-v text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🟢 Estadísticas generales -->
+      <div *ngIf="secciones.length > 0" class="mt-8 sm:mt-10 md:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 md:p-6 border border-white-10">
+          <div class="flex items-center">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mr-3 sm:mr-4">
+              <i class="fas fa-users text-blue-300 text-lg sm:text-xl"></i>
+            </div>
+            <div>
+              <p class="text-blue-100 text-xs sm:text-sm">Total Estudiantes</p>
+              <p class="text-white text-xl sm:text-2xl font-bold">{{ getTotalEstudiantes() }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 md:p-6 border border-white-10">
+          <div class="flex items-center">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center mr-3 sm:mr-4">
+              <i class="fas fa-check-circle text-green-300 text-lg sm:text-xl"></i>
+            </div>
+            <div>
+              <p class="text-blue-100 text-xs sm:text-sm">Actividades Activas</p>
+              <p class="text-white text-xl sm:text-2xl font-bold">{{ getTotalActividades() }}</p>
+            </div>
+          </div>
         </div>
 
-        <!-- Título -->
-        <h3 class="text-xl font-bold text-white mb-2">{{ seccion.nombre }}</h3>
+      </div>
 
-        <!-- Subtexto -->
-        <p class="text-blue-100 text-sm mb-6">Curso asignado</p>
-
-        <!-- Botón -->
-        <button type="button" [routerLink]="['/actividades', seccion.id_seccion]"
-          class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all duration-300">
-          Ver Detalles
-        </button>
+      <!-- 🟢 Información adicional -->
+      <div *ngIf="secciones.length > 0" class="mt-6 sm:mt-8 bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-5 md:p-6 border border-white/10">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+            <i class="fas fa-info-circle text-yellow-300 text-base sm:text-lg"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-white font-semibold mb-1 text-sm sm:text-base">Información Importante</h4>
+            <p class="text-blue-100 text-xs sm:text-sm">
+              Bienvenido {{ getUserDisplayName() }}. Recuerda que puedes comunicarte con tus estudiantes a través del chat, crear actividades para cada sección y realizar seguimiento del progreso académico.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </main>
+
+  <!-- 🟢 Footer más pequeño -->
+  <footer class="bg-gradient-to-r from-blue-900 to-cyan-800 border-t border-white/10 text-white py-4 sm:py-6">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        
+        <!-- Información del sistema -->
+        <div class="flex items-center mb-3 sm:mb-4 md:mb-0">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+            <i class="fas fa-graduation-cap text-white text-xs sm:text-sm"></i>
+          </div>
+          <div>
+            <p class="font-bold text-xs sm:text-sm">Sistema Académico Docente</p>
+            <p class="text-blue-100 text-xs">v2.1.0</p>
+          </div>
+        </div>
+
+        <!-- Enlaces y copyright -->
+        <div class="flex flex-col md:flex-row items-center space-y-1 sm:space-y-2 md:space-y-0 md:space-x-4 lg:space-x-6 text-xs">
+          <span class="text-blue-100 text-xs">
+            © 2024 Sistema Académico. Todos los derechos reservados.
+          </span>
+          <div class="flex space-x-3 sm:space-x-4">
+            <a href="#" class="text-blue-100 hover:text-white transition-colors duration-300 text-xs">Términos</a>
+            <a href="#" class="text-blue-100 hover:text-white transition-colors duration-300 text-xs">Privacidad</a>
+            <a href="#" class="text-blue-100 hover:text-white transition-colors duration-300 text-xs">Ayuda</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
 </div>

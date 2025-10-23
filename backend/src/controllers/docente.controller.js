@@ -1,7 +1,7 @@
+// src/controllers/docente.controller.js
 import { getDocenteByUsuario } from '../services/docente.service.js';
 
 export const getIdDocente = async (req, res) => {
-
     try {
         console.log("req.user:", req.user);
 
@@ -10,7 +10,7 @@ export const getIdDocente = async (req, res) => {
         }
 
         const id_usuario = req.user.id_usuario;
-         console.log("Buscando docente con id_usuario:", id_usuario);
+        console.log("Buscando docente con id_usuario:", id_usuario);
 
         const docente = await getDocenteByUsuario(id_usuario);
 
@@ -23,5 +23,4 @@ export const getIdDocente = async (req, res) => {
         console.error('Error en getMiDocente:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
-
 }

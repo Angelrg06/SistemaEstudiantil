@@ -8,60 +8,61 @@ datasource db {
 }
 
 // ======================
-// USUARIO
+// USUARIO - CORREGIDO
 // ======================
 model Usuario {
-  id_usuario Int      @id @default(autoincrement())
-  correo     String   @unique
+  id_usuario Int    @id @default(autoincrement())
+  correo     String @unique
   password   String
-  rol        String   // admin, docente, estudiante
+  rol        String // admin, docente, estudiante
 
-  docentes    Docente[]
-  estudiantes Estudiante[]
+  // ✅ CORREGIDO: Relaciones uno-a-uno
+  docente    Docente?
+  estudiante Estudiante?
 
-  chats_enviados  Chat[] @relation("ChatRemitente")
-  chats_recibidos Chat[] @relation("ChatDestinatario")
-  mensajes_enviados Mensaje[] @relation("MensajeRemitente")
+  chats_enviados  Chat[]    @relation("ChatRemitente")
+  chats_recibidos Chat[]    @relation("ChatDestinatario")
+  mensajes        Mensaje[] @relation("MensajeRemitente")
 
   @@map("usuarios")
 }
 
 // ======================
-// ESTUDIANTE
+// ESTUDIANTE - CORREGIDO
 // ======================
 model Estudiante {
-  id_estudiante      Int      @id @default(autoincrement())
-  codigo             String   @unique
-  dni                String   @unique
-  nombre             String
-  apellido           String
-  id_usuario         Int
-  id_seccion         Int?
+  id_estudiante Int    @id @default(autoincrement())
+  codigo        String @unique
+  dni           String @unique
+  nombre        String
+  apellido      String
+  id_usuario    Int    @unique // ✅ AGREGAR UNIQUE
+  id_seccion    Int?
 
-  usuario   Usuario  @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
-  seccion   Seccion? @relation(fields: [id_seccion], references: [id_seccion], onDelete: SetNull)
-  entregas  Entrega[]
+  usuario  Usuario   @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  seccion  Seccion?  @relation(fields: [id_seccion], references: [id_seccion], onDelete: SetNull)
+  entregas Entrega[]
 
   @@map("estudiantes")
 }
 
 // ======================
-// DOCENTE
+// DOCENTE - CORREGIDO
 // ======================
 model Docente {
-  id_docente          Int      @id @default(autoincrement())
-  codigo              String   @unique
-  dni                 String   @unique
-  nombre              String
-  apellido            String
-  id_usuario          Int
-  numero_colegiatura String?  
-  usuario             Usuario  @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  id_docente         Int     @id @default(autoincrement())
+  codigo             String  @unique
+  dni                String  @unique
+  nombre             String
+  apellido           String
+  id_usuario         Int     @unique // ✅ AGREGAR UNIQUE
+  numero_colegiatura String?
+
+  usuario             Usuario             @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
   actividades         Actividad[]
   notificaciones      Notificacion[]
   retroalimentaciones Retroalimentacion[]
-
-  secciones           Seccion[] @relation("DocenteSecciones")
+  secciones           Seccion[]           @relation("DocenteSecciones") // ✅ MANTENER relación muchos-a-muchos con secciones
 
   @@map("docentes")
 }
@@ -71,7 +72,7 @@ model Docente {
 // ======================
 model Bimestre {
   id_bimestre  Int       @id @default(autoincrement())
-  nombre       String    // I, II, III, IV
+  nombre       String
   fecha_inicio DateTime
   fecha_fin    DateTime
   secciones    Seccion[]
@@ -83,8 +84,8 @@ model Bimestre {
 // CURSO
 // ======================
 model Curso {
-  id_curso   Int       @id @default(autoincrement())
-  nombre     String
+  id_curso Int    @id @default(autoincrement())
+  nombre   String
 
   seccionesCurso SeccionCurso[]
   chats          Chat[]
@@ -97,18 +98,18 @@ model Curso {
 // SECCION
 // ======================
 model Seccion {
-  id_seccion  Int       @id @default(autoincrement())
+  id_seccion  Int    @id @default(autoincrement())
   nombre      String
   id_bimestre Int?
 
-  bimestre    Bimestre? @relation(fields: [id_bimestre], references: [id_bimestre], onDelete: SetNull)
+  bimestre Bimestre? @relation(fields: [id_bimestre], references: [id_bimestre], onDelete: SetNull)
 
-  estudiantes Estudiante[]
-  grupos      Grupo[]
-  actividades Actividad[]
-  docentes    Docente[] @relation("DocenteSecciones")
+  estudiantes    Estudiante[]
+  grupos         Grupo[]
+  actividades    Actividad[]
+  docentes       Docente[]      @relation("DocenteSecciones") // ✅ MANTENER relación muchos-a-muchos
   seccionesCurso SeccionCurso[]
-  chats       Chat[]
+  chats          Chat[]
 
   @@map("secciones")
 }
@@ -131,12 +132,12 @@ model SeccionCurso {
 // GRUPO
 // ======================
 model Grupo {
-  id_grupo   Int     @id @default(autoincrement())
+  id_grupo   Int    @id @default(autoincrement())
   nombre     String
   id_seccion Int
 
-  seccion    Seccion @relation(fields: [id_seccion], references: [id_seccion], onDelete: Cascade)
-  foro       Foro?   @relation("GrupoForo")
+  seccion Seccion @relation(fields: [id_seccion], references: [id_seccion], onDelete: Cascade)
+  foro    Foro?   @relation("GrupoForo")
 
   @@map("grupos")
 }
@@ -150,7 +151,7 @@ model Foro {
   tema        String
   descripcion String?
 
-  grupo       Grupo   @relation("GrupoForo", fields: [id_grupo], references: [id_grupo], onDelete: Cascade)
+  grupo Grupo @relation("GrupoForo", fields: [id_grupo], references: [id_grupo], onDelete: Cascade)
 
   @@map("foros")
 }
@@ -159,7 +160,7 @@ model Foro {
 // ACTIVIDAD
 // ======================
 model Actividad {
-  id_actividad  Int      @id @default(autoincrement())
+  id_actividad  Int       @id @default(autoincrement())
   titulo        String
   descripcion   String?
   tipo          String?
@@ -167,19 +168,19 @@ model Actividad {
   fecha_fin     DateTime?
   estado        String?
   fecha_entrega DateTime?
-  archivo       String?  // URL pública de Supabase
-  archivo_ruta  String?  // Ruta interna en Supabase
+  archivo       String?
+  archivo_ruta  String?
 
-  id_curso      Int     
-  id_docente    Int      
-  id_seccion    Int?     
-  
-  curso         Curso    @relation(fields: [id_curso], references: [id_curso])
-  docente       Docente  @relation(fields: [id_docente], references: [id_docente])
-  seccion       Seccion? @relation(fields: [id_seccion], references: [id_seccion])
+  id_curso   Int
+  id_docente Int
+  id_seccion Int?
 
-  entregas      Entrega[]
-  notificaciones Notificacion[]
+  curso   Curso    @relation(fields: [id_curso], references: [id_curso])
+  docente Docente  @relation(fields: [id_docente], references: [id_docente], onDelete: Cascade)
+  seccion Seccion? @relation(fields: [id_seccion], references: [id_seccion], onDelete: SetNull)
+
+  entregas            Entrega[]
+  notificaciones      Notificacion[]
   retroalimentaciones Retroalimentacion[]
 
   @@map("actividades")
@@ -189,24 +190,23 @@ model Actividad {
 // ENTREGA
 // ======================
 model Entrega {
-  id_entrega     Int       @id @default(autoincrement())
-  archivo        String?   // URL pública de Supabase
-  archivo_ruta   String?   // Ruta interna en Supabase
-  fecha_entrega  DateTime? 
-  comentario_estudiante String? //Comentario opcional del estudiante
-  intento        Int      @default(1) //Número de intento (1, 2, 3...)
-  estado_entrega String   @default("ENTREGADO") //Estado: ENTREGADO, CALIFICADO, DEVUELTO
+  id_entrega            Int       @id @default(autoincrement())
+  archivo               String?
+  archivo_ruta          String?
+  fecha_entrega         DateTime?
+  comentario_estudiante String?
+  intento               Int       @default(1)
+  estado_entrega        String    @default("ENTREGADO")
 
-  id_actividad   Int
-  id_estudiante  Int
-  
-  actividad      Actividad  @relation(fields: [id_actividad], references: [id_actividad], onDelete: Cascade)
-  estudiante     Estudiante @relation(fields: [id_estudiante], references: [id_estudiante], onDelete: Cascade)
+  id_actividad  Int
+  id_estudiante Int
 
+  actividad         Actividad          @relation(fields: [id_actividad], references: [id_actividad], onDelete: Cascade)
+  estudiante        Estudiante         @relation(fields: [id_estudiante], references: [id_estudiante], onDelete: Cascade)
   retroalimentacion Retroalimentacion? @relation("EntregaRetro")
-  notificacion   Notificacion? @relation("EntregaNotif")
+  notificacion      Notificacion?      @relation("EntregaNotif")
 
-  @@unique([id_estudiante, id_actividad, intento]) //Único por estudiante, actividad e intento
+  @@unique([id_estudiante, id_actividad, intento])
   @@map("entregas")
 }
 
@@ -215,16 +215,16 @@ model Entrega {
 // ======================
 model Retroalimentacion {
   id_retroalimentacion Int      @id @default(autoincrement())
-  comentario           String   //Comentario del docente
+  comentario           String
   calificacion         Float?
   fecha                DateTime @default(now())
   id_actividad         Int
   id_docente           Int
   id_entrega           Int?     @unique
 
-  actividad            Actividad @relation(fields: [id_actividad], references: [id_actividad], onDelete: Cascade)
-  docente              Docente   @relation(fields: [id_docente], references: [id_docente], onDelete: Cascade)
-  entrega              Entrega?  @relation("EntregaRetro", fields: [id_entrega], references: [id_entrega], onDelete: SetNull)
+  actividad Actividad @relation(fields: [id_actividad], references: [id_actividad], onDelete: Cascade)
+  docente   Docente   @relation(fields: [id_docente], references: [id_docente], onDelete: Cascade)
+  entrega   Entrega?  @relation("EntregaRetro", fields: [id_entrega], references: [id_entrega], onDelete: SetNull)
 
   @@map("retroalimentaciones")
 }
@@ -233,17 +233,17 @@ model Retroalimentacion {
 // NOTIFICACION
 // ======================
 model Notificacion {
-  id_notificacion  Int      @id @default(autoincrement())
-  mensaje          String
-  fecha_envio      DateTime @default(now())
-  tipo             String?
-  id_actividad     Int?
-  id_docente       Int?
-  id_entrega       Int?     @unique
+  id_notificacion Int      @id @default(autoincrement())
+  mensaje         String
+  fecha_envio     DateTime @default(now())
+  tipo            String?
+  id_actividad    Int?
+  id_docente      Int?
+  id_entrega      Int?     @unique
 
-  actividad        Actividad? @relation(fields: [id_actividad], references: [id_actividad], onDelete: SetNull)
-  docente          Docente?   @relation(fields: [id_docente], references: [id_docente], onDelete: SetNull)
-  entrega          Entrega?   @relation("EntregaNotif", fields: [id_entrega], references: [id_entrega], onDelete: SetNull)
+  actividad Actividad? @relation(fields: [id_actividad], references: [id_actividad], onDelete: SetNull)
+  docente   Docente?   @relation(fields: [id_docente], references: [id_docente], onDelete: SetNull)
+  entrega   Entrega?   @relation("EntregaNotif", fields: [id_entrega], references: [id_entrega], onDelete: SetNull)
 
   @@map("notificaciones")
 }
@@ -252,17 +252,17 @@ model Notificacion {
 // CHAT
 // ======================
 model Chat {
-  id_chat        Int      @id @default(autoincrement())
-  id_remitente   Int
+  id_chat         Int  @id @default(autoincrement())
+  id_remitente    Int
   id_destinatario Int
-  id_seccion     Int?
-  id_curso       Int?
+  id_seccion      Int?
+  id_curso        Int?
 
-  remitente      Usuario  @relation("ChatRemitente", fields: [id_remitente], references: [id_usuario])
-  destinatario   Usuario  @relation("ChatDestinatario", fields: [id_destinatario], references: [id_usuario])
-  seccion        Seccion? @relation(fields: [id_seccion], references: [id_seccion], onDelete: SetNull)
-  curso          Curso?   @relation(fields: [id_curso], references: [id_curso], onDelete: SetNull)
-  mensajes       Mensaje[]
+  remitente    Usuario   @relation("ChatRemitente", fields: [id_remitente], references: [id_usuario])
+  destinatario Usuario   @relation("ChatDestinatario", fields: [id_destinatario], references: [id_usuario])
+  seccion      Seccion?  @relation(fields: [id_seccion], references: [id_seccion], onDelete: SetNull)
+  curso        Curso?    @relation(fields: [id_curso], references: [id_curso], onDelete: SetNull)
+  mensajes     Mensaje[]
 
   @@map("chats")
 }
@@ -271,16 +271,16 @@ model Chat {
 // MENSAJE
 // ======================
 model Mensaje {
-  id_mensaje    Int      @id @default(autoincrement())
-  contenido     String?
-  archivo       String?  // 🆕 URL pública de Supabase para archivos
-  archivo_ruta  String?  // 🆕 Ruta interna en Supabase
-  fecha         DateTime @default(now())
-  id_chat       Int
-  id_remitente  Int
+  id_mensaje   Int      @id @default(autoincrement())
+  contenido    String?
+  archivo      String?
+  archivo_ruta String?
+  fecha        DateTime @default(now())
+  id_chat      Int
+  id_remitente Int
 
-  chat          Chat     @relation(fields: [id_chat], references: [id_chat], onDelete: Cascade)
-  remitente     Usuario  @relation(fields: [id_remitente], references: [id_usuario], onDelete: Cascade)
+  chat      Chat    @relation(fields: [id_chat], references: [id_chat], onDelete: Cascade)
+  remitente Usuario @relation("MensajeRemitente", fields: [id_remitente], references: [id_usuario], onDelete: Cascade)
 
   @@map("mensajes")
 }

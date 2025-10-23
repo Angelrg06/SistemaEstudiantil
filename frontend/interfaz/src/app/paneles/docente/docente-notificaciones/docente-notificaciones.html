@@ -1,1 +1,104 @@
-<p>docente-notificaciones works!</p>
+<div class="notificaciones-container fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm transition-all duration-300"
+     (click)="cerrarNotificaciones()">
+  
+  <div class="notificaciones-panel absolute top-16 right-4 sm:right-6 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 animate-scale-in"
+       (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-bell text-white text-sm"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">Notificaciones</h3>
+          <p class="text-gray-600 text-sm">Tus alertas recientes</p>
+        </div>
+      </div>
+      <button (click)="cerrarNotificaciones()" 
+              class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Contenido -->
+    <div class="max-h-96 overflow-y-auto">
+      
+      <!-- Estado de carga -->
+      <div *ngIf="cargando" class="p-6 text-center">
+        <div class="loading-spinner flex gap-1.5 items-center justify-center mb-3">
+          <div class="spinner-dot w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+          <div class="spinner-dot w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+          <div class="spinner-dot w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+        </div>
+        <p class="text-gray-600 text-sm">Cargando notificaciones...</p>
+      </div>
+
+      <!-- Estado vacío -->
+      <div *ngIf="!cargando && notificaciones.length === 0" class="p-6 text-center">
+        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <i class="fas fa-bell-slash text-gray-400 text-lg"></i>
+        </div>
+        <h4 class="text-gray-900 font-medium mb-1">No hay notificaciones</h4>
+        <p class="text-gray-600 text-sm">No tienes notificaciones pendientes</p>
+      </div>
+
+      <!-- Lista de notificaciones -->
+      <div *ngIf="!cargando && notificaciones.length > 0" class="p-2">
+        <div *ngFor="let notif of notificaciones; trackBy: trackByNotificacionId" 
+             class="notificacion-item group p-3 rounded-lg border border-gray-100 hover:bg-blue-50 transition-all duration-200 mb-2 last:mb-0">
+          
+          <!-- Header de la notificación -->
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <!-- Icono según tipo -->
+              <div [class]="getIconoClase(notif.tipo)" class="w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                <i [class]="getIcono(notif.tipo)"></i>
+              </div>
+              <span class="text-xs font-medium text-gray-700 capitalize">{{ notif.tipo || 'sistema' }}</span>
+            </div>
+            <span class="text-xs text-gray-500">{{ notif.fecha_envio }}</span>
+          </div>
+
+          <!-- Mensaje -->
+          <p class="text-sm text-gray-800 mb-2 leading-relaxed">{{ notif.mensaje }}</p>
+
+          <!-- Información adicional -->
+          <div *ngIf="notif.actividad || notif.entrega" class="text-xs text-gray-600 space-y-1">
+            <div *ngIf="notif.actividad" class="flex items-center gap-1">
+              <i class="fas fa-tasks text-blue-500"></i>
+              <span>Actividad: {{ notif.actividad.titulo }}</span>
+            </div>
+            <div *ngIf="notif.entrega" class="flex items-center gap-1">
+              <i class="fas fa-user-graduate text-green-500"></i>
+              <span>Estudiante: {{ notif.entrega.estudiante?.nombre }} {{ notif.entrega.estudiante?.apellido }}</span>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
+            <button (click)="marcarComoLeida(notif)"
+                    class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors duration-200">
+              <i class="fas fa-check text-xs"></i>
+              Marcar como leída
+            </button>
+            <button *ngIf="notif.actividad"
+                    class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors duration-200">
+              <i class="fas fa-external-link-alt text-xs"></i>
+              Ver actividad
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div *ngIf="!cargando && notificaciones.length > 0" class="p-4 border-t border-gray-100">
+      <button (click)="limpiarTodas()"
+              class="w-full py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium">
+        <i class="fas fa-trash-alt mr-2 text-xs"></i>
+        Limpiar todas las notificaciones
+      </button>
+    </div>
+  </div>
+</div>
