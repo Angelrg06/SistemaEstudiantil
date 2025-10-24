@@ -12,7 +12,7 @@ export class EntregasService {
     constructor(private http: HttpClient) { }
 
     //Método para subir entrega con archivo
-    subirEntrega(archivo: File, idActividad: number): Observable<any> {
+    subirEntrega(archivo: File, idActividad: number, comentario?: string): Observable<any> {
 
         // FormData es una clase de JavaScript que permite enviar archivos
         // mediante peticiones HTTP
@@ -21,6 +21,7 @@ export class EntregasService {
         //Construir FormData
         formData.append('archivo', archivo); //Archivo
         formData.append('id_actividad', idActividad.toString()); //ID Actividad
+        if (comentario) formData.append('comentario', comentario); 
 
         //Verificar archivo e id
         console.log('Enviando archivo:', archivo.name);
