@@ -1,11 +1,13 @@
 import express from "express";
 import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { 
-  getActividadesBySeccion, 
-  crearActividad, 
-  actualizarActividad, 
+import {
+  getActividadesBySeccion,
+  crearActividad,
+  actualizarActividad,
   eliminarActividad,
-  diagnosticoActividades  // 🟢 AGREGAR DIAGNÓSTICO
+  diagnosticoActividades,
+  obtenerActividadesPorEstado,
+  obtenerActividadesPorMes
 } from "../controllers/actividad.controller.js";
 
 const router = express.Router();
@@ -16,5 +18,7 @@ router.get("/diagnostico", authMiddleware, diagnosticoActividades); // 🟢 RUTA
 router.post("/", authMiddleware, crearActividad);
 router.put("/:id", authMiddleware, actualizarActividad);
 router.delete("/:id", authMiddleware, eliminarActividad);
+router.get('/estado/:estado', obtenerActividadesPorEstado); // Ruta para filtrar por estado
+router.get("/mes/:mes", authMiddleware, obtenerActividadesPorMes);
 
 export default router;

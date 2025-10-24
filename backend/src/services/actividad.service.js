@@ -123,3 +123,47 @@ export const eliminar = async (id) => {
     throw error;
   }
 };
+
+//Filtrar actividades por estado: pendiente, completado, activo
+export const obtenerPorEstado = async (estado) => {
+  try {
+    const actividades = await prisma.actividad.findMany({
+      where: { estado: estado },
+      include: {
+        curso: true,
+        docente: true,
+        seccion: true
+      }
+    });
+    return actividades;
+  } catch (error) {
+    throw new Error(`Error al obtener actividades por estado: ${error.message}`);
+  }
+};
+
+// Filtrar actividades por mes (solo del docente autenticado)
+export const obtenerPorMes = async (mes, id_docente) => {
+  try {
+    const actividades = await prisma.actividad.findMany({
+      where: {
+        id_docente, // 🔹 filtro agregado
+        fecha_inicio: {
+          gte: new Date(2024, mes - 1, 1),
+          lt: new Date(2024, mes, 1),
+        },
+      },
+      include: {
+        curso: true,
+        docente: true,
+        seccion: true,
+      },
+    });
+
+    console.log(`📚 Actividades del docente ${id_docente} para el mes ${mes}: ${actividades.length}`);
+    return actividades;
+  } catch (error) {
+    console.error("❌ Error en obtenerPorMes:", error);
+    throw error;
+  }
+};
+

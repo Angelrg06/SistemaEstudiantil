@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import * as actividadService from "../services/actividad.service.js";
+
+
 const prisma = new PrismaClient();
 
 // 🟢 FORMATO ESTANDAR DE RESPUESTA
@@ -431,5 +434,81 @@ export const eliminarActividad = async (req, res) => {
     res.status(500).json(
       errorResponse("Error al eliminar actividad", error)
     );
+  }
+};
+
+// Obtener actividades por estado
+export const obtenerActividadesPorEstado = async (req, res) => {
+  try {
+    const { estado } = req.params;
+
+    // Validar estado permitido
+    const estadosPermitidos = ['activo', 'completado', 'pendiente'];
+    if (!estadosPermitidos.includes(estado.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estado no válido. Usa: activo, completado o pendiente.'
+      });
+    }
+
+    const actividades = await actividadService.obtenerPorEstado(estado);
+    res.json({
+      success: true,
+      data: actividades,
+      message: `Actividades con estado '${estado}' obtenidas correctamente`
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener actividades por estado',
+      error: error.message
+    });
+  }
+};
+
+// Obtener actividades por mes (solo del docente autenticado)
+export const obtenerActividadesPorMes = async (req, res) => {
+  try {
+    const { mes } = req.params;
+    const id_usuario = req.user.id_usuario;
+
+    console.log(`📅 Buscando actividades del mes ${mes} para el usuario ${id_usuario}`);
+
+    // 🟢 OBTENER el docente del usuario autenticado
+    const docente = await prisma.docente.findFirst({
+      where: { id_usuario }
+    });
+
+    if (!docente) {
+      return res.status(403).json({
+        success: false,
+        message: "Usuario no autorizado o no es docente"
+      });
+    }
+
+    // 🔹 Llamar al servicio con id_docente
+    const actividades = await actividadService.obtenerPorMes(parseInt(mes), docente.id_docente);
+
+    if (!actividades || actividades.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No se encontraron actividades del docente para el mes ${mes}`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Se encontraron ${actividades.length} actividades del mes ${mes}`,
+      data: actividades
+    });
+
+  } catch (error) {
+    console.error("❌ Error al obtener actividades por mes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener actividades por mes",
+      error: error.message
+    });
   }
 };
