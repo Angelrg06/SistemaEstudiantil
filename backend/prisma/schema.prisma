@@ -280,6 +280,7 @@ model Mensaje {
   id_chat      Int
   id_remitente Int
 
+
   chat      Chat    @relation(fields: [id_chat], references: [id_chat], onDelete: Cascade)
 >>>>>>> bdaaccf (docente actualizado)
   remitente Usuario @relation("MensajeRemitente", fields: [id_remitente], references: [id_usuario], onDelete: Cascade)
