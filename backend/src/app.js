@@ -1,4 +1,4 @@
-// src/app.js
+// src/app.js - VERSIÓN CORREGIDA
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,12 +6,14 @@ import adminRoutes from './routes/admin.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/usuarios.routes.js';
 import panelRoutes from './routes/panel.routes.js';
-import seccionesRoutes from './routes/secciones.routes.js'; // importamos secciones
-import actividadesRoutes from "./routes/actividades.routes.js"; // importamos actividades
+import seccionesRoutes from './routes/seccion.routes.js';
+import actividadesRoutes from "./routes/actividades.routes.js";
 import { authMiddleware } from './middlewares/auth.middleware.js';
-import docenteRoutes from './routes/docentes.routes.js';
+import docenteRoutes from './routes/docente.routes.js';
 import estudianteRoutes from './routes/estudiantes.routes.js';
+import chatRoutes from "./routes/chat.routes.js";
 import entregaRoutes from './routes/entregas.routes.js';
+import notificacionesRoutes from './routes/notificaciones.routes.js'; // 🆕 AÑADIR ESTA LÍNEA
 
 dotenv.config();
 
@@ -31,10 +33,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', authMiddleware, userRoutes);
 app.use('/api/panel', panelRoutes);
 app.use('/api/admin', adminRoutes);
-app.use("/api/secciones", seccionesRoutes); // Aquí montamos la ruta de secciones
-app.use("/api/actividades", actividadesRoutes); // Aquí montamos la ruta de act
-app.use('/api/docente', docenteRoutes);
+app.use("/api/secciones", seccionesRoutes);
+app.use("/api/actividades", actividadesRoutes);
+app.use('/api/docentes', docenteRoutes);
 app.use('/api/estudiante', estudianteRoutes);
-app.use('/api/entregas', authMiddleware, entregaRoutes); 
+app.use("/api/chat", chatRoutes);
+app.use('/api/entregas', authMiddleware, entregaRoutes);
+app.use('/api/notificaciones', authMiddleware, notificacionesRoutes); // 🆕 AÑADIR ESTA LÍNEA
 
 export default app;

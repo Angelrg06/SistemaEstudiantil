@@ -15,8 +15,11 @@ export const crearEntrega = async (req, res) => {
 
         //Obtener datos de la petición
         const { id_actividad } = req.body;
+        if (!id_actividad) {
+  return res.status(400).json({ error: "ID de actividad requerido" });
+}
         const archivo = req.file; //Archivo procesado para Multer
-        const id_usuario = req.user.id; //ID del usuario desde el token
+        const id_usuario = req.user.id_usuario; //ID del usuario desde el token
 
         //req.file contiene el archivo que Multer procesó
         //Viene del FormData que envía Angular
