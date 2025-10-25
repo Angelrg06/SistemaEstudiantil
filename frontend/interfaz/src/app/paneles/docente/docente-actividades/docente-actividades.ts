@@ -5,6 +5,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { CursoService } from '../../../services/curso.service';
+import { AuthService } from '../../../services/auth.service';
 
 // Importar componentes necesarios
 import { DocenteChat } from '../docente-chat/docente-chat';
@@ -22,6 +24,9 @@ interface Actividad {
   fecha_entrega: string;
   id_docente: number;
   id_seccion: number;
+  max_intentos?: number;  // 🔹 nuevo
+  archivo?: string;       // 🔹 nuevo
+  archivo_ruta?: string;  // 🔹 nuevo
 }
 
 interface Seccion {
@@ -52,6 +57,7 @@ export class Actividades implements OnInit, OnDestroy {
   id_actual: number | null = null;
   id_docente_logeado: number = 0;
   seccionInfo: Seccion | null = null;
+  cursosDisponibles: any[] = [];
 
   // 🟢 Estados de UI
   isModalOpen = false;
@@ -76,6 +82,10 @@ export class Actividades implements OnInit, OnDestroy {
   titulo_nuevo: string = '';
   descripcion_nuevo: string = '';
   curso_nuevo: string = '';
+  max_intentos_nuevos: number = 1;
+  archivoSeleccionado: File | null = null;
+  archivoNombre: string = '';
+  archivo_nuevo: File | null = null;       // Archivo que sube el docente        // URL pública (lo recibes del backend)
 
   // 🟢 Datos temporales para edición
   fecha_temporal_inicio: string = '';
@@ -84,6 +94,8 @@ export class Actividades implements OnInit, OnDestroy {
   titulo_temporal: string = '';
   descripcion_temporal: string = '';
   curso_temporal: string = '';
+  intentos_nuevo: number = 1;
+  archivo_ruta_nuevo: string = '';
 
   // 🟢 Estructura de usuario (consistente con docente.ts)
   currentUser: any = {
@@ -115,7 +127,7 @@ export class Actividades implements OnInit, OnDestroy {
   // 🟢 Subscripciones
   private subscriptions: Subscription = new Subscription();
 
-  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router, private cursoService: CursoService, private authService: AuthService) { }
 
   ngOnInit(): void {
     this.initializeComponent();
@@ -504,7 +516,24 @@ export class Actividades implements OnInit, OnDestroy {
       return;
     }
 
-    const nuevaActividad = {
+    const formData = new FormData();
+    formData.append('curso', this.curso_nuevo.trim());
+    formData.append('titulo', this.titulo_nuevo.trim());
+    formData.append('descripcion', this.descripcion_nuevo.trim());
+    formData.append('tipo', this.tipo_nuevo);
+    formData.append('fecha_inicio', new Date(this.fecha_ini_nuevo).toISOString());
+    formData.append('fecha_fin', new Date(this.fecha_fini_nuevo).toISOString());
+    formData.append('estado', 'activo');
+    formData.append('fecha_entrega', new Date(this.fecha_fini_nuevo).toISOString());
+    formData.append('id_seccion', this.idSeccion.toString());
+    formData.append('max_intentos', this.max_intentos_nuevos.toString());
+
+    // ✅ Cambiar aquí: usar archivoSeleccionado
+    if (this.archivoSeleccionado) {
+      formData.append('archivo', this.archivoSeleccionado, this.archivoSeleccionado.name);
+    }
+
+    /*const nuevaActividad = {
       curso: this.curso_nuevo.trim(),
       titulo: this.titulo_nuevo.trim(),
       descripcion: this.descripcion_nuevo.trim(),
@@ -515,17 +544,17 @@ export class Actividades implements OnInit, OnDestroy {
       fecha_entrega: this.fecha_fini_nuevo ? new Date(this.fecha_fini_nuevo).toISOString() : null,
       id_docente: this.id_docente_logeado,
       id_seccion: this.idSeccion,
-    };
-
-    console.log('🆕 Creando actividad:', nuevaActividad);
+    };*/
 
     const token = this.getToken();
     if (!token) return;
 
     this.subscriptions.add(
       this.http
-        .post<any>('http://localhost:4000/api/actividades', nuevaActividad, {
-          headers: this.getAuthHeaders(),
+        .post('http://localhost:4000/api/actividades', formData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         })
         .subscribe({
           next: (response) => {
@@ -644,8 +673,16 @@ export class Actividades implements OnInit, OnDestroy {
     this.fecha_temporal_inicio = this.toDateTimeLocal(actividad.fecha_inicio);
     this.fecha_temporal_final = this.toDateTimeLocal(actividad.fecha_fin);
 
+    // 🔹 NUEVO: cargar intentos y archivo
+    this.intentos_nuevo = actividad.max_intentos || 1;
+    this.archivo_ruta_nuevo = actividad.archivo || '';
+
+    this.archivoSeleccionado = null; // limpiar archivo local para reemplazo
+
     this.isModalOpen = true;
     this.error = '';
+
+    this.cargarCursos()
   }
 
   cerrarModal(): void {
@@ -657,6 +694,7 @@ export class Actividades implements OnInit, OnDestroy {
 
   mostrarFormActividad(): void {
     this.nuevaActividad = true;
+    this.cargarCursos();
     this.limpiarDatosNuevaActividad();
     this.error = '';
   }
@@ -692,7 +730,24 @@ export class Actividades implements OnInit, OnDestroy {
       return;
     }
 
-    const actividadActualizada = {
+    // Construir el FormData si hay archivo
+    const formData = new FormData();
+    formData.append('curso', this.curso_temporal?.trim() || '');
+    formData.append('titulo', this.titulo_temporal?.trim() || '');
+    formData.append('descripcion', this.descripcion_temporal?.trim() || '');
+    formData.append('tipo', this.tipo_actividad || '');
+    formData.append('fecha_inicio', this.fecha_temporal_inicio ? new Date(this.fecha_temporal_inicio).toISOString() : '');
+    formData.append('fecha_fin', this.fecha_temporal_final ? new Date(this.fecha_temporal_final).toISOString() : '');
+    formData.append('estado', 'activo');
+    formData.append('fecha_entrega', this.fecha_temporal_final ? new Date(this.fecha_temporal_final).toISOString() : '');
+
+    // 🟢 Nuevos campos
+    formData.append('max_intentos', this.intentos_nuevo?.toString() || '1');
+    // ✅ Adjuntar archivo si existe
+    if (this.archivoSeleccionado) {
+      formData.append('archivo', this.archivoSeleccionado, this.archivoSeleccionado.name);
+    }
+    /*const actividadActualizada = {
       curso: this.curso_temporal?.trim() || null,
       titulo: this.titulo_temporal?.trim() || null,
       descripcion: this.descripcion_temporal?.trim() || null,
@@ -707,7 +762,7 @@ export class Actividades implements OnInit, OnDestroy {
       fecha_entrega: this.fecha_temporal_final
         ? new Date(this.fecha_temporal_final).toISOString()
         : null,
-    };
+    };*/
 
     if (!this.id_actual) {
       this.error = '❌ No se encontró el ID de la actividad';
@@ -720,8 +775,10 @@ export class Actividades implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.http
-        .put(`http://localhost:4000/api/actividades/${this.id_actual}`, actividadActualizada, {
-          headers: this.getAuthHeaders(),
+        .put(`http://localhost:4000/api/actividades/${this.id_actual}`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         })
         .subscribe({
           next: () => {
@@ -953,5 +1010,34 @@ export class Actividades implements OnInit, OnDestroy {
           },
         })
     );
+  }
+
+  // Detectar archivo
+  onArchivoSeleccionado(event: any): void {
+    if (event.target.files && event.target.files.length > 0) {
+      this.archivoSeleccionado = event.target.files[0];
+      this.archivoNombre = this.archivoSeleccionado?.name || '';
+    } else {
+      this.archivoSeleccionado = null;
+      this.archivoNombre = '';
+    }
+  }
+
+  cargarCursos(): void {
+    const token = this.authService.getToken(); // tu método para obtener token
+    if (!this.idSeccion) {
+      this.cursosDisponibles = [];
+      return;
+    }
+
+    this.cursoService.getCursosPorSeccion(this.idSeccion!, token!).subscribe({
+      next: (data) => {
+        this.cursosDisponibles = data;
+      },
+      error: (err) => {
+        console.error('Error al cargar cursos:', err);
+        this.error = 'No se pudieron cargar los cursos';
+      }
+    });
   }
 }
