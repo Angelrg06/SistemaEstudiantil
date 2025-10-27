@@ -43,7 +43,7 @@ export class Admin implements OnInit {
     private authService: AuthService,
     private router: Router,
     private adminService: AdminService
-  ) {}
+  ) { }
 
   ngOnInit() {
     // Validar usuario admin
@@ -83,10 +83,26 @@ export class Admin implements OnInit {
   // TOGGLE MENÚ MÓVIL
   toggleMobileMenu() {
     this.showMobileMenu = !this.showMobileMenu;
+    // Bloquear scroll del body mientras esté abierto
+    document.body.style.overflow = this.showMobileMenu ? 'hidden' : 'auto';
   }
 
   // TOGGLE DROPDOWN USUARIO
   toggleUserMenu() {
     this.showUserMenu = !this.showUserMenu;
+    // Bloquear scroll del body mientras el menú esté abierto
+    document.body.style.overflow = this.showUserMenu ? 'hidden' : 'auto';
   }
+
+  // Cerrar menú de usuario
+  closeUserMenu() {
+    this.showUserMenu = false;
+    document.body.style.overflow = 'auto';
+ }
+
+ closeMobileMenu() {
+  this.showMobileMenu = false;
+  document.body.style.overflow = 'auto';
+}
+
 }
