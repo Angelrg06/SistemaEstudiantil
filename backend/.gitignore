@@ -27,3 +27,7 @@ build/
 # Prisma
 prisma/migrations/
 backend/prisma/schema.prisma
+
+/src/generated/prisma
+
+/src/generated/prisma
