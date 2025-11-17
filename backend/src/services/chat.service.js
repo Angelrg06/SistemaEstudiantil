@@ -113,6 +113,7 @@ export const getChatsByDocente = async (id_docente) => {
   }
 };
 
+
 /**
  * 🟢 Obtener todos los alumnos del docente (con y sin chat) - CORREGIDO
  */
@@ -175,6 +176,8 @@ export const getAlumnosByDocente = async (id_docente, id_seccion = null) => {
         }
       });
     });
+
+    
 
     const usuariosEstudiantes = await prisma.usuario.findMany({
       where: {
@@ -404,7 +407,7 @@ export const getMensajesByChatPaginado = async (id_chat, pagina = 1, limite = 50
 /**
  * 🟢 Enviar un mensaje nuevo
  */
-export const enviarMensaje = async ({ contenido, id_chat, id_remitente }) => {
+export const enviarMensaje = async ({ contenido, id_chat, id_remitente, archivo = null }) => {
   try {
     // 🟢 MEJORA: Validar que el chat existe
     const chat = await prisma.chat.findUnique({
@@ -420,13 +423,17 @@ export const enviarMensaje = async ({ contenido, id_chat, id_remitente }) => {
       data: { 
         contenido: contenido.trim(), 
         id_chat: Number(id_chat), 
-        id_remitente: Number(id_remitente)
+        id_remitente: Number(id_remitente),
+        archivo: archivo?.url || null,        // 🆕 Guardar URL del archivo
+        archivo_ruta: archivo?.ruta || null   // 🆕 Guardar ruta del archivo
       },
       select: {
         id_mensaje: true,
         contenido: true,
         fecha: true,
         id_remitente: true,
+        archivo: true,                        // 🆕 Incluir archivo en respuesta
+        archivo_ruta: true,                   // 🆕 Incluir ruta en respuesta
         remitente: {
           select: { 
             id_usuario: true, 
@@ -806,3 +813,4 @@ export const getEstadisticasChat = async (id_docente) => {
     throw new Error(`No se pudieron obtener las estadísticas: ${error.message}`);
   }
 };
+

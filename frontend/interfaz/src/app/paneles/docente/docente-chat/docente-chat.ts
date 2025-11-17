@@ -54,6 +54,14 @@ interface Mensaje {
     correo: string;
     rol: string;
   };
+   // 🆕 AGREGAR SOPORTE PARA ARCHIVOS
+  archivo?: {
+    url: string;
+    ruta: string;
+    nombre: string;
+    tipo: string;
+    tamano?: number;
+  } | null;
 }
 
 interface Seccion {
@@ -66,6 +74,18 @@ interface Seccion {
   };
 }
 
+// 🆕 AGREGAR estas interfaces
+interface ConnectionState {
+  status: 'connected' | 'connecting' | 'disconnected' | 'error';
+  lastError?: string;
+  reconnectAttempts: number;
+}
+
+interface UploadProgress {
+  chatId: number;
+  progress: number;
+}
+
 interface PaginacionMensajes {
   paginaActual: number;
   porPagina: number;
@@ -74,48 +94,111 @@ interface PaginacionMensajes {
   tieneMas: boolean;
 }
 
+interface MensajeSocket {
+  id_mensaje: number;
+  contenido: string;
+  fecha: string;
+  id_chat: number;
+  id_remitente: number;
+  remitente?: {
+    id_usuario: number;
+    correo: string;
+    rol: string;
+  };
+  archivo?: {
+    url: string;
+    ruta: string;
+    nombre: string;
+    tipo: string;
+    tamano?: number; // Hacer opcional
+  } | null;
+}
+
 @Component({
   selector: 'app-docente-chat',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './docente-chat.html',
   styles: [`
-    .animate-message-in {
-      animation: messageIn 0.3s ease-out;
+  .animate-message-in {
+    animation: messageIn 0.3s ease-out;
+  }
+  
+  @keyframes messageIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
-    
-    @keyframes messageIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    
-    .animate-fade-in {
-      animation: fadeIn 0.2s ease-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    .word-wrap-break {
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
-  `]
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .word-wrap-break {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* 🆕 ESTILOS SIMPLES PARA INDICADOR DE CONEXIÓN */
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 1px solid;
+  }
+  
+  .status-disconnected {
+    background-color: #fefce8;
+    color: #854d0e;
+    border-color: #fef08a;
+  }
+  
+  .status-connecting {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #dbeafe;
+  }
+  
+  .status-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+  }
+
+  /* 🆕 ESTILOS PARA BARRA DE PROGRESO */
+  .progress-bar {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 8px;
+  }
+  
+  .progress-fill {
+    height: 8px;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+  }
+`]
 })
 export class DocenteChat implements OnInit, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
@@ -149,6 +232,10 @@ export class DocenteChat implements OnInit, OnDestroy {
   alumnosFiltrados: Alumno[] = [];
   pestanaActiva: 'misAlumnos' | 'alumnosChat' = 'misAlumnos';
   private searchSubject = new Subject<string>();
+  connectionState: ConnectionState = { status: 'disconnected', reconnectAttempts: 0 };
+  uploadProgreso: number = 0;
+  private connectionCheckTimer: any;
+  private mensajesCache = new Map<number, Mensaje[]>();
 
   // Control responsive
   isMobile: boolean = false;
@@ -167,18 +254,41 @@ export class DocenteChat implements OnInit, OnDestroy {
     private cdRef: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
-    this.obtenerUsuarioActual();
-    this.checkScreenSize();
-    this.setupSearchDebounce();
-    this.setupGlobalListeners();
-  }
+ngOnInit(): void {
+  this.obtenerUsuarioActual();
+  this.checkScreenSize();
+  this.setupSearchDebounce();
+  this.setupGlobalListeners();
+  this.setupWebSocketListeners();
+  this.startConnectionMonitoring(); // 🆕 AGREGAR esta línea
+  this.inicializarWebSocket();
+  
+  // 🆕 AGREGAR esta suscripción para upload progress
+  this.subscriptions.add(
+    this.chatService.uploadProgress$.subscribe(progress => {
+      if (progress && progress.chatId === this.chatSeleccionado?.id_chat) {
+        this.uploadProgreso = progress.progress;
+      } else if (!progress) {
+        this.uploadProgreso = 0;
+      }
+    })
+  );
+}
 
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-    this.searchSubject.complete();
-    this.removeGlobalListeners();
+ngOnDestroy(): void {
+  if (this.connectionCheckTimer) {
+    clearInterval(this.connectionCheckTimer);
   }
+  
+  if (this.chatSeleccionado) {
+    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+    this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat); // 🆕 AGREGAR esta línea
+  }
+  
+  this.subscriptions.unsubscribe();
+  this.searchSubject.complete();
+  this.removeGlobalListeners();
+}
 
   ngOnChanges(): void {
     if (this.seccionesDesdePadre && this.seccionesDesdePadre.length > 0) {
@@ -209,7 +319,205 @@ export class DocenteChat implements OnInit, OnDestroy {
         this.filtrarAlumnos();
       })
     );
+  } 
+// 🆕 En el ngOnInit, agregar después de setupSearchDebounce():
+// 🟢 CORREGIR: Configuración completa del WebSocket
+private setupWebSocketListeners(): void {
+  console.log('🔧 Configurando listeners WebSocket para docente...');
+
+  // Estado de conexión
+  this.subscriptions.add(
+    this.chatService.connectionState$.subscribe({
+      next: (state: ConnectionState) => {
+        console.log('📡 Estado conexión docente:', state.status);
+        this.connectionState = state;
+        this.cdRef.detectChanges();
+        
+        // Reconectar automáticamente si es necesario
+        if (state.status === 'disconnected' && this.chatSeleccionado) {
+          setTimeout(() => {
+            if (this.chatSeleccionado && !this.chatService.isWebSocketConnected()) {
+              console.log('🔄 Reconectando WebSocket para docente...');
+              this.chatService.reconectarWebSocket();
+            }
+          }, 3000);
+        }
+      },
+      error: (error) => console.error('❌ Error en connectionState:', error)
+    })
+  );
+
+  // En setupWebSocketListeners() - VERIFICAR ESTA PARTE
+this.subscriptions.add(
+  this.chatService.mensajes$.subscribe({
+    next: (mensajesSocket: Mensaje[]) => {
+      console.log('📥 Mensajes recibidos del WebSocket:', mensajesSocket.length);
+      
+      if (this.chatSeleccionado && mensajesSocket.length > 0) {
+        const mensajesFiltrados = mensajesSocket.filter(m => 
+          m.id_chat === this.chatSeleccionado!.id_chat
+        );
+        
+        if (mensajesFiltrados.length > 0) {
+          console.log('💬 Mensajes filtrados para chat actual:', mensajesFiltrados.length);
+          this.procesarMensajesTiempoReal(mensajesFiltrados);
+        }
+      }
+    },
+    error: (error) => console.error('❌ Error en mensajes$:', error)
+  })
+);
+
+  // Notificaciones
+  this.subscriptions.add(
+    this.chatService.notificaciones$.subscribe({
+      next: (notificacion) => {
+        if (notificacion) {
+          console.log('🔔 Notificación recibida:', notificacion);
+          this.mostrarNotificacion(notificacion);
+        }
+      }
+    })
+  );
+
+  // Progreso de upload
+  this.subscriptions.add(
+    this.chatService.uploadProgress$.subscribe({
+      next: (progress) => {
+        if (progress && progress.chatId === this.chatSeleccionado?.id_chat) {
+          this.uploadProgreso = progress.progress;
+          console.log(`📤 Progreso upload: ${progress.progress}%`);
+        } else if (!progress) {
+          this.uploadProgreso = 0;
+        }
+        this.cdRef.detectChanges();
+      }
+    })
+  );
+
+  // Escuchar indicador "escribiendo..."
+  this.subscriptions.add(
+    this.chatService.onUsuarioEscribiendo().subscribe({
+      next: (data) => {
+        console.log('✍️ Usuario escribiendo:', data);
+        this.manejarIndicadorEscritura(data);
+      }
+    })
+  );
+}
+
+// En el método que prueba el WebSocket
+private probarConexionWebSocket(): void {
+  console.log('🔍 Estado WebSocket:', {
+    conectado: this.isWebSocketConnected(),
+    estado: this.connectionState.status,
+    chatActual: this.chatSeleccionado?.id_chat,
+    usuario: this.currentUser?.id_usuario
+  });
+  
+  // Probar envío de mensaje de prueba si está conectado
+  if (this.isWebSocketConnected() && this.chatSeleccionado) {
+    console.log('🧪 Probando WebSocket...');
+    try {
+      this.chatService.enviarMensajeTiempoReal({
+        contenido: 'Mensaje de prueba WebSocket',
+        id_chat: this.chatSeleccionado.id_chat,
+        id_remitente: this.currentUser!.id_usuario
+      });
+      console.log('✅ Mensaje de prueba enviado');
+    } catch (error) {
+      console.error('❌ Error en mensaje de prueba:', error);
+    }
   }
+}
+
+// 🆕 MEJORAR: Procesamiento más estricto de mensajes en tiempo real
+// 🟢 CORREGIR: Mejorar el procesamiento de mensajes en tiempo real
+private procesarMensajesTiempoReal(mensajesSocket: Mensaje[]): void {
+  const idsExistentes = new Set(this.mensajes.map(m => m.id_mensaje));
+  
+  // 🟢 CORRECCIÓN: Solo filtrar por ID, no por remitente
+  const nuevosMensajes = mensajesSocket.filter(m => 
+    !idsExistentes.has(m.id_mensaje)
+  );
+  
+  if (nuevosMensajes.length > 0) {
+    console.log('🆕 Agregando', nuevosMensajes.length, 'mensajes en tiempo real');
+    
+    // Ordenar por fecha
+    nuevosMensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    
+    this.mensajes = [...this.mensajes, ...nuevosMensajes];
+    
+    // Actualizar último mensaje en la lista de alumnos
+    if (nuevosMensajes.length > 0) {
+      this.actualizarUltimoMensajeEnLista(nuevosMensajes[nuevosMensajes.length - 1]);
+    }
+    
+    // Scroll automático solo si el usuario está abajo
+    const element = this.messagesContainer?.nativeElement;
+    if (element && this.autoScrollEnabled) {
+      setTimeout(() => {
+        element.scrollTop = element.scrollHeight;
+      }, 100);
+    }
+    
+    this.cdRef.detectChanges();
+  }
+}
+
+
+
+// 🆕 Manejar indicador de escritura
+private manejarIndicadorEscritura(data: { userId: number; isTyping: boolean }): void {
+  // Implementar lógica para mostrar "usuario escribiendo..."
+  // Por ejemplo, mostrar un indicador en la UI
+  if (data.userId !== this.currentUser?.id_usuario) {
+    console.log(`✍️ ${data.isTyping ? 'El alumno está escribiendo...' : 'El alumno dejó de escribir'}`);
+  }
+}
+
+// 🆕 Mostrar notificación
+private mostrarNotificacion(notificacion: any): void {
+  // Puedes implementar toast notifications aquí
+  if (notificacion.chatId !== this.chatSeleccionado?.id_chat) {
+    console.log('🔔 Tienes un nuevo mensaje de:', notificacion.sender?.nombre);
+    // Mostrar alerta o notificación push
+  }
+}
+
+// 🆕 En configurarWebSocketParaChat(), cambiar MensajeSocket por Mensaje
+private configurarWebSocketParaChat(id_chat: number): void {
+  console.log('💬 Configurando WebSocket para chat:', id_chat);
+
+  // Salir del chat anterior si existe
+  if (this.chatSeleccionado && this.chatSeleccionado.id_chat !== id_chat) {
+    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+  }
+
+  // Unirse al nuevo chat
+  this.chatService.unirseAlChat(id_chat);
+  
+  // 🟢 CORRECCIÓN: No limpiar mensajes aquí, solo unirse al chat
+  console.log('✅ WebSocket configurado para chat:', id_chat);
+}
+
+// 🆕 En actualizarMensajesEnTiempoReal(), cambiar MensajeSocket por Mensaje
+private actualizarMensajesEnTiempoReal(mensajesSocket: Mensaje[]): void { // ✅ Cambiar aquí
+  const idsExistentes = new Set(this.mensajes.map(m => m.id_mensaje));
+  const nuevosMensajes = mensajesSocket.filter(m => !idsExistentes.has(m.id_mensaje));
+  
+  if (nuevosMensajes.length > 0) {
+    console.log('🆕 Agregando', nuevosMensajes.length, 'mensajes en tiempo real');
+    this.mensajes = [...this.mensajes, ...nuevosMensajes];
+    
+    if (this.autoScrollEnabled) {
+      setTimeout(() => this.scrollToBottom(), 100);
+    }
+    
+    this.cdRef.detectChanges();
+  }
+}
 
   private setupGlobalListeners(): void {
     window.addEventListener('storage', this.handleStorageChange.bind(this));
@@ -224,6 +532,88 @@ export class DocenteChat implements OnInit, OnDestroy {
       this.handleLogout();
     }
   }
+
+  // 🆕 En la clase componente, agregar este método:
+tieneArchivo(msg: Mensaje): boolean {
+  return !!(msg.archivo && msg.archivo.url && msg.archivo.nombre);
+}
+
+// 🆕 Obtener URL del archivo
+obtenerUrlArchivo(msg: Mensaje): string | null {
+  return msg.archivo?.url || null;
+}
+
+// 🆕 AGREGAR estos métodos para manejar archivos de forma segura
+obtenerTamanoArchivoSeguro(msg: Mensaje): number {
+  return msg.archivo?.tamano || 0;
+}
+
+tieneTamanoArchivo(msg: Mensaje): boolean {
+  return !!(msg.archivo && typeof msg.archivo.tamano === 'number');
+}
+
+// 🆕 Obtener nombre del archivo
+obtenerNombreArchivo(msg: Mensaje): string {
+  return msg.archivo?.nombre || 'Archivo adjunto';
+}
+
+// 🆕 NUEVO: Obtener icono según tipo de archivo
+obtenerIconoArchivo(msg: Mensaje): string {
+  const nombre = this.obtenerNombreArchivo(msg).toLowerCase();
+  
+  if (nombre.match(/\.(pdf)$/)) return 'fas fa-file-pdf';
+  if (nombre.match(/\.(doc|docx)$/)) return 'fas fa-file-word';
+  if (nombre.match(/\.(xls|xlsx)$/)) return 'fas fa-file-excel';
+  if (nombre.match(/\.(ppt|pptx)$/)) return 'fas fa-file-powerpoint';
+  if (nombre.match(/\.(zip|rar|7z)$/)) return 'fas fa-file-archive';
+  if (nombre.match(/\.(jpg|jpeg|png|gif|bmp|svg)$/)) return 'fas fa-file-image';
+  if (nombre.match(/\.(txt)$/)) return 'fas fa-file-alt';
+  
+  return 'fas fa-file';
+}
+archivoSeleccionado: File | null = null;
+
+// 🆕 MÉTODO: Manejar selección de archivo
+onFileSelected(event: any): void {
+  const file = event.target.files[0];
+  if (file) {
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      this.mostrarError('El archivo es demasiado grande. Máximo 10MB permitido.');
+      return;
+    }
+    
+    // Validar tipo de archivo
+    const tiposPermitidos = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'application/zip',
+      'application/x-rar-compressed'
+    ];
+    
+    if (!tiposPermitidos.includes(file.type)) {
+      this.mostrarError('Tipo de archivo no permitido.');
+      return;
+    }
+    
+    this.archivoSeleccionado = file;
+    console.log('📎 Archivo seleccionado:', file.name, file.size, file.type);
+  }
+}
+
+// 🆕 MÉTODO: Remover archivo seleccionado
+removerArchivo(): void {
+  this.archivoSeleccionado = null;
+}
 
   private handleLogout(): void {
     this.chatSeleccionado = null;
@@ -696,6 +1086,7 @@ export class DocenteChat implements OnInit, OnDestroy {
       this.cargandoMensajes = true;
       this.mensajes = [];
       this.paginacionMensajes = null;
+      this.configurarWebSocketParaChat(id_chat);
     } else {
       this.cargandoMasMensajes = true;
     }
@@ -790,6 +1181,8 @@ export class DocenteChat implements OnInit, OnDestroy {
     );
   }
 
+  
+
   private procesarMensajesBackend(mensajesData: any[]): Mensaje[] {
     if (!Array.isArray(mensajesData)) {
       console.error('❌ mensajesData no es array:', mensajesData);
@@ -835,96 +1228,331 @@ export class DocenteChat implements OnInit, OnDestroy {
     this.cargarMensajes(this.chatSeleccionado.id_chat, siguientePagina, true);
   }
 
-  enviarMensaje(): void {
-    if (!this.validarMensajeAntesDeEnviar()) {
-      return;
-    }
-
-    this.enviandoMensaje = true;
-    const contenido = this.nuevoMensaje.trim();
-
-    console.log('📤 Enviando mensaje:', contenido);
-
-    const mensajeOptimista: Mensaje = {
-      id_mensaje: Date.now(),
-      contenido,
-      fecha: new Date().toISOString(),
-      id_chat: this.chatSeleccionado!.id_chat,
-      id_remitente: this.currentUser!.id_usuario,
-      remitente: {
-        id_usuario: this.currentUser!.id_usuario,
-        correo: this.currentUser!.correo,
-        rol: this.currentUser!.rol
-      }
-    };
-
-    this.mensajes.push(mensajeOptimista);
-    this.nuevoMensaje = '';
-    this.autoScrollEnabled = true;
+  // 🆕 CONECTAR WEBSOCKET AL INICIAR CHAT
+private conectarWebSocket(): void {
+  const currentUser = this.authService.getCurrentUser();
+  if (currentUser) {
+    this.chatService.unirseAlChat(this.chatSeleccionado!.id_chat);
     
-    setTimeout(() => this.scrollToBottom(), 50);
+  }
+}
 
-    this.subscriptions.add(
-      this.chatService.enviarMensaje({
+async enviarMensaje(): Promise<void> {
+  // 🔴 PROTECCIÓN CONTRA DOBLE ENVÍO SIMPLE
+  if (this.enviandoMensaje) {
+    console.warn('🚫 Envío en progreso - Evitando doble envío');
+    return;
+  }
+
+  if (!this.validarMensajeAntesDeEnviar()) {
+    return;
+  }
+
+  this.enviandoMensaje = true;
+  const contenido = this.nuevoMensaje.trim();
+
+  console.log('📤 Enviando mensaje:', { 
+    contenido, 
+    tieneArchivo: !!this.archivoSeleccionado,
+    chatId: this.chatSeleccionado?.id_chat 
+  });
+
+  try {
+    if (this.archivoSeleccionado) {
+      await this.enviarMensajeConArchivo(contenido);
+    } else {
+      await this.enviarMensajeNormal(contenido);
+    }
+  } catch (error) {
+    console.error('❌ Error al enviar mensaje:', error);
+    this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
+  } finally {
+    // 🔴 RESETEO GARANTIZADO
+    this.enviandoMensaje = false;
+  }
+}
+
+
+
+// 🆕 MÉTODO CORREGIDO: Enviar mensaje con archivo
+private async enviarMensajeConArchivo(contenido: string): Promise<void> {
+  const mensajeOptimista: Mensaje = {
+    id_mensaje: Date.now(),
+    contenido: contenido || '📎 Archivo compartido',
+    fecha: new Date().toISOString(),
+    id_chat: this.chatSeleccionado!.id_chat,
+    id_remitente: this.currentUser!.id_usuario,
+    remitente: {
+      id_usuario: this.currentUser!.id_usuario,
+      correo: this.currentUser!.correo,
+      rol: this.currentUser!.rol
+    },
+    archivo: {
+      url: '',
+      ruta: '',
+      nombre: this.archivoSeleccionado!.name,
+      tipo: this.archivoSeleccionado!.type,
+      tamano: this.archivoSeleccionado!.size
+    }
+  };
+
+  this.agregarMensajeOptimista(mensajeOptimista);
+
+  return new Promise((resolve, reject) => {
+    this.chatService.enviarMensajeConArchivo({
+      contenido: contenido || '📎 Archivo compartido',
+      id_chat: this.chatSeleccionado!.id_chat,
+      id_remitente: this.currentUser!.id_usuario
+    }, this.archivoSeleccionado!).subscribe({
+      next: (response: any) => {
+        console.log('✅ Mensaje con archivo enviado:', response);
+        this.procesarRespuestaMensaje(response, mensajeOptimista);
+        this.archivoSeleccionado = null;
+        this.uploadProgreso = 0;
+        resolve();
+      },
+      error: (error: any) => {
+        console.error('❌ Error enviando mensaje con archivo:', error);
+        this.manejarErrorEnvioMensaje(mensajeOptimista, error);
+        this.uploadProgreso = 0;
+        reject(error);
+      }
+    });
+  });
+}
+
+// 🟢 AGREGAR: Métodos para el indicador de conexión
+getConnectionClass(): string {
+  switch (this.connectionState.status) {
+    case 'connected': return 'text-green-500';
+    case 'connecting': return 'text-yellow-500';
+    case 'disconnected': return 'text-red-500';
+    default: return 'text-gray-500';
+  }
+}
+
+getConnectionText(): string {
+  switch (this.connectionState.status) {
+    case 'connected': return 'Conectado';
+    case 'connecting': return 'Conectando...';
+    case 'disconnected': return 'Desconectado';
+    default: return 'Sin conexión';
+  }
+}
+
+// 🟢 AGREGAR ESTE MÉTODO - FALTANTE
+isWebSocketConnected(): boolean {
+  return this.chatService.isWebSocketConnected();
+}
+
+private startConnectionMonitoring(): void {
+  this.connectionCheckTimer = setInterval(() => {
+    this.verificarEstadoConexion();
+  }, 10000); // Verificar cada 10 segundos
+}
+// 🟢 NUEVO: Verificar y mostrar estado de conexión
+verificarEstadoConexion(): void {
+  const estado = this.chatService.getConnectionState();
+  this.connectionState = estado;
+  
+  console.log('📡 Estado de conexión WebSocket:', {
+    estado: estado.status,
+    conectado: this.chatService.isWebSocketConnected(),
+    chatActual: this.chatSeleccionado?.id_chat
+  });
+  
+  this.cdRef.detectChanges();
+}
+
+private mostrarAlertaConexion(): void {
+  console.warn('⚠️ Conexión WebSocket perdida, usando modo offline');
+  // Opcional: mostrar banner al usuario
+}
+
+private agregarMensajeOptimista(mensaje: Mensaje): void {
+  this.mensajes.push(mensaje);
+  this.nuevoMensaje = '';
+  this.archivoSeleccionado = null; // Limpiar archivo después de agregar el optimista
+  this.autoScrollEnabled = true;
+  setTimeout(() => this.scrollToBottom(), 50);
+  this.cdRef.detectChanges();
+}
+
+// ✅ MANTENER SOLO ESTA IMPLEMENTACIÓN (líneas ~1755-1793):
+private async enviarMensajeNormal(contenido: string): Promise<void> {
+  const mensajeOptimista: Mensaje = {
+    id_mensaje: Date.now(),
+    contenido,
+    fecha: new Date().toISOString(),
+    id_chat: this.chatSeleccionado!.id_chat,
+    id_remitente: this.currentUser!.id_usuario,
+    remitente: {
+      id_usuario: this.currentUser!.id_usuario,
+      correo: this.currentUser!.correo,
+      rol: this.currentUser!.rol
+    }
+  };
+
+  this.agregarMensajeOptimista(mensajeOptimista);
+
+  try {
+    // 🟢 INTENTAR WEBSOCKET PRIMERO (TIEMPO REAL)
+    if (this.isWebSocketConnected()) {
+      console.log('📤 Enviando por WebSocket (tiempo real)');
+      
+      // ✅ ESTE MÉTODO SÍ EXISTE en tu ChatService
+      this.chatService.enviarMensajeTiempoReal({
         contenido,
         id_chat: this.chatSeleccionado!.id_chat,
         id_remitente: this.currentUser!.id_usuario
-      }).subscribe({
-        next: (response: any) => {
-          console.log('✅ Respuesta de enviar mensaje:', response);
-          
-          const nuevoMensaje = response.data || response;
-          console.log('✅ Mensaje enviado exitosamente');
-          
-          const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimista.id_mensaje);
-          if (index !== -1) {
-            this.mensajes[index] = nuevoMensaje;
-          }
-          
-          // 🟢 CORRECCIÓN: Solo marcar como activo cuando se envía el primer mensaje
-          this.actualizarUltimoMensajeEnLista(nuevoMensaje);
-          this.enviandoMensaje = false;
-          this.cdRef.detectChanges();
-        },
-        error: (error: any) => {
-          console.error('❌ Error al enviar mensaje:', error);
-          this.mensajes = this.mensajes.filter(m => m.id_mensaje !== mensajeOptimista.id_mensaje);
-          this.enviandoMensaje = false;
-          this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
-          this.cdRef.detectChanges();
-        }
-      })
-    );
+      });
+      
+      // 🟢 Resolver inmediatamente para WebSocket
+      return Promise.resolve();
+      
+    } else {
+      // 🟢 FALLBACK A HTTP
+      console.log('🔄 WebSocket no disponible, usando HTTP');
+      return await this.enviarMensajePorHTTP(contenido, mensajeOptimista);
+    }
+  } catch (error) {
+    console.error('❌ Error en envío tiempo real:', error);
+    // Fallback a HTTP en caso de error
+    return await this.enviarMensajePorHTTP(contenido, mensajeOptimista);
   }
+}
+
+
+// 🆕 AGREGAR métodos para manejo de archivos
+formatearTamanoArchivo(bytes: number = 0): string {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+obtenerIconoArchivoPorTipo(tipo: string): string {
+  if (tipo.match(/pdf/)) return 'fas fa-file-pdf';
+  if (tipo.match(/word/)) return 'fas fa-file-word';
+  if (tipo.match(/excel|spreadsheet/)) return 'fas fa-file-excel';
+  if (tipo.match(/powerpoint|presentation/)) return 'fas fa-file-powerpoint';
+  if (tipo.match(/image/)) return 'fas fa-file-image';
+  if (tipo.match(/zip|rar|compressed/)) return 'fas fa-file-archive';
+  if (tipo.match(/text/)) return 'fas fa-file-alt';
+  if (tipo.match(/audio/)) return 'fas fa-file-audio';
+  if (tipo.match(/video/)) return 'fas fa-file-video';
+  return 'fas fa-file';
+}
+
+obtenerTipoArchivo(msg: Mensaje): string {
+  if (!msg.archivo?.tipo) return 'Archivo';
+  const tipo = msg.archivo.tipo.split('/')[1]?.toUpperCase() || 'Archivo';
+  return tipo;
+}
+
+// 🟢 AGREGAR: Inicialización mejorada del WebSocket
+private inicializarWebSocket(): void {
+  console.log('🔄 Inicializando WebSocket para docente...');
+  
+  // Forzar reconexión si es necesario
+  setTimeout(() => {
+    if (!this.isWebSocketConnected()) {
+      console.log('🔌 WebSocket desconectado, reconectando...');
+      this.chatService.reconectarWebSocket();
+    }
+  }, 1000);
+}
+
+// 🆕 NUEVO MÉTODO: Enviar mensaje por HTTP exclusivamente
+// 🟢 MEJORAR: Envío HTTP como fallback
+private async enviarMensajePorHTTP(contenido: string, mensajeOptimista: Mensaje): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      const resultado = this.chatService.enviarMensaje({
+        contenido,
+        id_chat: this.chatSeleccionado!.id_chat,
+        id_remitente: this.currentUser!.id_usuario
+      }, false); // 🔴 Usar HTTP explícitamente
+
+      if (resultado && 'subscribe' in resultado) {
+        resultado.subscribe({
+          next: (response: any) => {
+            console.log('✅ Mensaje enviado por HTTP (fallback):', response);
+            this.procesarRespuestaMensaje(response, mensajeOptimista);
+            resolve();
+          },
+          error: (error: any) => {
+            this.manejarErrorEnvioMensaje(mensajeOptimista, error);
+            reject(error);
+          }
+        });
+      } else {
+        console.log('✅ Mensaje enviado');
+        this.enviandoMensaje = false;
+        resolve();
+      }
+    } catch (error) {
+      this.manejarErrorEnvioMensaje(mensajeOptimista, error);
+      this.enviandoMensaje = false;
+      reject(error);
+    }
+  });
+}
+
+// 🆕 NUEVO MÉTODO: Procesar respuesta del mensaje
+private procesarRespuestaMensaje(response: any, mensajeOptimista: Mensaje): void {
+  const nuevoMensaje = response.data || response;
+  console.log('✅ Mensaje confirmado por servidor:', nuevoMensaje);
+  
+  // Reemplazar mensaje optimista con el real del servidor
+  const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimista.id_mensaje);
+  if (index !== -1) {
+    this.mensajes[index] = nuevoMensaje;
+  }
+  
+  this.actualizarUltimoMensajeEnLista(nuevoMensaje);
+  this.enviandoMensaje = false;
+  this.cdRef.detectChanges();
+}
+
+// 🆕 NUEVO MÉTODO: Manejar error en envío
+private manejarErrorEnvioMensaje(mensajeOptimista: Mensaje, error: any): void {
+  // Remover mensaje optimista
+  this.mensajes = this.mensajes.filter(m => m.id_mensaje !== mensajeOptimista.id_mensaje);
+  this.enviandoMensaje = false;
+  this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
+  this.cdRef.detectChanges();
+}
 
   private validarMensajeAntesDeEnviar(): boolean {
-    if (!this.nuevoMensaje?.trim()) {
-      this.mostrarError('El mensaje no puede estar vacío');
-      return false;
-    }
-
-    if (!this.chatSeleccionado) {
-      this.mostrarError('No hay chat seleccionado');
-      return false;
-    }
-
-    if (this.enviandoMensaje) {
-      console.warn('⚠️ Ya se está enviando un mensaje');
-      return false;
-    }
-
-    if (!this.currentUser) {
-      this.mostrarError('Usuario no identificado');
-      return false;
-    }
-
-    if (this.nuevoMensaje.trim().length > 1000) {
-      this.mostrarError('El mensaje es demasiado largo (máximo 1000 caracteres)');
-      return false;
-    }
-
-    return true;
+  if (!this.nuevoMensaje?.trim() && !this.archivoSeleccionado) {
+    this.mostrarError('El mensaje no puede estar vacío o debe incluir un archivo');
+    return false;
   }
+
+  if (!this.chatSeleccionado) {
+    this.mostrarError('No hay chat seleccionado');
+    return false;
+  }
+
+  if (this.enviandoMensaje) {
+    console.warn('⚠️ Ya se está enviando un mensaje');
+    return false;
+  }
+
+  if (!this.currentUser) {
+    this.mostrarError('Usuario no identificado');
+    return false;
+  }
+
+  if (this.nuevoMensaje && this.nuevoMensaje.trim().length > 1000) {
+    this.mostrarError('El mensaje es demasiado largo (máximo 1000 caracteres)');
+    return false;
+  }
+
+  return true;
+}
 
   manejarEnter(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -1051,14 +1679,30 @@ export class DocenteChat implements OnInit, OnDestroy {
     this.filtrarAlumnos();
   }
 
-  volverALista(): void {
-    console.log('🔙 Volviendo a la lista de alumnos');
-    this.chatSeleccionado = null;
-    this.mensajes = [];
-    this.nuevoMensaje = '';
-    this.autoScrollEnabled = true;
-    this.paginacionMensajes = null;
+// 🆕 MEJORAR: Limpieza completa al volver a la lista
+volverALista(): void {
+  console.log('🔙 Volviendo a la lista de alumnos');
+  
+  // 🆕 MEJORA: Limpieza completa
+  if (this.chatSeleccionado) {
+    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+    this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat);
   }
+  
+  this.chatSeleccionado = null;
+  this.mensajes = [];
+  this.nuevoMensaje = '';
+  this.archivoSeleccionado = null;
+  this.uploadProgreso = 0;
+  this.autoScrollEnabled = true;
+  this.paginacionMensajes = null;
+  this.enviandoMensaje = false; // 🔴 IMPORTANTE: Resetear estado de envío
+  
+  // 🆕 Limpiar mensajes del servicio
+  this.chatService.limpiarMensajes();
+  
+  this.cdRef.detectChanges();
+}
 
   limpiarFiltroSecciones(): void {
     this.seccionSeleccionada = null;
@@ -1078,4 +1722,8 @@ export class DocenteChat implements OnInit, OnDestroy {
   trackBySeccionId(index: number, seccion: Seccion): number {
     return seccion.id_seccion;
   }
+  
+
+  
 }
+

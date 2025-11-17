@@ -27,6 +27,7 @@
         </div>
       </div>
     </header>
+    
 
     <!-- 🟢 Filtros y controles -->
     <div class="sidebar-controls space-y-2 sm:space-y-3 lg:space-y-4 p-2 sm:p-3 lg:p-4 bg-white border-b border-gray-100">
@@ -375,45 +376,58 @@
         [class.inset-0]="isMobile && chatSeleccionado"
         [class.z-50]="isMobile && chatSeleccionado">
     
-    <!-- Header del chat -->
-    <header class="chat-header bg-white border-b border-gray-200 px-4 sm:px-6 py-3 shadow-sm">
-      <div class="flex items-center justify-between">
-        
-        <!-- Información del usuario -->
-        <div class="flex items-center gap-3 flex-1 min-w-0">
-          <!-- Botón volver (mobile) -->
-          <button *ngIf="isMobile" 
-                  (click)="volverALista()"
-                  class="w-8 h-8 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 mr-2 flex-shrink-0">
-            <i class="fas fa-arrow-left text-sm"></i>
-          </button>
+    <!-- Header del chat - CORREGIR -->
+<header class="chat-header bg-white border-b border-gray-200 px-4 sm:px-6 py-3 shadow-sm">
+  <div class="flex items-center justify-between">
+    
+    <!-- Información del usuario -->
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <!-- Botón volver (mobile) -->
+      <button *ngIf="isMobile" 
+              (click)="volverALista()"
+              class="w-8 h-8 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 mr-2 flex-shrink-0">
+        <i class="fas fa-arrow-left text-sm"></i>
+      </button>
 
-          <!-- Avatar -->
-          <div class="user-avatar w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
-            {{ obtenerInicialesChat(chatSeleccionado) }}
-          </div>
+      <!-- Avatar -->
+      <div class="user-avatar w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
+        {{ obtenerInicialesChat(chatSeleccionado) }}
+      </div>
+      
+      <!-- Información -->
+      <div class="user-info flex-1 min-w-0">
+        <h2 class="text-base font-semibold text-gray-900 truncate">
+          {{ chatSeleccionado.usuario.nombre }} {{ chatSeleccionado.usuario.apellido }}
+        </h2>
+        
+        <div class="user-meta flex items-center gap-2 text-sm text-gray-600">
+          <span class="flex items-center gap-1">
+            <i class="fas fa-book text-gray-400 text-xs"></i>
+            <span>{{ chatSeleccionado.curso || 'Curso no asignado' }}</span>
+          </span>
           
-          <!-- Información -->
-          <div class="user-info flex-1 min-w-0">
-            <h2 class="text-base font-semibold text-gray-900 truncate">
-              {{ chatSeleccionado.usuario.nombre }} {{ chatSeleccionado.usuario.apellido }}
-            </h2>
-            
-            <div class="user-meta flex items-center gap-2 text-sm text-gray-600">
-              <span class="flex items-center gap-1">
-                <i class="fas fa-book text-gray-400 text-xs"></i>
-                <span>{{ chatSeleccionado.curso || 'Curso no asignado' }}</span>
-              </span>
-              
-              <span *ngIf="chatSeleccionado.seccion" class="flex items-center gap-1">
-                <i class="fas fa-users text-gray-400 text-xs"></i>
-                <span>{{ chatSeleccionado.seccion }}</span>
-              </span>
-            </div>
-          </div>
+          <span *ngIf="chatSeleccionado.seccion" class="flex items-center gap-1">
+            <i class="fas fa-users text-gray-400 text-xs"></i>
+            <span>{{ chatSeleccionado.seccion }}</span>
+          </span>
         </div>
       </div>
-    </header>
+
+      <!-- 🟢 INDICADOR DE CONEXIÓN - MOVER AQUÍ -->
+      <div class="flex items-center gap-2 ml-auto">
+        <div class="connection-status flex items-center gap-1 text-xs"
+             [class]="getConnectionClass()">
+          <i class="fas fa-circle text-[8px]"></i>
+          <span class="hidden sm:inline">
+            {{ getConnectionText() }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+    
 
     <!-- 🟢 Área de mensajes -->
     <div class="messages-container flex-1 overflow-hidden flex flex-col">
@@ -454,13 +468,41 @@
                [class.justify-end]="esMensajePropio(msg)">
             
             <!-- Mensaje recibido (alumno) -->
-            <div *ngIf="!esMensajePropio(msg)" 
-                 class="message received flex max-w-[85%]">
+            <div *ngIf="!esMensajePropio(msg)" class="message received flex max-w-[85%]">
               <div class="flex flex-col gap-1 items-start w-full">
                 <div class="message-bubble px-4 py-2.5 rounded-xl bg-white border border-gray-200 rounded-tl-sm shadow-xs">
                   <p class="message-text text-sm leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
                     {{ msg.contenido }}
                   </p>
+                  
+                  <!-- 🆕 ARCHIVO ADJUNTO -->
+<div *ngIf="tieneArchivo(msg)" class="file-message mt-2 p-3 rounded-lg border bg-gray-50 border-gray-200">
+  <div class="flex items-center gap-3">
+    <i [class]="obtenerIconoArchivoPorTipo(msg.archivo?.tipo || '') + ' text-gray-500 text-lg'"></i>
+    
+    <div class="file-details flex-1 min-w-0">
+      <div class="file-name text-sm font-medium text-gray-800 truncate">
+        {{ obtenerNombreArchivo(msg) }}
+      </div>
+      <div class="file-info flex items-center gap-2 text-xs mt-1">
+        <span class="text-gray-600">{{ obtenerTipoArchivo(msg) }}</span>
+        <span class="text-gray-400">•</span>
+        <span class="text-gray-600" *ngIf="msg.archivo?.tamano">
+            {{ formatearTamanoArchivo(obtenerTamanoArchivoSeguro(msg)) }}
+        </span>
+      </div>
+    </div>
+    
+    <a *ngIf="obtenerUrlArchivo(msg)" 
+       [href]="obtenerUrlArchivo(msg)" 
+       target="_blank" 
+       class="download-btn p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors"
+       title="Descargar archivo"
+       (click)="$event.stopPropagation()">
+      <i class="fas fa-download text-sm"></i>
+    </a>
+  </div>
+</div>
                 </div>
                 <div class="message-time text-xs text-gray-500 px-1">
                   {{ formatearFecha(msg.fecha) }}
@@ -469,13 +511,41 @@
             </div>
 
             <!-- Mensaje enviado (docente) -->
-            <div *ngIf="esMensajePropio(msg)" 
-                 class="message sent flex max-w-[85%]">
+            <div *ngIf="esMensajePropio(msg)" class="message sent flex max-w-[85%]">
               <div class="flex flex-col gap-1 items-end w-full">
                 <div class="message-bubble px-4 py-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-sm shadow-xs">
                   <p class="message-text text-sm leading-relaxed break-words whitespace-pre-wrap">
                     {{ msg.contenido }}
                   </p>
+                  
+                  <!-- 🆕 ARCHIVO ADJUNTO -->
+<div *ngIf="tieneArchivo(msg)" class="file-message mt-2 p-3 rounded-lg border bg-blue-50 border-blue-200">
+  <div class="flex items-center gap-3">
+    <i [class]="obtenerIconoArchivoPorTipo(msg.archivo?.tipo || '') + ' text-blue-500 text-lg'"></i>
+    
+    <div class="file-details flex-1 min-w-0">
+      <div class="file-name text-sm font-medium text-blue-800 truncate">
+        {{ obtenerNombreArchivo(msg) }}
+      </div>
+      <div class="file-info flex items-center gap-2 text-xs mt-1">
+        <span class="text-blue-600">{{ obtenerTipoArchivo(msg) }}</span>
+        <span class="text-blue-400">•</span>
+        <span class="text-blue-600" *ngIf="msg.archivo?.tamano">
+          {{ formatearTamanoArchivo(obtenerTamanoArchivoSeguro(msg)) }}
+        </span>
+      </div>
+    </div>
+    
+    <a *ngIf="obtenerUrlArchivo(msg)" 
+       [href]="obtenerUrlArchivo(msg)" 
+       target="_blank" 
+       class="download-btn p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+       title="Descargar archivo"
+       (click)="$event.stopPropagation()">
+      <i class="fas fa-download text-sm"></i>
+    </a>
+  </div>
+</div>
                 </div>
                 <div class="message-time text-xs text-gray-500 px-1 flex items-center gap-1">
                   <i class="fas fa-check-double text-blue-500 text-xs"></i>
@@ -504,11 +574,20 @@
     <footer class="message-input-area bg-white border-t border-gray-200 px-4 py-3">
       <div class="input-container flex items-end gap-3">
         
-        <!-- Botón de adjuntar archivo -->
-        <button class="attach-btn w-10 h-10 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-gray-200 hover:border-gray-400 flex-shrink-0"
-                title="Adjuntar archivo">
-          <i class="fas fa-paperclip text-sm"></i>
-        </button>
+        <!-- 🆕 BOTÓN DE ADJUNTAR ARCHIVO MEJORADO -->
+        <div class="relative">
+          <input type="file" 
+                 #fileInput
+                 (change)="onFileSelected($event)"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                 class="hidden">
+          <button (click)="fileInput.click()"
+                  class="attach-btn w-10 h-10 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-gray-200 hover:border-gray-400 flex-shrink-0"
+                  title="Adjuntar archivo"
+                  [disabled]="enviandoMensaje">
+            <i class="fas fa-paperclip text-sm"></i>
+          </button>
+        </div>
         
         <!-- Área de texto -->
         <div class="input-wrapper flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 transition-all duration-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-100">
@@ -520,7 +599,34 @@
             rows="1"
             maxlength="1000"
             class="message-input w-full border-none bg-transparent resize-none outline-none text-sm leading-relaxed max-h-24 font-inherit placeholder-gray-400"></textarea>
+          
+          <!-- 🆕 INDICADOR DE ARCHIVO SELECCIONADO -->
+          <div *ngIf="archivoSeleccionado" class="mt-2 p-2 bg-green-50 rounded border border-green-200">
+            <div class="flex items-center gap-2 text-xs">
+              <i class="fas fa-paperclip text-green-500"></i>
+              <span class="text-green-700 font-medium truncate flex-1">
+                {{ archivoSeleccionado.name }}
+              </span>
+              <button (click)="removerArchivo()" 
+                      class="text-green-500 hover:text-green-700"
+                      title="Remover archivo">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
         </div>
+
+        <!-- 🆕 INDICADOR DE PROGRESO DE UPLOAD -->
+<div *ngIf="uploadProgreso > 0 && uploadProgreso < 100" 
+     class="upload-progress fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+  <div class="flex items-center gap-3">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Subiendo archivo: {{ uploadProgreso }}%</span>
+  </div>
+  <div class="progress-bar mt-2 bg-blue-200 rounded-full h-2">
+    <div class="progress-fill bg-white" [style.width]="uploadProgreso + '%'"></div>
+  </div>
+</div>
         
         <!-- Botón de enviar -->
         <button
@@ -529,8 +635,7 @@
           class="send-btn w-10 h-10 bg-blue-600 border-none rounded-lg text-white cursor-pointer flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:bg-blue-700 hover:shadow-sm active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
           [class.animate-pulse]="enviandoMensaje"
           title="Enviar mensaje">
-          <i *ngIf="!enviandoMensaje" class="fas fa-paper-plane text-xs"></i>
-          <i *ngIf="enviandoMensaje" class="fas fa-spinner fa-spin text-xs"></i>
+          <i class="fas fa-paper-plane text-xs"></i>
         </button>
       </div>
       

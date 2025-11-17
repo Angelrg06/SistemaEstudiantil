@@ -1,0 +1,505 @@
+<div class="chat-container flex h-screen bg-gray-50 relative overflow-hidden">
+  
+  <!-- Panel izquierdo - Lista de docentes y compañeros -->
+  <aside class="chat-sidebar w-full sm:w-96 sm:min-w-80 border-r border-gray-200 bg-white flex flex-col h-full transition-all duration-300 ease-in-out"
+         [class.hidden]="chatSeleccionado && isMobile"
+         [class.flex]="!chatSeleccionado || !isMobile"
+         [class.absolute]="isMobile && !chatSeleccionado"
+         [class.inset-0]="isMobile && !chatSeleccionado"
+         [class.z-40]="isMobile && !chatSeleccionado">
+    
+    <!-- Header del panel -->
+    <header class="sidebar-header bg-gradient-to-r from-green-600 to-green-700 px-4 py-4 border-b border-green-500/30 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="header-icon w-10 h-10 bg-white/20 rounded-lg backdrop-blur-sm flex items-center justify-center shadow-inner">
+          <i class="fas fa-comments text-white text-base"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-lg font-bold text-white truncate">Mis Conversaciones</h1>
+          <p class="text-green-100/90 text-sm mt-1 truncate">
+            {{ vistaActiva === 'docentes' ? docentes.length + ' docentes' : companeros.length + ' compañeros' }}
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- 🆕 Selector de cursos -->
+    <div class="sidebar-controls space-y-3 p-3 bg-white border-b border-gray-100">
+      
+      <!-- Selector de cursos -->
+      <div class="course-filter">
+        <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+          <i class="fas fa-book text-green-500 mr-1 text-xs"></i>
+          Seleccionar curso
+        </label>
+        
+        <div class="relative">
+          <button (click)="mostrarSelectorCursos = !mostrarSelectorCursos"
+                  class="w-full flex items-center justify-between p-3 bg-gray-50/80 border border-gray-300 rounded-lg transition-all duration-200 cursor-pointer hover:bg-white hover:border-green-400 hover:shadow-sm group"
+                  [class.border-green-500]="mostrarSelectorCursos"
+                  [class.ring-2]="mostrarSelectorCursos"
+                  [class.ring-green-100]="mostrarSelectorCursos"
+                  [disabled]="cursos.length === 0">
+            
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="flex-shrink-0 w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-layer-group text-green-600 text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0 text-left">
+                <div class="text-sm font-semibold text-gray-900 truncate">
+                  {{ cursoSeleccionado ? cursoSeleccionado.nombre : 'Selecciona un curso' }}
+                </div>
+                <div class="text-xs text-gray-500 truncate mt-0.5">
+                  {{ cursoSeleccionado ? cursos.length + ' cursos disponibles' : 'Elige un curso para comenzar' }}
+                </div>
+              </div>
+            </div>
+            
+            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-200 ml-2 flex-shrink-0" 
+               [class.rotate-180]="mostrarSelectorCursos"
+               [class.text-green-500]="mostrarSelectorCursos"></i>
+          </button>
+
+          <!-- Dropdown de cursos -->
+          <div *ngIf="mostrarSelectorCursos && cursos.length > 0"
+               class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-50 mt-1 max-h-48 overflow-y-auto animate-fade-in">
+            
+            <div class="p-2 space-y-1">
+              <!-- Lista de cursos -->
+              <div *ngFor="let curso of cursos" 
+                   class="border-t border-gray-100 first:border-t-0">
+                <button (click)="seleccionarCurso(curso)"
+                        class="w-full flex items-center justify-between p-3 rounded-md transition-all duration-200 text-left hover:bg-green-50 group"
+                        [class.bg-green-50]="cursoSeleccionado?.id_curso === curso.id_curso"
+                        [class.border]="cursoSeleccionado?.id_curso === curso.id_curso"
+                        [class.border-green-200]="cursoSeleccionado?.id_curso === curso.id_curso">
+                  
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-0.5">
+                      <span class="font-semibold text-gray-900 text-sm truncate">{{ curso.nombre }}</span>
+                    </div>
+                    <div *ngIf="curso.docente" class="text-xs text-gray-600 truncate">Prof: {{ curso.docente }}</div>
+                  </div>
+                  
+                  <i *ngIf="cursoSeleccionado?.id_curso === curso.id_curso" 
+                     class="fas fa-check text-green-500 text-sm ml-3 flex-shrink-0"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado sin cursos -->
+        <div *ngIf="cursos.length === 0 && !cargandoDocentes" 
+             class="flex items-center gap-2 text-gray-500 text-sm mt-2 p-2 bg-gray-50 rounded-lg">
+          <i class="fas fa-info-circle text-green-400 text-xs"></i>
+          <span>No tienes cursos asignados</span>
+        </div>
+      </div>
+
+      <!-- 🆕 Pestañas de navegación -->
+      <div *ngIf="cursoSeleccionado" class="view-tabs flex border border-gray-200 rounded-lg bg-gray-50 p-1">
+        <button (click)="cambiarVista('docentes')"
+                [class.text-green-600]="vistaActiva === 'docentes'"
+                [class.bg-white]="vistaActiva === 'docentes'"
+                [class.shadow-sm]="vistaActiva === 'docentes'"
+                class="flex-1 flex items-center justify-center gap-2 py-2 px-3 border-none bg-transparent text-gray-500 font-medium text-sm cursor-pointer transition-all duration-200 hover:text-gray-700 rounded-md"
+                [disabled]="!cursoSeleccionado">
+          
+          <div class="flex items-center gap-2">
+            <i class="fas fa-chalkboard-teacher text-xs"></i>
+            <span class="whitespace-nowrap text-xs">Docentes</span>
+          </div>
+        </button>
+        
+        <button (click)="cambiarVista('companeros')"
+                [class.text-green-600]="vistaActiva === 'companeros'"
+                [class.bg-white]="vistaActiva === 'companeros'"
+                [class.shadow-sm]="vistaActiva === 'companeros'"
+                class="flex-1 flex items-center justify-center gap-2 py-2 px-3 border-none bg-transparent text-gray-500 font-medium text-sm cursor-pointer transition-all duration-200 hover:text-gray-700 rounded-md"
+                [disabled]="!cursoSeleccionado">
+          
+          <div class="flex items-center gap-2">
+            <i class="fas fa-users text-xs"></i>
+            <span class="whitespace-nowrap text-xs">Compañeros</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🆕 Contenido de la lista (Docentes o Compañeros) -->
+    <div class="sidebar-content flex-1 overflow-hidden flex flex-col">
+      
+      <!-- Estados de carga -->
+      <div *ngIf="cargandoDocentes" 
+           class="state-container flex flex-col items-center justify-center py-12 px-6 text-center flex-1">
+        <div class="loading-spinner flex gap-1.5 items-center justify-center mb-3">
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+        </div>
+        <p class="text-gray-600 text-sm">Cargando {{ vistaActiva === 'docentes' ? 'docentes' : 'compañeros' }}...</p>
+      </div>
+
+      <!-- 🆕 Lista de DOCENTES -->
+      <div *ngIf="!cargandoDocentes && vistaActiva === 'docentes' && cursoSeleccionado" class="h-full">
+        
+        <div *ngIf="docentes.length === 0" 
+             class="state-container flex flex-col items-center justify-center py-12 px-6 text-center h-full">
+          <div class="state-icon w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+            <i class="fas fa-chalkboard-teacher text-gray-400 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Sin docentes</h3>
+          <p class="text-gray-600 text-sm leading-relaxed max-w-xs">
+            No hay docentes asignados para el curso {{ cursoSeleccionado.nombre }}.
+          </p>
+        </div>
+
+        <div *ngIf="docentes.length > 0" class="docentes-list flex-1 overflow-y-auto p-4 space-y-3">
+          <div *ngFor="let docente of docentes; trackBy: trackByDocenteId"
+               (click)="seleccionarDocente(docente)"
+               class="docente-card group cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-0.5 active:scale-95"
+               [class.active]="chatSeleccionado?.usuario?.id_usuario === docente.id_usuario">
+            
+            <div class="bg-white rounded-xl border border-gray-300 shadow-sm hover:shadow-md hover:border-gray-400 transition-all duration-300 overflow-hidden"
+                 [class.border-green-500]="chatSeleccionado?.usuario?.id_usuario === docente.id_usuario"
+                 [class.ring-1]="chatSeleccionado?.usuario?.id_usuario === docente.id_usuario"
+                 [class.ring-green-100]="chatSeleccionado?.usuario?.id_usuario === docente.id_usuario"
+                 [class.bg-green-50/30]="chatSeleccionado?.usuario?.id_usuario === docente.id_usuario">
+              
+              <div class="p-4">
+                <div class="flex items-start gap-3">
+                  <!-- Avatar -->
+                  <div class="docente-avatar relative flex-shrink-0">
+                    <div class="avatar w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                      {{ obtenerIniciales(docente) }}
+                    </div>
+                    <div *ngIf="docente.tieneChat" 
+                         class="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-2 border-white rounded-full bg-green-500 shadow-sm"></div>
+                  </div>
+
+                  <!-- Información -->
+                  <div class="docente-info flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <h3 class="text-sm font-semibold text-gray-900 truncate leading-tight">
+                        {{ docente.nombre }} {{ docente.apellido }}
+                      </h3>
+                      <i class="fas fa-chevron-right text-gray-300 text-xs mt-0.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-gray-500 flex-shrink-0"></i>
+                    </div>
+                    
+                    <p class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+                      <i class="fas fa-book text-gray-400 text-xs"></i>
+                      <span class="truncate">{{ docente.seccion || 'Sin sección asignada' }}</span>
+                    </p>
+
+                    <!-- Estado del chat -->
+                    <div class="status-container">
+                      <span *ngIf="docente.tieneChat" 
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        <i class="fas fa-comment text-xs"></i>
+                        <span>Chat Activo</span>
+                      </span>
+                      <span *ngIf="!docente.tieneChat" 
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                        <i class="fas fa-comment-medical text-xs"></i>
+                        <span>Iniciar Chat</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🆕 Lista de COMPAÑEROS -->
+      <div *ngIf="!cargandoDocentes && vistaActiva === 'companeros' && cursoSeleccionado" class="h-full">
+        
+        <div *ngIf="companeros.length === 0" 
+             class="state-container flex flex-col items-center justify-center py-12 px-6 text-center h-full">
+          <div class="state-icon w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+            <i class="fas fa-users text-gray-400 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Sin compañeros</h3>
+          <p class="text-gray-600 text-sm leading-relaxed max-w-xs">
+            No hay compañeros en el curso {{ cursoSeleccionado.nombre }}.
+          </p>
+        </div>
+
+        <div *ngIf="companeros.length > 0" class="companeros-list flex-1 overflow-y-auto p-4 space-y-3">
+          <div *ngFor="let companero of companeros; trackBy: trackByCompaneroId"
+               (click)="seleccionarCompanero(companero)"
+               class="companero-card group cursor-pointer transition-all duration-300 hover:transform hover:-translate-y-0.5 active:scale-95">
+            
+            <div class="bg-white rounded-xl border border-gray-300 shadow-sm hover:shadow-md hover:border-gray-400 transition-all duration-300 overflow-hidden">
+              
+              <div class="p-4">
+                <div class="flex items-start gap-3">
+                  <!-- Avatar -->
+                  <div class="companero-avatar relative flex-shrink-0">
+                    <div class="avatar w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                      {{ obtenerInicialesCompanero(companero) }}
+                    </div>
+                    <div *ngIf="companero.tieneChat" 
+                         class="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-2 border-white rounded-full bg-blue-500 shadow-sm"></div>
+                  </div>
+
+                  <!-- Información -->
+                  <div class="companero-info flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <h3 class="text-sm font-semibold text-gray-900 truncate leading-tight">
+                        {{ companero.nombre }} {{ companero.apellido }}
+                      </h3>
+                      <i class="fas fa-chevron-right text-gray-300 text-xs mt-0.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-gray-500 flex-shrink-0"></i>
+                    </div>
+                    
+                    <p class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+                      <i class="fas fa-user-graduate text-gray-400 text-xs"></i>
+                      <span class="truncate">Compañero de clase</span>
+                    </p>
+
+                    <!-- Estado del chat -->
+                    <div class="status-container">
+                      <span *ngIf="companero.tieneChat" 
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                        <i class="fas fa-comment text-xs"></i>
+                        <span>Chat Activo</span>
+                      </span>
+                      <span *ngIf="!companero.tieneChat" 
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                        <i class="fas fa-comment-medical text-xs"></i>
+                        <span>Iniciar Chat</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado sin curso seleccionado -->
+      <div *ngIf="!cursoSeleccionado && !cargandoDocentes" 
+           class="state-container flex flex-col items-center justify-center py-12 px-6 text-center flex-1">
+        <div class="state-icon w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+          <i class="fas fa-book-open text-gray-400 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Selecciona un curso</h3>
+        <p class="text-gray-600 text-sm leading-relaxed max-w-xs">
+          Elige un curso de la lista para ver los docentes y compañeros disponibles.
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Panel principal - Área de chat -->
+  <main class="chat-main flex-1 flex flex-col bg-white h-full transition-all duration-300 ease-in-out" 
+        *ngIf="chatSeleccionado; else noChatSelected"
+        [class.absolute]="isMobile && chatSeleccionado"
+        [class.inset-0]="isMobile && chatSeleccionado"
+        [class.z-50]="isMobile && chatSeleccionado">
+    
+    <!-- Header del chat -->
+    <header class="chat-header bg-white border-b border-gray-200 px-6 py-3 shadow-sm">
+      <div class="flex items-center justify-between">
+        
+        <!-- Información del usuario -->
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <!-- Botón volver (mobile) -->
+          <button *ngIf="isMobile" 
+                  (click)="volverALista()"
+                  class="w-8 h-8 border border-gray-300 rounded-lg bg-white text-gray-500 cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 mr-2 flex-shrink-0">
+            <i class="fas fa-arrow-left text-sm"></i>
+          </button>
+
+          <!-- Avatar -->
+          <div class="user-avatar w-10 h-10 rounded-lg bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0">
+            {{ obtenerInicialesChat(chatSeleccionado) }}
+          </div>
+          
+          <!-- Información -->
+          <div class="user-info flex-1 min-w-0">
+            <h2 class="text-base font-semibold text-gray-900 truncate">
+              {{ chatSeleccionado.usuario.nombre }} {{ chatSeleccionado.usuario.apellido }}
+            </h2>
+            
+            <div class="user-meta flex items-center gap-2 text-sm text-gray-600">
+              <span class="flex items-center gap-1">
+                <i class="fas fa-chalkboard-teacher text-gray-400 text-xs"></i>
+                <span>{{ chatSeleccionado.usuario.rol === 'docente' ? 'Docente' : 'Compañero' }}</span>
+              </span>
+              
+              <span *ngIf="chatSeleccionado.seccion" class="flex items-center gap-1">
+                <i class="fas fa-users text-gray-400 text-xs"></i>
+                <span>{{ chatSeleccionado.seccion }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Indicador de conexión -->
+<!-- En el header del chat, después de la información del usuario -->
+<div class="flex items-center gap-2 ml-auto">
+  <div class="connection-status flex items-center gap-1 text-xs"
+       [class]="getConnectionClass()">
+    <i class="fas fa-circle text-[8px]"></i>
+    <span class="hidden sm:inline">
+      {{ getConnectionText() }}
+    </span>
+  </div>
+</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Área de mensajes -->
+    <div class="messages-container flex-1 overflow-hidden flex flex-col">
+      
+      <!-- Estado de carga -->
+      <div *ngIf="cargandoMensajes" 
+           class="loading-state flex flex-col items-center justify-center h-full gap-3 text-gray-500">
+        <div class="loading-spinner flex gap-1.5 items-center justify-center">
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+        </div>
+        <p class="text-sm">Cargando mensajes...</p>
+      </div>
+
+      <!-- Mensajes -->
+      <div #messagesContainer 
+           class="messages-area flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6 space-y-3 min-h-full"
+           (scroll)="onMessagesScroll()"
+           *ngIf="!cargandoMensajes && mensajes.length > 0">
+        
+        <!-- Mensajes -->
+        <div *ngFor="let msg of mensajes; trackBy: trackByMensajeId" 
+             class="message-wrapper flex w-full animate-message-in"
+             [class.justify-end]="esMensajePropio(msg)">
+          
+          <!-- Mensaje recibido -->
+          <div *ngIf="!esMensajePropio(msg)" class="message received flex max-w-[85%]">
+            <div class="flex flex-col gap-1 items-start w-full">
+              <div class="message-bubble px-4 py-2.5 rounded-xl bg-white border border-gray-200 rounded-tl-sm shadow-xs">
+                <p class="message-text text-sm leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
+                  {{ msg.contenido }}
+                </p>
+              </div>
+              <div class="message-time text-xs text-gray-500 px-1">
+                {{ formatearFecha(msg.fecha) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje enviado -->
+          <div *ngIf="esMensajePropio(msg)" class="message sent flex max-w-[85%]">
+            <div class="flex flex-col gap-1 items-end w-full">
+              <div class="message-bubble px-4 py-2.5 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white rounded-tr-sm shadow-xs">
+                <p class="message-text text-sm leading-relaxed break-words whitespace-pre-wrap">
+                  {{ msg.contenido }}
+                </p>
+              </div>
+              <div class="message-time text-xs text-gray-500 px-1 flex items-center gap-1">
+                <i class="fas fa-check-double text-green-500 text-xs"></i>
+                {{ formatearFecha(msg.fecha) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado sin mensajes -->
+      <div *ngIf="!cargandoMensajes && mensajes.length === 0" 
+           class="empty-chat-state flex flex-col items-center justify-center py-12 text-center h-full">
+        <div class="empty-icon w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+          <i class="fas fa-comment-dots text-gray-400 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Inicia la conversación</h3>
+        <p class="text-gray-600 text-sm leading-relaxed max-w-md px-4">
+          Sé el primero en enviar un mensaje y comienza la comunicación con {{ chatSeleccionado.usuario.nombre }}.
+        </p>
+      </div>
+    </div>
+
+    <!-- Input de mensaje -->
+    <footer class="message-input-area bg-white border-t border-gray-200 px-4 py-3">
+      <div class="input-container flex items-end gap-3">
+
+        <!-- 🆕 BOTÓN DE ADJUNTAR ARCHIVO -->
+    <div class="relative">
+      <input type="file" 
+             #fileInput
+             (change)="onFileSelected($event)"
+             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+             class="hidden">
+      <button (click)="fileInput.click()"
+              class="attach-btn w-10 h-10 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-gray-200 hover:border-gray-400 flex-shrink-0"
+              title="Adjuntar archivo"
+              [disabled]="enviandoMensaje">
+        <i class="fas fa-paperclip text-sm"></i>
+      </button>
+    </div>
+
+        <!-- Área de texto -->
+        <div class="input-wrapper flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 transition-all duration-200 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-100">
+          <textarea
+            [(ngModel)]="nuevoMensaje"
+            placeholder="Escribe tu mensaje..."
+            (keydown)="manejarEnter($event)"
+            [disabled]="enviandoMensaje || !chatSeleccionado"
+            rows="1"
+            maxlength="1000"
+            class="message-input w-full border-none bg-transparent resize-none outline-none text-sm leading-relaxed max-h-24 font-inherit placeholder-gray-400"></textarea>
+        <!-- 🆕 INDICADOR DE ARCHIVO SELECCIONADO -->
+      <div *ngIf="archivoSeleccionado" class="mt-2 p-2 bg-green-50 rounded border border-green-200">
+        <div class="flex items-center gap-2 text-xs">
+          <i class="fas fa-paperclip text-green-500"></i>
+          <span class="text-green-700 font-medium truncate flex-1">
+            {{ archivoSeleccionado.name }}
+          </span>
+          <button (click)="removerArchivo()" 
+                  class="text-green-500 hover:text-green-700"
+                  title="Remover archivo">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+          </div>
+        
+        <!-- Botón de enviar -->
+        <button
+          (click)="enviarMensaje()"
+          [disabled]="!nuevoMensaje.trim() || !chatSeleccionado || enviandoMensaje"
+          class="send-btn w-10 h-10 bg-green-600 border-none rounded-lg text-white cursor-pointer flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:bg-green-700 hover:shadow-sm active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+          [class.animate-pulse]="enviandoMensaje"
+          title="Enviar mensaje">
+          <i *ngIf="!enviandoMensaje" class="fas fa-paper-plane text-xs"></i>
+          <i *ngIf="enviandoMensaje" class="fas fa-spinner fa-spin text-xs"></i>
+        </button>
+      </div>
+      
+      <!-- Contador de caracteres -->
+      <div *ngIf="nuevoMensaje" class="text-right mt-2">
+        <span class="text-xs text-gray-500">{{ nuevoMensaje.length }}/1000 caracteres</span>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Estado sin chat seleccionado -->
+  <ng-template #noChatSelected>
+    <div class="no-chat-state flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 h-full"
+         [class.hidden]="isMobile && chatSeleccionado"
+         [class.flex]="!isMobile || !chatSeleccionado">
+      <div class="empty-content text-center max-w-md px-6">
+        <div class="empty-icon w-20 h-20 bg-gradient-to-br from-white to-gray-100 rounded-3xl flex items-center justify-center mb-6 shadow-lg mx-auto">
+          <i class="fas fa-comments text-gray-400 text-3xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-3">Selecciona una conversación</h2>
+        <p class="text-gray-600 text-lg leading-relaxed mb-6">
+          Elige un docente o compañero de la lista para comenzar a comunicarte.
+        </p>
+      </div>
+    </div>
+  </ng-template>
+</div>
