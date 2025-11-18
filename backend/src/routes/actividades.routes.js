@@ -10,7 +10,8 @@ import {
   obtenerActividadesPorEstado,
   obtenerActividadesPorMes,
   getCursosPorSeccion,
-  uploadActividad
+  uploadActividad,
+  actividadesEstudiante
 } from "../controllers/actividad.controller.js";
 
 const router = express.Router();
@@ -19,6 +20,10 @@ const router = express.Router();
 router.get('/:id_seccion/cursos', authMiddleware, getCursosPorSeccion);
 router.get("/seccion/:id", authMiddleware, getActividadesBySeccion);
 router.get("/diagnostico", authMiddleware, diagnosticoActividades); // 🟢 RUTA DE DIAGNÓSTICO
+
+// 👉 NUEVA RUTA PARA ESTUDIANTES
+router.get("/estudiante/mis-actividades", authMiddleware, actividadesEstudiante);
+
 router.post("/", authMiddleware, upload.single('archivo'), crearActividad);
 router.put("/:id", authMiddleware, uploadActividad, actualizarActividad);
 router.delete("/:id", authMiddleware, eliminarActividad);

@@ -13,6 +13,9 @@ import { AuthRoleGuard } from './guards/authRole.guard';
 import { DocenteChat } from './paneles/docente/docente-chat/docente-chat';
 import { EstudianteChat } from './paneles/estudiante/estudiante-chat/estudiante-chat';
 
+// 🆕 IMPORTAR COMPONENTE DE CALENDARIO
+import { Calendario } from './paneles/estudiante/calendario/calendario';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
@@ -62,6 +65,10 @@ export const routes: Routes = [
     component: EstudianteEntregas,
     canActivate: [AuthRoleGuard],
     data: { role: 'estudiante' },
+  },
+  {
+    path: 'calendario',
+    component: Calendario,
   },
 
   // Ruta fallback

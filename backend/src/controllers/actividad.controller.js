@@ -592,3 +592,51 @@ export const getCursosPorSeccion = async (req, res) => {
     res.status(500).json(errorResponse("Error al obtener cursos", error));
   }
 };
+
+export const actividadesEstudiante = async (req, res) => {
+  try {
+    const id_usuario = req.user.id_usuario;
+
+    // Encontrar estudiante por id_usuario
+    const estudiante = await prisma.estudiante.findUnique({
+      where: { id_usuario },
+    });
+
+    if (!estudiante) {
+      return res.status(404).json({ error: "Estudiante no encontrado" });
+    }
+
+    if (!estudiante.id_seccion) {
+      return res.status(400).json({ error: "No tienes una sección asignada" });
+    }
+
+    // Obtener actividades de esa sección
+    const actividades = await prisma.actividad.findMany({
+      where: { id_seccion: estudiante.id_seccion },
+      include: {
+        curso: true,
+        docente: true
+      }
+    });
+
+    // Formato para FullCalendar
+    const eventos = actividades.map(a => ({
+      id: a.id_actividad,
+      title: `${a.titulo} (${a.curso.nombre})`,
+      start: a.fecha_inicio,
+      end: a.fecha_fin,
+      extendedProps: {
+        descripcion: a.descripcion,
+        estado: a.estado,
+        docente: `${a.docente.nombre} ${a.docente.apellido}`,
+        curso: a.curso.nombre
+      }
+    }));
+
+    return res.json(eventos);
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    res.status(500).json({ error: "Error obteniendo actividades" });
+  }
+};
