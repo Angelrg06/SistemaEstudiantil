@@ -123,6 +123,9 @@ export class EstudianteChat implements OnInit, OnDestroy {
   enviandoMensaje: boolean = false;
   errorDocentes: string = '';
 
+  private ultimoMensajeEnviado: string = '';
+  private ultimoEnvioTimestamp: number = 0;
+
   // Usuario actual
   currentUser: any = null;
 
@@ -225,12 +228,22 @@ vistaActiva: 'docentes' | 'companeros' = 'docentes';
     return this.isWebSocketConnected() ? 'Conectado' : 'Conectando...';
   }
 
-  ngOnInit(): void {
-    this.obtenerUsuarioActual();
-    this.checkScreenSize();
+ ngOnInit(): void {
+  console.log('🎯 Inicializando chat de ESTUDIANTE');
+  
+  this.obtenerUsuarioActual();
+  this.checkScreenSize();
+  
+  // 🟢 MEJOR ORDEN DE INICIALIZACIÓN
+  setTimeout(() => {
     this.inicializarWebSocket();
-    this.configurarWebSocketListeners(); // 🆕 AGREGAR esta línea
-  }
+    this.configurarWebSocketListeners();
+
+    
+  }, 1500);
+}
+
+
 
   // 🆕 CONFIGURAR LISTENERS DE WEBSOCKET
   private configurarWebSocketListeners(): void {
@@ -291,35 +304,60 @@ vistaActiva: 'docentes' | 'companeros' = 'docentes';
 }
 
   // 🆕 PROCESAR MENSAJES EN TIEMPO REAL
-// 🟢 CORREGIR: Mejorar el procesamiento de mensajes en tiempo real
-private procesarMensajesTiempoReal(mensajesSocket: Mensaje[]): void {
+// 🟢 CORREGIDO: Procesamiento más estricto de mensajes
+private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
+  if (!mensajesSocket || mensajesSocket.length === 0) return;
+
+  console.log('🔄 Procesando mensajes tiempo real:', mensajesSocket.length);
+  
   const idsExistentes = new Set(this.mensajes.map(m => m.id_mensaje));
-  
-  // 🟢 CORRECCIÓN: Solo filtrar por ID, no por remitente
-  const nuevosMensajes = mensajesSocket.filter(m => 
-    !idsExistentes.has(m.id_mensaje)
-  );
-  
-  if (nuevosMensajes.length > 0) {
-    console.log('🆕 Agregando', nuevosMensajes.length, 'mensajes en tiempo real');
+  let mensajesAgregados = 0;
+  let mensajesDuplicados = 0;
+
+  mensajesSocket.forEach(mensaje => {
+    // 🟢 VERIFICACIÓN MÁS ESTRICTA - Evitar cualquier duplicado
+    const esDuplicado = idsExistentes.has(mensaje.id_mensaje) || 
+                       this.mensajes.some(m => 
+                         m.id_remitente === mensaje.id_remitente && 
+                         m.contenido === mensaje.contenido && 
+                         Math.abs(new Date(m.fecha).getTime() - new Date(mensaje.fecha).getTime()) < 3000
+                       );
+
+    if (!esDuplicado) {
+      this.mensajes.push(mensaje);
+      mensajesAgregados++;
+      console.log('✅ Mensaje agregado:', mensaje.id_mensaje);
+    } else {
+      mensajesDuplicados++;
+      console.log('🚫 Mensaje duplicado ignorado:', mensaje.id_mensaje);
+    }
+  });
+
+  if (mensajesAgregados > 0) {
+    console.log(`🆕 Agregados ${mensajesAgregados} mensajes en tiempo real (${mensajesDuplicados} duplicados ignorados)`);
     
     // Ordenar por fecha
-    nuevosMensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    this.mensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     
-    this.mensajes = [...this.mensajes, ...nuevosMensajes];
-    
-    // Scroll automático
+    // Scroll automático solo si el usuario está abajo
     if (this.autoScrollEnabled) {
       setTimeout(() => this.scrollToBottom(), 100);
     }
     
     this.cdRef.detectChanges();
+  } else if (mensajesDuplicados > 0) {
+    console.log(`⚠️ Todos los mensajes eran duplicados (${mensajesDuplicados} ignorados)`);
   }
 }
 
 // 🟢 MEJORAR: Configuración completa del WebSocket
 private setupWebSocketListeners(): void {
   console.log('🔧 Configurando listeners WebSocket para estudiante...');
+
+  // Limpiar suscripciones anteriores
+  if (this.connectionStateSubscription) {
+    this.connectionStateSubscription.unsubscribe();
+  }
 
   // Escuchar estado de conexión
   this.connectionStateSubscription = this.chatService.connectionState$.subscribe({
@@ -358,34 +396,75 @@ private setupWebSocketListeners(): void {
   // 🟢 CORRECCIÓN: Escuchar mensajes en tiempo real SIN filtrar por remitente
   this.subscriptions.add(
     this.chatService.mensajes$.subscribe({
-      next: (mensajesSocket: Mensaje[]) => {
+      next: (mensajesSocket: any[]) => {
+        console.log('📥 Mensajes recibidos en estudiante:', mensajesSocket.length);
+        
         if (this.chatSeleccionado && mensajesSocket.length > 0) {
+          // Filtrar solo mensajes del chat actual
           const mensajesFiltrados = mensajesSocket.filter(m => 
-            m.id_chat === this.chatSeleccionado!.id_chat
+            m && m.id_chat === this.chatSeleccionado!.id_chat
           );
           
           if (mensajesFiltrados.length > 0) {
-            console.log('📥 Mensajes en tiempo real recibidos para chat:', this.chatSeleccionado.id_chat);
+            console.log('💬 Mensajes filtrados para chat actual:', mensajesFiltrados.length);
             this.procesarMensajesTiempoReal(mensajesFiltrados);
           }
         }
       },
-      error: (error) => console.error('❌ Error en mensajes$:', error)
+      error: (error) => console.error('❌ Error en mensajes$ estudiante:', error)
+})
+  );
+       // Escuchar notificaciones
+  this.subscriptions.add(
+    this.chatService.notificaciones$.subscribe({
+      next: (notificacion) => {
+        if (notificacion && notificacion.type === 'error') {
+          console.error('❌ Error recibido:', notificacion.message);
+          this.mostrarError(notificacion.message);
+        }
+      }
     })
   );
 }
 
+// 🟢 CORREGIDO: Método mejorado para seleccionar chat
+private configurarChatParaEstudiante(id_chat: number): void {
+  console.log('💬 Configurando chat para estudiante, ID:', id_chat);
+
+    this.limpiarMensajesAlCambiarChat();
+
+  // 🟢 IMPORTANTE: Unirse al chat a través del servicio
+  this.chatService.unirseAlChat(id_chat);
+  
+  // 🟢 Cargar mensajes iniciales
+  this.cargarMensajes(id_chat);
+  
+  console.log('✅ Chat configurado para estudiante:', id_chat);
+}
+
   // 🆕 MEJORAR inicialización de WebSocket
   // 🟢 AGREGAR: Inicialización mejorada del WebSocket
+// 🟢 CORREGIDO: Inicialización mejorada del WebSocket
 private inicializarWebSocket(): void {
-  console.log('🔄 Inicializando WebSocket para estudiante...');
+  console.log('🔄 Inicializando WebSocket específico para estudiante...');
   
-  // Forzar reconexión si es necesario
+  // Esperar a que el usuario esté disponible
   setTimeout(() => {
+    if (!this.currentUser) {
+      console.log('⏳ Esperando usuario para conectar WebSocket...');
+      this.inicializarWebSocket();
+      return;
+    }
+
+    // Forzar reconexión si es necesario
     if (!this.isWebSocketConnected()) {
-      console.log('🔌 WebSocket desconectado, reconectando...');
+      console.log('🔌 WebSocket desconectado, reconectando para estudiante...');
       this.chatService.reconectarWebSocket();
     }
+
+    // 🟢 CONFIGURACIÓN ESPECÍFICA PARA ESTUDIANTE
+    this.setupWebSocketListeners();
+    
   }, 1000);
 }
   
@@ -658,9 +737,11 @@ private inicializarChatExistenteCompanero(companero: any): void {
   console.log('💬 Chat con compañero seleccionado:', this.chatSeleccionado);
   
   this.cdRef.detectChanges();
-  this.cargarMensajes(companero.chatExistente.id_chat);
-  this.conectarWebSocket();
+  
+  // 🟢 USAR EL MÉTODO CORREGIDO
+  this.configurarChatParaEstudiante(companero.chatExistente.id_chat);
 }
+
 
 private crearNuevoChatCompanero(companero: any): void {
   console.log('🆕 Iniciando chat con compañero:', companero.nombre);
@@ -796,8 +877,9 @@ trackByCompaneroId(index: number, companero: any): number {
     console.log('💬 Chat seleccionado:', this.chatSeleccionado);
     
     this.cdRef.detectChanges();
-    this.cargarMensajes(docente.chatExistente.id_chat);
-    this.conectarWebSocket();
+  
+  // 🟢 USAR EL MÉTODO CORREGIDO
+  this.configurarChatParaEstudiante(docente.chatExistente.id_chat);
   }
 
   private crearNuevoChat(docente: Docente): void {
@@ -941,38 +1023,77 @@ private conectarWebSocket(): void {
     }
   }
 
-  async enviarMensaje(): Promise<void> {
-    if (!this.validarMensajeAntesDeEnviar()) {
-      return;
-    }
-
-    // 🔴 PREVENIR DOBLE ENVÍO
+// 🟢 CORREGIR: Método enviarMensaje para estudiante
+async enviarMensaje(): Promise<void> {
+  // 🔴 PROTECCIÓN MEJORADA CONTRA DOBLE ENVÍO
   if (this.enviandoMensaje) {
-    console.warn('⚠️ Envío en progreso, ignorando solicitud duplicada');
+    console.warn('🚫 Envío en progreso - Evitando doble envío');
     return;
   }
 
-    this.enviandoMensaje = true;
-    const contenido = this.nuevoMensaje.trim();
+  const contenido = this.nuevoMensaje.trim();
+  const tieneContenido = contenido.length > 0;
+  const tieneArchivo = !!this.archivoSeleccionado;
 
-    try {
-      if (this.archivoSeleccionado) {
-        // 🟢 ENVIAR MENSAJE CON ARCHIVO
-        await this.enviarMensajeConArchivo(contenido);
-      } else {
-        // 🟢 ENVIAR MENSAJE NORMAL
-        await this.enviarMensajeNormal(contenido);
-      }
-    } catch (error) {
-      console.error('❌ Error al enviar mensaje:', error);
-      this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
-      this.enviandoMensaje = false; // 🔴 IMPORTANTE: Resetear en caso de error
-    }
+  if (!tieneContenido && !tieneArchivo) {
+    this.mostrarError('El mensaje no puede estar vacío');
+    return;
   }
+
+  if (!this.chatSeleccionado) {
+    this.mostrarError('No hay chat seleccionado');
+    return;
+  }
+
+  if (!this.currentUser) {
+    this.mostrarError('Usuario no identificado');
+    return;
+  }
+
+  // 🟢 EVITAR ENVÍOS DUPLICADOS RÁPIDOS
+  const mensajeIdentificador = `${contenido}_${tieneArchivo}_${Date.now()}`;
+  if (this.ultimoMensajeEnviado === mensajeIdentificador && Date.now() - this.ultimoEnvioTimestamp < 2000) {
+    console.warn('🚫 Mensaje duplicado detectado');
+    return;
+  }
+
+  this.enviandoMensaje = true;
+  this.ultimoMensajeEnviado = mensajeIdentificador;
+  this.ultimoEnvioTimestamp = Date.now();
+
+  console.log('📤 Iniciando envío de mensaje (estudiante):', { 
+    tieneContenido, 
+    tieneArchivo,
+    chatId: this.chatSeleccionado.id_chat 
+  });
+
+  try {
+    if (tieneArchivo) {
+      await this.enviarMensajeConArchivo(contenido);
+    } else {
+      await this.enviarMensajeNormal(contenido);
+    }
+  } catch (error) {
+    console.error('❌ Error al enviar mensaje:', error);
+    this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
+  } finally {
+    // 🔴 RESETEO GARANTIZADO CON TIMEOUT DE SEGURIDAD
+    setTimeout(() => {
+      this.enviandoMensaje = false;
+    }, 500);
+  }
+}
 
   // 🟢 MÉTODO PARA ENVIAR MENSAJE CON ARCHIVO
 // 🟢 CORREGIR: Enviar mensaje con archivo
 private async enviarMensajeConArchivo(contenido: string): Promise<void> {
+  // 🟢 VERIFICAR que el archivo existe ANTES de continuar
+
+  if (!this.archivoSeleccionado) {
+    console.error('❌ No hay archivo seleccionado para enviar');
+    this.mostrarError('No se ha seleccionado ningún archivo');
+    return;
+  }
   // Mensaje optimista para UI inmediata
   const mensajeOptimista: Mensaje = {
     id_mensaje: Date.now(),
@@ -1046,11 +1167,11 @@ private actualizarUltimoMensajeEnLista(nuevoMensaje: any): void {
 }
 
   // 🟢 MÉTODO PARA ENVIAR MENSAJE NORMAL
- // 🟢 CORREGIR: Usar WebSocket para envío pero con mejor control
+// 🟢 CORREGIDO: Enviar mensaje normal SIN procesamiento duplicado
 private async enviarMensajeNormal(contenido: string): Promise<void> {
-  // Mensaje optimista
+  // Mensaje optimista para UI inmediata
   const mensajeOptimista: Mensaje = {
-    id_mensaje: Date.now(),
+    id_mensaje: Date.now(), // ID temporal
     contenido,
     fecha: new Date().toISOString(),
     id_chat: this.chatSeleccionado!.id_chat,
@@ -1062,42 +1183,104 @@ private async enviarMensajeNormal(contenido: string): Promise<void> {
     }
   };
 
-  this.mensajes.push(mensajeOptimista);
-  this.nuevoMensaje = '';
-  this.autoScrollEnabled = true;
-  
-  setTimeout(() => this.scrollToBottom(), 50);
+  // 🟢 AGREGAR mensaje optimista a la UI
+  this.agregarMensajeOptimista(mensajeOptimista);
 
-  // 🟢 USAR WEBSOCKET PARA TIEMPO REAL PERO CON MEJOR CONTROL
-  if (this.isWebSocketConnected()) {
-    console.log('📤 Enviando mensaje por WebSocket (tiempo real)');
-    
-    try {
-      // Enviar por WebSocket
-      this.chatService.enviarMensajeTiempoReal({
-        contenido,
-        id_chat: this.chatSeleccionado!.id_chat,
-        id_remitente: this.currentUser.id_usuario
+  try {
+    // 🟢 USAR SOLO EL SERVICIO PRINCIPAL
+    const resultado = this.chatService.enviarMensaje({
+      contenido,
+      id_chat: this.chatSeleccionado!.id_chat,
+      id_remitente: this.currentUser.id_usuario
+    }, true); // true = usar WebSocket
+
+    if (resultado && 'subscribe' in resultado) {
+      // 🟢 SOLO HTTP: Suscribirse para confirmación
+      await new Promise((resolve, reject) => {
+        resultado.subscribe({
+          next: (response: any) => {
+            console.log('✅ Mensaje confirmado por HTTP:', response);
+            // Reemplazar mensaje optimista con el real
+            this.reemplazarMensajeOptimista(mensajeOptimista, response);
+            resolve(response);
+          },
+          error: (error: any) => {
+            this.manejarErrorEnvioMensaje(mensajeOptimista, error);
+            reject(error);
+          }
+        });
       });
-      
-      // 🟢 NUEVO: Esperar un poco y luego marcar como enviado
-      setTimeout(() => {
-        this.enviandoMensaje = false;
-        console.log('✅ Mensaje enviado por WebSocket');
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ Error en WebSocket, usando HTTP fallback:', error);
-      await this.enviarMensajePorHTTP(contenido, mensajeOptimista);
+    } else {
+      // 🟢 WEBSOCKET: No hacer nada más - el mensaje real llegará por WebSocket
+      console.log('✅ Mensaje enviado por WebSocket, esperando llegada automática...');
+      // NO llamar a procesarRespuestaMensaje - el WebSocket lo hará
     }
-  } else {
-    // Fallback a HTTP
-    console.log('🔄 WebSocket no disponible, usando HTTP');
-    await this.enviarMensajePorHTTP(contenido, mensajeOptimista);
+  } catch (error) {
+    console.error('❌ Error al enviar mensaje:', error);
+    this.manejarErrorEnvioMensaje(mensajeOptimista, error);
+    throw error;
   }
 }
 
+// 🟢 MEJORADO: Agregar mensaje optimista con verificación
+private agregarMensajeOptimista(mensaje: Mensaje): void {
+  // Verificar que no sea duplicado
+  const esDuplicado = this.mensajes.some(m => 
+    m.id_remitente === mensaje.id_remitente && 
+    m.contenido === mensaje.contenido &&
+    Math.abs(new Date(m.fecha).getTime() - new Date(mensaje.fecha).getTime()) < 1000
+  );
 
+  if (!esDuplicado) {
+    this.mensajes.push(mensaje);
+    this.nuevoMensaje = '';
+    this.archivoSeleccionado = null;
+    this.autoScrollEnabled = true;
+    
+    setTimeout(() => this.scrollToBottom(), 50);
+    this.cdRef.detectChanges();
+    
+    console.log('📝 Mensaje optimista agregado:', mensaje.id_mensaje);
+  } else {
+    console.warn('🚫 Mensaje optimista duplicado, ignorando:', mensaje.id_mensaje);
+  }
+}
+
+// 🟢 AGREGAR: Método para agregar mensaje optimista
+// 🟢 AGREGAR: Método para reemplazar mensaje optimista con el real
+private reemplazarMensajeOptimista(mensajeOptimista: Mensaje, mensajeReal: any): void {
+  const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimista.id_mensaje);
+  
+  if (index !== -1) {
+    this.mensajes[index] = {
+      ...mensajeReal,
+      // Mantener algunas propiedades del optimista si es necesario
+      fecha: mensajeReal.fecha || mensajeOptimista.fecha
+    };
+    console.log('🔄 Mensaje optimista reemplazado:', mensajeOptimista.id_mensaje, '→', mensajeReal.id_mensaje);
+    this.cdRef.detectChanges();
+  } else {
+    console.warn('⚠️ Mensaje optimista no encontrado para reemplazar:', mensajeOptimista.id_mensaje);
+  }
+}
+
+// 🟢 AGREGAR: Propiedades para control de envíos rápidos
+private ultimoEnvioTime: number = 0;
+private readonly TIEMPO_ENTRE_ENVIOS = 1000; // 1 segundo
+
+private puedeEnviarMensaje(): boolean {
+  const ahora = Date.now();
+  const tiempoDesdeUltimoEnvio = ahora - this.ultimoEnvioTime;
+  
+  if (tiempoDesdeUltimoEnvio < this.TIEMPO_ENTRE_ENVIOS) {
+    console.warn(`🚫 Espere ${this.TIEMPO_ENTRE_ENVIOS - tiempoDesdeUltimoEnvio}ms antes de enviar otro mensaje`);
+    this.mostrarError(`Espere ${Math.ceil((this.TIEMPO_ENTRE_ENVIOS - tiempoDesdeUltimoEnvio) / 1000)} segundos antes de enviar otro mensaje`);
+    return false;
+  }
+  
+  this.ultimoEnvioTime = ahora;
+  return true;
+}
 
 
   // 🆕 MÉTODO PARA ENVÍO HTTP
@@ -1148,13 +1331,29 @@ private procesarRespuestaMensaje(response: any, mensajeOptimista: Mensaje): void
   this.cdRef.detectChanges();
 }
 
+// 🟢 AGREGAR: Limpiar mensajes al cambiar de chat
+private limpiarMensajesAlCambiarChat(): void {
+  console.log('🧹 Limpiando mensajes al cambiar de chat...');
+  this.mensajes = [];
+  this.chatService.limpiarMensajes();
+  this.cdRef.detectChanges();
+}
+
+// 🟢 AGREGAR: Método para manejar error de envío (FALTANTE)
+// 🟢 MEJORADO: Manejo de errores de envío
 private manejarErrorEnvioMensaje(mensajeOptimista: Mensaje, error: any): void {
-    // Remover mensaje optimista
-    this.mensajes = this.mensajes.filter(m => m.id_mensaje !== mensajeOptimista.id_mensaje);
-    this.enviandoMensaje = false;
-    this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
+  console.error('❌ Error enviando mensaje, removiendo optimista:', mensajeOptimista.id_mensaje);
+  
+  // Remover mensaje optimista
+  const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimista.id_mensaje);
+  if (index !== -1) {
+    this.mensajes.splice(index, 1);
     this.cdRef.detectChanges();
+    console.log('🗑️ Mensaje optimista removido por error');
   }
+  
+  this.mostrarError('Error al enviar mensaje: ' + this.obtenerMensajeError(error));
+}
 
 
   private validarMensajeAntesDeEnviar(): boolean {

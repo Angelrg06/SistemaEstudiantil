@@ -213,7 +213,7 @@ export const enviarMensaje = async (req, res) => {
       );
     }
 
-    if (contenido.trim().length === 0) {
+    if ((!contenido || contenido.trim().length === 0) && !archivo) {
       return res.status(400).json(
         errorResponse(
           "El mensaje no puede estar vacío", 
@@ -222,6 +222,27 @@ export const enviarMensaje = async (req, res) => {
         )
       );
     }
+
+    
+    // 🟢 VERIFICAR DUPLICADOS EN EL BACKEND
+    const mensajeDuplicado = await prisma.mensaje.findFirst({
+      where: {
+        id_chat: Number(id_chat),
+        id_remitente: Number(id_remitente),
+        contenido: contenido?.trim() || '',
+        fecha: {
+          gte: new Date(Date.now() - 5000) // Últimos 5 segundos
+        }
+      }
+    });
+
+    if (mensajeDuplicado) {
+      console.log('⚠️ Mensaje duplicado detectado en backend');
+      return res.status(400).json(
+        errorResponse("Mensaje duplicado detectado")
+      );
+    }
+
 
     // 🟢 SUBIR ARCHIVO SI EXISTE
     let archivoData = null;

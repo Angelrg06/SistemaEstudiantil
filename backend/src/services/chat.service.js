@@ -419,6 +419,26 @@ export const enviarMensaje = async ({ contenido, id_chat, id_remitente, archivo 
       throw new Error(`Chat con ID ${id_chat} no encontrado`);
     }
 
+    // 🟢 PROTECCIÓN ADICIONAL EN EL SERVICIO
+    const ahora = new Date();
+    const hace3Segundos = new Date(ahora.getTime() - 3000);
+
+    const mensajeDuplicado = await prisma.mensaje.findFirst({
+      where: {
+        id_chat: Number(id_chat),
+        id_remitente: Number(id_remitente),
+        contenido: contenido.trim(),
+        fecha: {
+          gte: hace3Segundos
+        }
+      }
+    });
+
+    if (mensajeDuplicado) {
+      console.log('⚠️ Mensaje duplicado detectado en servicio para chat:', id_chat);
+      throw new Error('Mensaje duplicado detectado');
+    }
+    
     return await prisma.mensaje.create({
       data: { 
         contenido: contenido.trim(), 

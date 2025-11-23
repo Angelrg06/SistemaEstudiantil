@@ -554,7 +554,7 @@ export class ChatService {
   }
 
  // 🟢 MODIFICAR enviarMensaje para evitar doble envío
-// 🟢 REVERTIR: Permitir WebSocket pero con control de duplicados
+// 🟢 CORREGIR: Método enviarMensaje para evitar doble envío
 enviarMensaje(mensaje: any, usarWebSocket: boolean = true): Observable<any> | void {
   console.log('📤 Enviando mensaje:', { 
     id_chat: mensaje.id_chat, 
@@ -568,22 +568,22 @@ enviarMensaje(mensaje: any, usarWebSocket: boolean = true): Observable<any> | vo
     return throwError(() => error);
   }
 
-  // 🟢 CORRECCIÓN: Usar WebSocket para tiempo real PERO con control
+  // 🟢 CORRECCIÓN DEFINITIVA: SOLO UN MÉTODO DE ENVÍO
   if (usarWebSocket && this.websocketService.isConnected()) {
-    console.log('📤 Enviando por WebSocket (tiempo real)');
+    console.log('📤 Enviando exclusivamente por WebSocket');
     this.enviarMensajeTiempoReal(mensaje);
     return; // No retorna Observable cuando usa WebSocket
-  }
-
-  // 🟢 Fallback a HTTP tradicional si WebSocket no está disponible
-  console.log('🔄 Usando HTTP como fallback para enviar mensaje');
-  
-  if (mensaje.archivo) {
-    return this.enviarMensajeConArchivo(mensaje, mensaje.archivo);
   } else {
-    return this.http.post(`${this.apiUrl}/enviar`, mensaje).pipe(
-      catchError(this.handleError.bind(this))
-    );
+    // 🟢 SOLO HTTP si WebSocket no está disponible
+    console.log('🔄 Usando HTTP (WebSocket no disponible)');
+    
+    if (mensaje.archivo) {
+      return this.enviarMensajeConArchivo(mensaje, mensaje.archivo);
+    } else {
+      return this.http.post(`${this.apiUrl}/enviar`, mensaje).pipe(
+        catchError(this.handleError.bind(this))
+      );
+    }
   }
 }
 

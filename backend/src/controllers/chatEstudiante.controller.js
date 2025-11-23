@@ -1,6 +1,7 @@
 // src/controllers/chatEstudiante.controller.js - COMPLETADO
 import { PrismaClient } from "@prisma/client";
 import * as chatService from "../services/chat.service.js";
+import { getDocentesByEstudiante, getChatsByEstudiante } from "../services/chatEstudiante.service.js";
 
 const prisma = new PrismaClient();
 

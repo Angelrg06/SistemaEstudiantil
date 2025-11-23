@@ -61,6 +61,11 @@ export class WebsocketService {
     reconnectAttempts: 0
   });
 
+   // 🟢 AGREGAR: Cache de mensajes recientes para detección de duplicados
+  private recentMessagesCache = new Map<number, any[]>();
+  private readonly MAX_RECENT_MESSAGES = 10;
+  private readonly DUPLICATE_TIME_WINDOW = 3000; // 3 segundos
+
   // 🆕 MEJORA: Subjects optimizados
   private messageSubject = new BehaviorSubject<MensajeSocket | null>(null);
   private notificationSubject = new BehaviorSubject<any>(null);
@@ -80,6 +85,53 @@ export class WebsocketService {
   constructor(private authService: AuthService) {
     console.log('🔧 WebsocketService inicializado - Versión Optimizada');
     this.initializeWithSafetyDelay();
+  }
+
+// 🟢 AGREGAR: Métodos para manejar mensajes recientes
+  private getRecentMessages(chatId: number): any[] {
+    return this.recentMessagesCache.get(chatId) || [];
+  }
+
+  private addToRecentMessages(chatId: number, message: any): void {
+    if (!this.recentMessagesCache.has(chatId)) {
+      this.recentMessagesCache.set(chatId, []);
+    }
+    
+    const messages = this.recentMessagesCache.get(chatId)!;
+    messages.unshift(message);
+    
+    // Mantener solo los mensajes más recientes
+    if (messages.length > this.MAX_RECENT_MESSAGES) {
+      messages.pop();
+    }
+    
+    // Limpiar mensajes antiguos automáticamente
+    this.cleanOldMessages(chatId);
+  }
+
+  private cleanOldMessages(chatId: number): void {
+    if (!this.recentMessagesCache.has(chatId)) return;
+    
+    const now = Date.now();
+    const messages = this.recentMessagesCache.get(chatId)!;
+    const filteredMessages = messages.filter(msg => {
+      const messageTime = new Date(msg.fecha).getTime();
+      return (now - messageTime) < this.DUPLICATE_TIME_WINDOW;
+    });
+    
+    this.recentMessagesCache.set(chatId, filteredMessages);
+  }
+
+  private isDuplicateMessage(contenido: string, chatId: number): boolean {
+    const recentMessages = this.getRecentMessages(chatId);
+    const now = Date.now();
+    
+    return recentMessages.some((msg: any) => {
+      const messageTime = new Date(msg.fecha).getTime();
+      const timeDiff = now - messageTime;
+      
+      return msg.contenido === contenido && timeDiff < this.DUPLICATE_TIME_WINDOW;
+    });
   }
 
   // 🆕 MEJORA: Inicialización con delay de seguridad
@@ -179,6 +231,8 @@ export class WebsocketService {
       this.socket.disconnect();
       this.socket = null;
     }
+    // 🟢 LIMPIAR CACHE AL DESCONECTAR
+  this.clearRecentMessages();
   }
 
   // 🆕 MEJORA: Configuración de listeners optimizada
@@ -249,8 +303,19 @@ export class WebsocketService {
         remitente: message.remitente?.id_usuario,
         contenido: message.contenido?.substring(0, 50)
       });
+
+      // 🟢 AGREGAR A MENSAJES RECIENTES cuando recibimos mensajes
+    if (message.contenido) {
+      this.addToRecentMessages(message.id_chat, {
+        contenido: message.contenido,
+        fecha: message.fecha,
+        id_remitente: message.id_remitente
+      });
+    }
       this.messageSubject.next(message);
     });
+
+    
 
     this.socket.on('message_notification', (notification) => {
       console.log('🔔 Notificación recibida para chat:', notification.chatId);
@@ -420,8 +485,56 @@ export class WebsocketService {
       return;
     }
 
+     // 🟢 AGREGAR TIMESTAMP PARA EVITAR DUPLICADOS
+  const mensajeConTimestamp = {
+    ...messageData,
+    _timestamp: Date.now(),
+    _socketId: this.socket?.id
+  };
+
+  console.log('📤 Enviando mensaje por WebSocket:', {
+    id_chat: messageData.id_chat,
+    id_remitente: messageData.id_remitente,
+    timestamp: mensajeConTimestamp._timestamp,
+    socketId: mensajeConTimestamp._socketId
+  });
+
+   // 🟢 AGREGAR A MENSAJES RECIENTES ANTES DE ENVIAR
+    if (messageData.contenido?.trim()) {
+      this.addToRecentMessages(messageData.id_chat, {
+        contenido: messageData.contenido.trim(),
+        fecha: new Date().toISOString(),
+        id_remitente: messageData.id_remitente
+      });
+    }
+
     // 🆕 MEJORA: Usar envío interno que maneja la cola
     this.sendMessageInternal(messageData);
+  }
+
+  // 🟢 AGREGAR: Método para limpiar la cache de mensajes
+  clearRecentMessages(chatId?: number): void {
+    if (chatId) {
+      this.recentMessagesCache.delete(chatId);
+      console.log(`🗑️ Cache de mensajes recientes limpiada para chat: ${chatId}`);
+    } else {
+      this.recentMessagesCache.clear();
+      console.log('🗑️ Cache de mensajes recientes limpiada completamente');
+    }
+  }
+
+  // 🟢 AGREGAR: Método para obtener estadísticas de la cache
+  getCacheStats(): { totalChats: number; totalMessages: number } {
+    let totalMessages = 0;
+    
+    this.recentMessagesCache.forEach((messages, chatId) => {
+      totalMessages += messages.length;
+    });
+    
+    return {
+      totalChats: this.recentMessagesCache.size,
+      totalMessages: totalMessages
+    };
   }
 
   private validateMessageData(messageData: any): boolean {
@@ -443,8 +556,17 @@ export class WebsocketService {
       return false;
     }
 
+    // 🟢 EVITAR MENSAJES DUPLICADOS POR CONTENIDO
+  const contenido = messageData.contenido?.trim() || '';
+  if (contenido && this.isDuplicateMessage(contenido, messageData.id_chat)) {
+    console.error('❌ Mensaje duplicado detectado');
+    this.errorSubject.next('Mensaje duplicado detectado. Espera unos segundos.');
+    return false;
+  }
+
     return true;
   }
+
 
   private sendMessageInternal(messageData: any): void {
     if (!this.socket?.connected) {
