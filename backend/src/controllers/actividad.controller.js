@@ -206,7 +206,6 @@ export const getActividadesBySeccion = async (req, res) => {
       docente: act.docente,
       seccion: act.seccion,
       total_entregas: act._count.entregas,
-      max_intentos: act.max_intentos || 1,
       archivo: act.archivo || null,
       archivo_ruta: act.archivo_ruta || null
     }));
@@ -229,12 +228,8 @@ export const crearActividad = async (req, res) => {
     const id_usuario = req.user.id_usuario;
     const archivo = req.file;
     console.log('Archivo recibido:', archivo);
-
-    console.log('Body:', req.body);       // campos de texto
-    console.log('Archivo:', req.file);    // archivo subido
-
-    console.log('🆕 Creando actividad. Usuario:', id_usuario);
-
+    console.log('Body:', req.body);
+    
     // 🟢 OBTENER el ID del docente del usuario autenticado
     const docente = await prisma.docente.findFirst({
       where: { id_usuario },
@@ -276,7 +271,6 @@ export const crearActividad = async (req, res) => {
       );
     }
 
-
     // Subir archivo a Supabase si existe
     let archivo_url = null;
     let archivo_ruta = null;
@@ -285,15 +279,14 @@ export const crearActividad = async (req, res) => {
       const resultado = await supabaseService.subirArchivo(
         archivo.buffer,
         archivo.originalname,
-        'actividades',           // carpeta en tu bucket
+        'actividades',
         archivo.mimetype
       );
-
       archivo_ruta = resultado.ruta;
       archivo_url = resultado.url;
     }
 
-    // 🟢 CREAR la actividad directamente
+    // 🟢 CREAR la actividad SIN max_intentos (ya que no existe en la BD)
     const nuevaActividad = await prisma.actividad.create({
       data: {
         titulo: req.body.titulo,
@@ -303,22 +296,11 @@ export const crearActividad = async (req, res) => {
         fecha_fin: new Date(req.body.fecha_fin),
         fecha_entrega: new Date(req.body.fecha_entrega),
         estado: 'activo',
-        max_intentos: parseInt(req.body.max_intentos) || 3,
         archivo: archivo_url,
         archivo_ruta: archivo_ruta,
         id_curso: curso.id_curso,
         id_docente: docente.id_docente,
         id_seccion: parseInt(req.body.id_seccion)
-        /*titulo: req.body.titulo,
-        descripcion: req.body.descripcion,
-        tipo: req.body.tipo,
-        fecha_inicio: new Date(req.body.fecha_inicio),
-        fecha_fin: new Date(req.body.fecha_fin),
-        fecha_entrega: new Date(req.body.fecha_entrega),
-        estado: 'activo',
-        id_curso: curso.id_curso,
-        id_docente: docente.id_docente,
-        id_seccion: parseInt(req.body.id_seccion)*/
       },
       include: {
         curso: true,
@@ -328,7 +310,6 @@ export const crearActividad = async (req, res) => {
     });
 
     console.log('✅ Actividad creada:', nuevaActividad.id_actividad);
-
     res.json({ success: true, message: 'Actividad creada correctamente', data: nuevaActividad });
 
   } catch (error) {
@@ -468,9 +449,9 @@ export const actualizarActividad = async (req, res) => {
       datosActualizacion.archivo_ruta = resultado.ruta;
     }
 
-    // 🔹 CONVERSIÓN DE max_intentos A NÚMERO
+    // 🟢 REMOVER max_intentos si existe (porque no está en la BD)
     if (datosActualizacion.max_intentos !== undefined) {
-      datosActualizacion.max_intentos = parseInt(datosActualizacion.max_intentos, 10);
+      delete datosActualizacion.max_intentos;
     }
 
     const actividadActualizada = await prisma.actividad.update({

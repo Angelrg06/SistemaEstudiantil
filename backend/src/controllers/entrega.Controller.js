@@ -63,8 +63,6 @@ export const crearEntrega = async (req, res) => {
             })
         };
 
-        const maxIntentos = actividad.max_intentos ?? 3; // fallback a 3 si es null
-
         //Determinar el siguiente intento para este estudiante y actividad
         const ultimaEntrega = await prisma.entrega.findFirst({
             where: { id_estudiante, id_actividad: Number(id_actividad) },

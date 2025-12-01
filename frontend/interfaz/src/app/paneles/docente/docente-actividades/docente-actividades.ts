@@ -25,7 +25,6 @@ interface Actividad {
   fecha_entrega: string;
   id_docente: number;
   id_seccion: number;
-  max_intentos?: number;  // 🔹 nuevo
   archivo?: string;       // 🔹 nuevo
   archivo_ruta?: string;  // 🔹 nuevo
 }
@@ -84,7 +83,6 @@ export class Actividades implements OnInit, OnDestroy {
   titulo_nuevo: string = '';
   descripcion_nuevo: string = '';
   curso_nuevo: string = '';
-  max_intentos_nuevos: number = 1;
   archivoSeleccionado: File | null = null;
   archivoNombre: string = '';
   archivo_nuevo: File | null = null;       // Archivo que sube el docente        // URL pública (lo recibes del backend)
@@ -567,7 +565,6 @@ onSeccionesActualizadas(secciones: any[]): void {
     formData.append('estado', 'activo');
     formData.append('fecha_entrega', new Date(this.fecha_fini_nuevo).toISOString());
     formData.append('id_seccion', this.idSeccion.toString());
-    formData.append('max_intentos', this.max_intentos_nuevos.toString());
 
     // ✅ Cambiar aquí: usar archivoSeleccionado
     if (this.archivoSeleccionado) {
@@ -715,7 +712,6 @@ onSeccionesActualizadas(secciones: any[]): void {
     this.fecha_temporal_final = this.toDateTimeLocal(actividad.fecha_fin);
 
     // 🔹 NUEVO: cargar intentos y archivo
-    this.intentos_nuevo = actividad.max_intentos || 1;
     this.archivo_ruta_nuevo = actividad.archivo || '';
 
     this.archivoSeleccionado = null; // limpiar archivo local para reemplazo
@@ -782,8 +778,6 @@ onSeccionesActualizadas(secciones: any[]): void {
     formData.append('estado', 'activo');
     formData.append('fecha_entrega', this.fecha_temporal_final ? new Date(this.fecha_temporal_final).toISOString() : '');
 
-    // 🟢 Nuevos campos
-    formData.append('max_intentos', this.intentos_nuevo?.toString() || '1');
     // ✅ Adjuntar archivo si existe
     if (this.archivoSeleccionado) {
       formData.append('archivo', this.archivoSeleccionado, this.archivoSeleccionado.name);
