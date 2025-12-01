@@ -63,6 +63,7 @@ export const obtenerChatsDocente = async (req, res) => {
 // 🟢 Obtener alumnos del docente (con filtro opcional por sección)
 export const obtenerAlumnosDocente = async (req, res) => {
   try {
+    
     console.log('🎯 Obteniendo alumnos para docente ID:', req.params.id);
     const id_docente = Number(req.params.id);
     const id_seccion = req.query.id_seccion ? Number(req.query.id_seccion) : null;

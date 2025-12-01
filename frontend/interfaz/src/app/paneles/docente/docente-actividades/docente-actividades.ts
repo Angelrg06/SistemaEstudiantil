@@ -237,13 +237,57 @@ export class Actividades implements OnInit, OnDestroy {
       });
   }
 
-  // 🟢 NUEVO MÉTODO: Cargar todos los datos iniciales
-  private cargarDatosIniciales(): void {
-    console.log('🔄 Cargando datos iniciales...');
-    this.cargarSeccionInfo();
-    this.cargarActividades();
-    setTimeout(() => this.actualizarContadorNotificaciones(), 1000);
+  // Agrega esta propiedad
+seccionesCompletas: any[] = []; // Para almacenar TODAS las secciones del docente
+
+// Agrega este método para cargar todas las secciones
+private cargarTodasLasSecciones(): void {
+  const docenteId = this.currentUser?.id_docente;
+  
+  if (!docenteId) {
+    console.warn('⚠️ No hay ID de docente para cargar secciones');
+    return;
   }
+
+  console.log('🔄 Cargando TODAS las secciones para docente ID:', docenteId);
+  
+  this.http.get<any>(`http://localhost:4000/api/secciones/docente/${docenteId}`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+  }).subscribe({
+    next: (response) => {
+      console.log('📋 Respuesta de TODAS las secciones:', response);
+      
+      if (response.success && Array.isArray(response.data)) {
+        this.seccionesCompletas = response.data;
+        console.log(`✅ ${this.seccionesCompletas.length} secciones cargadas para el chat`);
+      } else {
+        console.warn('⚠️ Formato de respuesta inesperado:', response);
+        this.seccionesCompletas = [];
+      }
+    },
+    error: (error) => {
+      console.error('❌ Error cargando secciones para chat:', error);
+      this.seccionesCompletas = [];
+    }
+  });
+}
+
+  // Modifica cargarDatosIniciales() para llamar a cargarTodasLasSecciones
+private cargarDatosIniciales(): void {
+  console.log('🔄 Cargando datos iniciales...');
+  this.cargarSeccionInfo();
+  this.cargarActividades();
+  this.cargarTodasLasSecciones(); // 🆕 AGREGAR esta línea
+  setTimeout(() => this.actualizarContadorNotificaciones(), 1000);
+}
+
+// También actualiza el método onSeccionesActualizadas
+onSeccionesActualizadas(secciones: any[]): void {
+  console.log('Secciones actualizadas desde el chat:', secciones);
+  this.seccionesCompletas = secciones; // Actualizar la lista completa
+}
 
   private cargarSeccionInfo(): void {
     const token = this.getToken();
@@ -416,11 +460,6 @@ export class Actividades implements OnInit, OnDestroy {
 
   closeChat(): void {
     this.showChat = false;
-  }
-
-  onSeccionesActualizadas(secciones: any[]): void {
-    console.log('Secciones actualizadas desde el chat:', secciones);
-    // Actualizar información si es necesario
   }
 
   refreshActividades(): void {

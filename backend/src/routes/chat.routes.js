@@ -22,6 +22,9 @@ import {
   diagnosticarArchivos
 } from "../controllers/chat.controller.js"; // ✅ Todos en un solo archivo
 
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { checkRole } from '../middlewares/checkRole.middleware.js';
+
 const router = express.Router();
 
 // 🟢 Health check del servicio
@@ -32,7 +35,11 @@ router.get("/health", healthCheck);
 // ==============================================
 
 // 🟢 Obtener todos los chats del docente
-router.get("/docente/:id/chats", obtenerChatsDocente);
+router.get("/docente/:id/chats", 
+  authMiddleware,
+  checkRole(['docente']),
+  obtenerChatsDocente
+);
 
 // 🟢 Obtener estadísticas de chat del docente
 router.get("/docente/:id/estadisticas", obtenerEstadisticasChat);
@@ -41,14 +48,23 @@ router.get("/docente/:id/estadisticas", obtenerEstadisticasChat);
 router.get("/docente/:id/secciones", obtenerSeccionesDocente);
 
 // 🟢 Obtener todos los alumnos del docente (con y sin chat)
-router.get("/docente/:id/alumnos", obtenerAlumnosDocente);
+router.get("/docente/:id/alumnos", 
+  authMiddleware,
+  checkRole(['docente']),
+  obtenerAlumnosDocente
+);
 
 // ==============================================
 // 🎯 RUTAS PARA ESTUDIANTES
 // ==============================================
 
 // 🟢 Obtener chats del estudiante
-router.get("/estudiante/:id/chats", obtenerChatsEstudiante);
+// Proteger rutas de estudiante:
+router.get("/estudiante/:id/chats", 
+  authMiddleware,
+  checkRole(['estudiante']),
+  obtenerChatsEstudiante
+);
 
 // 🟢 Obtener docentes disponibles para chat
 router.get("/estudiante/:id/docentes", obtenerDocentesParaChat);
@@ -67,10 +83,17 @@ router.get("/estudiante/:id/curso/:id_curso/companeros", obtenerCompanerosCurso)
 router.get("/usuarios/:id_usuario1/:id_usuario2", obtenerChatEntreUsuarios);
 
 // 🟢 Obtener mensajes de un chat (con paginación opcional)
-router.get("/mensajes/:id_chat", obtenerMensajes);
+router.get("/mensajes/:id_chat", 
+  authMiddleware,
+  obtenerMensajes
+);
 
 // 🟢 Enviar mensaje
-router.post("/enviar", uploadMensaje, enviarMensaje);
+router.post("/enviar",
+  authMiddleware,
+  uploadMensaje,
+  enviarMensaje
+);
 
 // 🟢 Crear chat docente-estudiante
 router.post("/crear", crearChat);

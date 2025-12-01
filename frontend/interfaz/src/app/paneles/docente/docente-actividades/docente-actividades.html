@@ -187,7 +187,7 @@
 
     <!-- Componente DocenteChat -->
     <div class="h-[calc(100vh-80px)]">
-      <app-docente-chat [seccionesDesdePadre]="seccionInfo ? [seccionInfo] : []"
+      <app-docente-chat [seccionesDesdePadre]="seccionesCompletas"
         (seccionesActualizadas)="onSeccionesActualizadas($event)" class="h-full w-full">
       </app-docente-chat>
     </div>
