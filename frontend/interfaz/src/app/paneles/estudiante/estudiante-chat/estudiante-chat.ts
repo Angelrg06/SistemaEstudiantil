@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../../services/chat.service';
 import { AuthService } from '../../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 interface Usuario {
   id_usuario: number;
@@ -40,6 +41,8 @@ interface Docente {
   } | null;
 }
 
+// En docente-chat.ts - EXTENDER la interfaz Mensaje de la misma manera
+
 interface Mensaje {
   id_mensaje: number;
   contenido: string;
@@ -56,7 +59,11 @@ interface Mensaje {
     ruta: string;
     nombre: string;
     tipo: string;
-  };
+    tamano?: number;
+  } | null;
+  // 🆕 AGREGAR propiedades para manejo de carga
+  _estado?: 'pendiente' | 'cargando' | 'confirmado' | 'error';
+  _idTemporal?: string;
 }
 
 @Component({
@@ -140,48 +147,83 @@ mostrarSelectorCursos: boolean = false;
 vistaActiva: 'docentes' | 'companeros' = 'docentes';
 
 // 🟢 MÉTODOS PARA MANEJO DE ARCHIVOS
-  onFileSelected(event: any): void {
+// 🟢 MEJORAR: Logging en onFileSelected
+onFileSelected(event: any): void {
+  try {
     const file = event.target.files[0];
-    if (file) {
-      // Validar tamaño (máximo 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        this.mostrarError('El archivo es demasiado grande. Máximo 10MB permitido.');
-        return;
-      }
-      
-      // Validar tipo de archivo
-      const tiposPermitidos = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'text/plain',
-        'application/zip',
-        'application/x-rar-compressed'
-      ];
-      
-      if (!tiposPermitidos.includes(file.type)) {
-        this.mostrarError('Tipo de archivo no permitido.');
-        return;
-      }
-      
-      this.archivoSeleccionado = file;
-      console.log('📎 Archivo seleccionado:', file.name, file.size, file.type);
+    console.log('📎 Archivo seleccionado:', file);
+    
+    if (!file) {
+      console.warn('⚠️ No se seleccionó ningún archivo');
+      return;
     }
-  }
 
-   removerArchivo(): void {
-    this.archivoSeleccionado = null;
-    if (this.fileInput && this.fileInput.nativeElement) {
-      this.fileInput.nativeElement.value = '';
+    // Validaciones
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+      this.mostrarError(`El archivo es demasiado grande. Máximo: ${MAX_SIZE / 1024 / 1024}MB`);
+      this.removerArchivo();
+      return;
     }
+    
+    // Validar tipo de archivo
+    const tiposPermitidos = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'application/zip',
+      'application/x-rar-compressed'
+    ];
+    
+    if (!tiposPermitidos.includes(file.type)) {
+      this.mostrarError('Tipo de archivo no permitido. Formatos: PDF, Word, Excel, PowerPoint, imágenes, ZIP');
+      this.removerArchivo();
+      return;
+    }
+
+    this.archivoSeleccionado = file;
+    console.log('✅ Archivo validado correctamente:', file.name);
+    
+  } catch (error) {
+    console.error('❌ Error procesando archivo:', error);
+    this.mostrarError('Error al procesar el archivo');
+    this.removerArchivo();
   }
+}
+
+// 🟢 AGREGAR: Método para verificar si un mensaje tiene archivo
+tieneArchivo(msg: Mensaje): boolean {
+  return !!(msg.archivo && 
+    (msg.archivo.url || msg.archivo.nombre) && 
+    msg.archivo.nombre !== 'uploading...'
+  );
+}
+
+
+
+
+// 🟢 AGREGAR: Método para remover archivo seleccionado
+removerArchivo(): void {
+  console.log('🗑️ Removiendo archivo seleccionado');
+  this.archivoSeleccionado = null;
+  
+  // Limpiar el input de archivo
+  if (this.fileInput && this.fileInput.nativeElement) {
+    this.fileInput.nativeElement.value = '';
+  }
+  
+  this.cdRef.detectChanges();
+}
+
+
 
   // Control de scroll
   private autoScrollEnabled: boolean = true;
@@ -196,7 +238,8 @@ vistaActiva: 'docentes' | 'companeros' = 'docentes';
   constructor(
     private chatService: ChatService,
     private authService: AuthService,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   isWebSocketConnected(): boolean {
@@ -228,21 +271,138 @@ vistaActiva: 'docentes' | 'companeros' = 'docentes';
     return this.isWebSocketConnected() ? 'Conectado' : 'Conectando...';
   }
 
- ngOnInit(): void {
+// AGREGAR en el método ngOnInit() después de la suscripción existente
+// En estudiante-chat.ts - MODIFICAR el ngOnInit
+
+ngOnInit(): void {
   console.log('🎯 Inicializando chat de ESTUDIANTE');
   
   this.obtenerUsuarioActual();
   this.checkScreenSize();
   
-  // 🟢 MEJOR ORDEN DE INICIALIZACIÓN
+  // 🆕 LLAMAR a los métodos que ahora existen
+  this.setupSearchDebounce();
+  this.setupGlobalListeners();
+  this.startConnectionMonitoring();
+  
+  // 🆕 CONFIGURACIÓN SIMPLIFICADA DE WEBSOCKET
   setTimeout(() => {
     this.inicializarWebSocket();
-    this.configurarWebSocketListeners();
+  }, 1000);
 
-    
-  }, 1500);
+  // Suscripción al progreso de upload
+  this.subscriptions.add(
+    this.chatService.uploadProgress$.subscribe(progress => {
+      if (progress && progress.chatId === this.chatSeleccionado?.id_chat) {
+        this.uploadProgreso = progress.progress;
+        this.cdRef.detectChanges(); // 🆕 FORZAR actualización de UI
+      } else if (!progress) {
+        this.uploadProgreso = 0;
+      }
+    })
+  );
+
+  // 🆕 NUEVA SUSCRIPCIÓN para estado de archivos
+  this.subscriptions.add(
+    (this.chatService as any).fileUpload$.subscribe((estado: any) => {
+      if (estado && estado.chatId === this.chatSeleccionado?.id_chat) {
+        console.log('📊 Estado de archivo:', estado);
+        
+        if (estado.estado === 'completado') {
+          this.uploadProgreso = 0;
+        } else if (estado.estado === 'error') {
+          this.uploadProgreso = 0;
+          this.mostrarError('Error al subir el archivo');
+        }
+        
+        this.cdRef.detectChanges();
+      }
+    })
+  );
 }
 
+// En estudiante-chat.ts - AGREGAR estos métodos en la clase EstudianteChat
+// 🆕 MÉTODO PARA VOLVER AL DASHBOARD DEL ESTUDIANTE
+volverAEstudiante(): void {
+  console.log('🏠 Volviendo al dashboard del estudiante');
+  
+  // Limpiar todo antes de salir
+  if (this.chatSeleccionado) {
+    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+    this.chatSeleccionado = null;
+  }
+  
+  this.mensajes = [];
+  this.nuevoMensaje = '';
+  this.archivoSeleccionado = null;
+  this.uploadProgreso = 0;
+  
+  // Navegar al dashboard del estudiante
+  this.router.navigate(['/estudiante']);
+}
+// 🆕 AGREGAR: Métodos faltantes
+private setupSearchDebounce(): void {
+  // No se necesita para estudiante, pero debe existir
+  console.log('🔍 Setup search debounce (no necesario para estudiante)');
+}
+
+// 🟢 CORREGIR ngOnInit - AGREGAR método faltante
+private setupGlobalListeners(): void {
+  console.log('🔍 Configurando listeners globales para estudiante...');
+  
+  // Listener para cambios de conexión
+  window.addEventListener('online', () => {
+    console.log('🌐 Conexión recuperada - reconectando WebSocket...');
+    this.chatService.reconectarWebSocket();
+  });
+  
+  window.addEventListener('offline', () => {
+    console.log('📵 Sin conexión - actualizando estado...');
+    this.conexionEstado = 'desconectado';
+    this.cdRef.detectChanges();
+  });
+}
+
+private startConnectionMonitoring(): void {
+  console.log('📡 Iniciando monitoreo de conexión para estudiante');
+  
+  // Monitorear estado de conexión periódicamente
+  setInterval(() => {
+    this.verificarEstadoConexion();
+  }, 10000); // Cada 10 segundos
+}
+
+// 🆕 AGREGAR: Método para verificar estado de conexión
+private verificarEstadoConexion(): void {
+  const estado = this.chatService.getConnectionState();
+  console.log('📡 Estado de conexión estudiante:', estado.status);
+  
+  // Actualizar estado local
+  switch (estado.status) {
+    case 'connected': 
+      this.conexionEstado = 'conectado';
+      break;
+    case 'connecting': 
+      this.conexionEstado = 'conectando';
+      break;
+    case 'disconnected': 
+    case 'error':
+      this.conexionEstado = 'desconectado';
+      break;
+  }
+  
+  this.cdRef.detectChanges();
+}
+
+// 🆕 AGREGAR: Método para debug de mensajes
+private debugMensajes(mensajes: Mensaje[], fuente: string): void {
+  console.log(`🔍 DEBUG ${fuente}:`, {
+    cantidad: mensajes.length,
+    cargando: mensajes.filter(m => this.esMensajeCargando(m)).length,
+    ids: mensajes.map(m => m.id_mensaje),
+    estados: mensajes.map(m => (m as any)._estado || 'normal')
+  });
+}
 
 
   // 🆕 CONFIGURAR LISTENERS DE WEBSOCKET
@@ -286,135 +446,215 @@ vistaActiva: 'docentes' | 'companeros' = 'docentes';
   // Escuchar mensajes en tiempo real
   this.subscriptions.add(
     this.chatService.mensajes$.subscribe({
-      next: (mensajesSocket: Mensaje[]) => {
+      next: (mensajesSocket: any[]) => {
+        console.log('📥 Mensajes recibidos en estudiante (RAW):', mensajesSocket.length);
+        
         if (this.chatSeleccionado && mensajesSocket.length > 0) {
+          // 🟢 FILTRAR SOLO mensajes del chat actual y que no sean duplicados
           const mensajesFiltrados = mensajesSocket.filter(m => 
-            m.id_chat === this.chatSeleccionado!.id_chat
+            m && 
+            m.id_chat === this.chatSeleccionado!.id_chat &&
+            // 🟢 EVITAR mensajes que ya están en la lista local
+            !this.mensajes.some(existing => 
+              existing.id_mensaje === m.id_mensaje ||
+              (existing.id_remitente === m.id_remitente && 
+               existing.contenido === m.contenido &&
+               Math.abs(new Date(existing.fecha).getTime() - new Date(m.fecha).getTime()) < 1000)
+            )
           );
           
           if (mensajesFiltrados.length > 0) {
-            console.log('🆕 Mensajes en tiempo real recibidos:', mensajesFiltrados.length);
+            console.log('💬 Mensajes filtrados (sin duplicados):', mensajesFiltrados.length);
             this.procesarMensajesTiempoReal(mensajesFiltrados);
+          }
+        }
+      },
+      error: (error) => console.error('❌ Error en mensajes$ estudiante:', error)
+    })
+  );
+}
+
+
+  // 🆕 PROCESAR MENSAJES EN TIEMPO REAL
+// 🟢 SOLUCIÓN: Método mejorado para procesar mensajes en tiempo real
+private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
+  if (!mensajesSocket || mensajesSocket.length === 0 || !this.chatSeleccionado) return;
+
+  console.log('🔄 Procesando mensajes tiempo real:', mensajesSocket.length);
+  
+  const idsExistentes = new Set(this.mensajes.map(m => m.id_mensaje));
+  let mensajesAgregados = 0;
+
+  mensajesSocket.forEach(mensaje => {
+    // 🟢 SOLUCIÓN: Solo procesar mensajes del chat actual
+    if (mensaje.id_chat !== this.chatSeleccionado!.id_chat) {
+      return;
+    }
+
+    // 🟢 SOLUCIÓN: Evitar mensajes propios que ya fueron procesados optimistamente
+    const esMensajePropio = mensaje.id_remitente === this.currentUser?.id_usuario;
+    if (esMensajePropio) {
+      // Buscar si ya existe un mensaje optimista con contenido similar
+      const mensajeOptimistaExistente = this.mensajes.find(m => 
+        m.id_remitente === this.currentUser?.id_usuario &&
+        m.contenido === mensaje.contenido &&
+        Math.abs(new Date(m.fecha).getTime() - new Date(mensaje.fecha).getTime()) < 5000
+      );
+      
+      if (mensajeOptimistaExistente) {
+        console.log('🔄 Reemplazando mensaje optimista con mensaje real:', mensaje.id_mensaje);
+        // Reemplazar el mensaje optimista con el real
+        const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimistaExistente.id_mensaje);
+        if (index !== -1) {
+          this.mensajes[index] = this.procesarMensajeIndividual(mensaje);
+          mensajesAgregados++;
+        }
+        return;
+      }
+    }
+
+    // 🟢 Verificar duplicados
+    const esDuplicado = idsExistentes.has(mensaje.id_mensaje);
+    if (!esDuplicado) {
+      const mensajeProcesado = this.procesarMensajeIndividual(mensaje);
+      this.mensajes.push(mensajeProcesado);
+      mensajesAgregados++;
+      idsExistentes.add(mensaje.id_mensaje);
+      
+      console.log('✅ Mensaje agregado:', {
+        id: mensaje.id_mensaje,
+        remitente: mensaje.id_remitente,
+        contenido: mensaje.contenido?.substring(0, 30)
+      });
+    }
+  });
+
+  if (mensajesAgregados > 0) {
+    console.log(`🆕 Agregados ${mensajesAgregados} mensajes`);
+    this.mensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    
+    if (this.autoScrollEnabled) {
+      setTimeout(() => this.scrollToBottom(), 100);
+    }
+    
+    this.cdRef.detectChanges();
+  }
+}
+
+// 🟢 AGREGAR: Método auxiliar para procesar mensajes individuales
+private procesarMensajeIndividual(mensaje: any): Mensaje {
+  // 🟢 CORRECCIÓN: Manejo seguro del remitente
+  let remitenteProcesado;
+  
+  if (mensaje.remitente && typeof mensaje.remitente === 'object') {
+    remitenteProcesado = {
+      id_usuario: mensaje.remitente.id_usuario || mensaje.id_remitente,
+      correo: mensaje.remitente.correo || 'sin-correo',
+      rol: mensaje.remitente.rol || 'estudiante'
+    };
+  } else {
+    remitenteProcesado = {
+      id_usuario: mensaje.id_remitente,
+      correo: 'sin-correo',
+      rol: 'estudiante'
+    };
+  }
+
+  // 🟢 NORMALIZAR ESTRUCTURA DEL ARCHIVO
+  let archivoProcesado = null;
+  if (mensaje.archivo) {
+    archivoProcesado = {
+      url: mensaje.archivo.url || '',
+      ruta: mensaje.archivo.ruta || '',
+      nombre: mensaje.archivo.nombre || 'Archivo sin nombre',
+      tipo: mensaje.archivo.tipo || 'application/octet-stream',
+      tamano: mensaje.archivo.tamano || mensaje.archivo.tamano || 0
+    };
+  }
+  
+  return {
+    id_mensaje: mensaje.id_mensaje,
+    contenido: mensaje.contenido || '📎 Archivo compartido',
+    fecha: mensaje.fecha,
+    id_chat: mensaje.id_chat,
+    id_remitente: mensaje.id_remitente,
+    remitente: remitenteProcesado,
+    archivo: archivoProcesado
+  };
+}
+
+// Método auxiliar para template
+tieneTamanoArchivo(msg: Mensaje): boolean {
+  return !!(msg.archivo && typeof msg.archivo.tamano === 'number');
+}
+
+// Método auxiliar para obtener tamaño seguro
+obtenerTamanoArchivo(msg: Mensaje): number {
+  return msg.archivo?.tamano || 0;
+}
+
+// 🟢 CORREGIR: Configuración mejorada de WebSocket
+private setupWebSocketListeners(): void {
+  console.log('🔧 Configurando listeners WebSocket para estudiante...');
+
+  // ... (código de connectionState sin cambios)
+
+  // 🟢 SOLUCIÓN: Suscripción simple y directa
+  this.subscriptions.add(
+    this.chatService.mensajes$.subscribe({
+      next: (mensajesSocket: any[]) => {
+        console.log('📥 Mensajes recibidos en componente:', mensajesSocket.length);
+        
+        if (this.chatSeleccionado && mensajesSocket.length > 0) {
+          // 🟢 SOLUCIÓN: Procesar todos los mensajes del chat actual
+          const mensajesDelChat = mensajesSocket.filter(m => 
+            m && m.id_chat === this.chatSeleccionado!.id_chat
+          );
+          
+          if (mensajesDelChat.length > 0) {
+            console.log('💬 Mensajes del chat actual:', mensajesDelChat.length);
+            this.procesarMensajesTiempoReal(mensajesDelChat);
           }
         }
       },
       error: (error) => console.error('❌ Error en mensajes$:', error)
     })
   );
-}
 
-  // 🆕 PROCESAR MENSAJES EN TIEMPO REAL
-// 🟢 CORREGIDO: Procesamiento más estricto de mensajes
-private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
-  if (!mensajesSocket || mensajesSocket.length === 0) return;
-
-  console.log('🔄 Procesando mensajes tiempo real:', mensajesSocket.length);
-  
-  const idsExistentes = new Set(this.mensajes.map(m => m.id_mensaje));
-  let mensajesAgregados = 0;
-  let mensajesDuplicados = 0;
-
-  mensajesSocket.forEach(mensaje => {
-    // 🟢 VERIFICACIÓN MÁS ESTRICTA - Evitar cualquier duplicado
-    const esDuplicado = idsExistentes.has(mensaje.id_mensaje) || 
-                       this.mensajes.some(m => 
-                         m.id_remitente === mensaje.id_remitente && 
-                         m.contenido === mensaje.contenido && 
-                         Math.abs(new Date(m.fecha).getTime() - new Date(mensaje.fecha).getTime()) < 3000
-                       );
-
-    if (!esDuplicado) {
-      this.mensajes.push(mensaje);
-      mensajesAgregados++;
-      console.log('✅ Mensaje agregado:', mensaje.id_mensaje);
-    } else {
-      mensajesDuplicados++;
-      console.log('🚫 Mensaje duplicado ignorado:', mensaje.id_mensaje);
-    }
-  });
-
-  if (mensajesAgregados > 0) {
-    console.log(`🆕 Agregados ${mensajesAgregados} mensajes en tiempo real (${mensajesDuplicados} duplicados ignorados)`);
-    
-    // Ordenar por fecha
-    this.mensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-    
-    // Scroll automático solo si el usuario está abajo
-    if (this.autoScrollEnabled) {
-      setTimeout(() => this.scrollToBottom(), 100);
-    }
-    
-    this.cdRef.detectChanges();
-  } else if (mensajesDuplicados > 0) {
-    console.log(`⚠️ Todos los mensajes eran duplicados (${mensajesDuplicados} ignorados)`);
-  }
-}
-
-// 🟢 MEJORAR: Configuración completa del WebSocket
-private setupWebSocketListeners(): void {
-  console.log('🔧 Configurando listeners WebSocket para estudiante...');
-
-  // Limpiar suscripciones anteriores
-  if (this.connectionStateSubscription) {
-    this.connectionStateSubscription.unsubscribe();
-  }
-
-  // Escuchar estado de conexión
-  this.connectionStateSubscription = this.chatService.connectionState$.subscribe({
-    next: (state) => {
-      console.log('📡 Estado conexión estudiante:', state.status);
-      
-      // 🟢 ACTUALIZAR estado local
-      switch (state.status) {
-        case 'connected': 
-          this.conexionEstado = 'conectado';
-          break;
-        case 'connecting': 
-          this.conexionEstado = 'conectando';
-          break;
-        case 'disconnected': 
-        case 'error':
-          this.conexionEstado = 'desconectado';
-          break;
-      }
-      
-      this.cdRef.detectChanges();
-      
-      // Reconectar automáticamente si se desconecta
-      if (state.status === 'disconnected' && this.chatSeleccionado) {
-        setTimeout(() => {
-          if (this.chatSeleccionado && !this.isWebSocketConnected()) {
-            console.log('🔄 Reconectando WebSocket...');
-            this.chatService.reconectarWebSocket();
-          }
-        }, 3000);
-      }
-    },
-    error: (error) => console.error('❌ Error en connectionState:', error)
-  });
-
-  // 🟢 CORRECCIÓN: Escuchar mensajes en tiempo real SIN filtrar por remitente
+  // 🟢 CORRECCIÓN CRÍTICA: Escuchar mensajes en tiempo real con filtro mejorado
   this.subscriptions.add(
     this.chatService.mensajes$.subscribe({
       next: (mensajesSocket: any[]) => {
-        console.log('📥 Mensajes recibidos en estudiante:', mensajesSocket.length);
+         console.log('📥 Mensajes recibidos en componente estudiante:', mensajesSocket.length);
         
         if (this.chatSeleccionado && mensajesSocket.length > 0) {
-          // Filtrar solo mensajes del chat actual
-          const mensajesFiltrados = mensajesSocket.filter(m => 
+          // 🟢 FILTRAR SOLO mensajes del chat actual
+          const mensajesDelChatActual = mensajesSocket.filter(m => 
             m && m.id_chat === this.chatSeleccionado!.id_chat
           );
           
-          if (mensajesFiltrados.length > 0) {
-            console.log('💬 Mensajes filtrados para chat actual:', mensajesFiltrados.length);
-            this.procesarMensajesTiempoReal(mensajesFiltrados);
+          if (mensajesDelChatActual.length > 0) {
+            console.log('💬 Mensajes del chat actual:', mensajesDelChatActual.length);
+            
+            // 🟢 CORRECCIÓN: Procesar solo mensajes que no sean del usuario actual
+            const mensajesDeOtros = mensajesDelChatActual.filter(m => 
+              m.id_remitente !== this.currentUser?.id_usuario
+            );
+            
+            if (mensajesDeOtros.length > 0) {
+              console.log('👤 Mensajes de otros usuarios:', mensajesDeOtros.length);
+              this.procesarMensajesTiempoReal(mensajesDeOtros);
+            } else {
+              console.log('ℹ️ Todos los mensajes son propios, ignorando...');
+            }
           }
         }
       },
-      error: (error) => console.error('❌ Error en mensajes$ estudiante:', error)
-})
+      error: (error) => console.error('❌ Error en mensajes$:', error)
+    })
   );
-       // Escuchar notificaciones
+
+  // Escuchar notificaciones
   this.subscriptions.add(
     this.chatService.notificaciones$.subscribe({
       next: (notificacion) => {
@@ -427,45 +667,21 @@ private setupWebSocketListeners(): void {
   );
 }
 
-// 🟢 CORREGIDO: Método mejorado para seleccionar chat
+
+// 🟢 AGREGAR: Método faltante
 private configurarChatParaEstudiante(id_chat: number): void {
   console.log('💬 Configurando chat para estudiante, ID:', id_chat);
 
-    this.limpiarMensajesAlCambiarChat();
+  // Limpiar mensajes anteriores
+  this.limpiarChatAnterior();
 
-  // 🟢 IMPORTANTE: Unirse al chat a través del servicio
+  // Unirse al chat a través del servicio
   this.chatService.unirseAlChat(id_chat);
   
-  // 🟢 Cargar mensajes iniciales
+  // Cargar mensajes iniciales
   this.cargarMensajes(id_chat);
   
   console.log('✅ Chat configurado para estudiante:', id_chat);
-}
-
-  // 🆕 MEJORAR inicialización de WebSocket
-  // 🟢 AGREGAR: Inicialización mejorada del WebSocket
-// 🟢 CORREGIDO: Inicialización mejorada del WebSocket
-private inicializarWebSocket(): void {
-  console.log('🔄 Inicializando WebSocket específico para estudiante...');
-  
-  // Esperar a que el usuario esté disponible
-  setTimeout(() => {
-    if (!this.currentUser) {
-      console.log('⏳ Esperando usuario para conectar WebSocket...');
-      this.inicializarWebSocket();
-      return;
-    }
-
-    // Forzar reconexión si es necesario
-    if (!this.isWebSocketConnected()) {
-      console.log('🔌 WebSocket desconectado, reconectando para estudiante...');
-      this.chatService.reconectarWebSocket();
-    }
-
-    // 🟢 CONFIGURACIÓN ESPECÍFICA PARA ESTUDIANTE
-    this.setupWebSocketListeners();
-    
-  }, 1000);
 }
   
 // 🟢 Cargar cursos del estudiante
@@ -627,7 +843,8 @@ obtenerUsuarioActual(): void {
   }
 }
 
-  cargarDocentes(): void {
+  // estudiante-chat.ts - MEJORAR el procesamiento de docentes en cargarDocentes()
+cargarDocentes(): void {
   if (!this.cursoSeleccionado) {
     console.warn('⚠️ No hay curso seleccionado para cargar docentes');
     return;
@@ -654,8 +871,15 @@ obtenerUsuarioActual(): void {
         }
         
         if (Array.isArray(docentesData)) {
-          this.docentes = docentesData;
-          console.log(`✅ ${this.docentes.length} docentes cargados`);
+          // 🟢 CORRECCIÓN: Asegurar que cada docente tenga cursos como array
+          this.docentes = docentesData.map((docente: any) => ({
+            ...docente,
+            cursos: docente.cursos || [], // 🟡 Asegurar que siempre sea array
+            tieneChat: docente.tieneChat || false,
+            chatExistente: docente.chatExistente || null
+          }));
+          
+          console.log(`✅ ${this.docentes.length} docentes cargados y procesados`);
         } else {
           console.error('❌ Formato de docentes inválido:', response);
           this.docentes = [];
@@ -673,6 +897,30 @@ obtenerUsuarioActual(): void {
       }
     })
   );
+}
+// estudiante-chat.ts - AGREGAR método para debug
+private validarDocenteCompleto(docente: Docente): boolean {
+  if (!docente) {
+    console.error('❌ Docente es null o undefined');
+    return false;
+  }
+
+  const camposRequeridos = ['id_docente', 'id_usuario', 'nombre', 'cursos'];
+  const camposFaltantes = camposRequeridos.filter(campo => !docente[campo as keyof Docente]);
+
+  if (camposFaltantes.length > 0) {
+    console.error('❌ Docente incompleto. Campos faltantes:', camposFaltantes);
+    console.error('📋 Docente actual:', docente);
+    return false;
+  }
+
+  // 🟢 Verificar que cursos es un array
+  if (!Array.isArray(docente.cursos)) {
+    console.error('❌ Docente.cursos no es un array:', docente.cursos);
+    docente.cursos = []; // 🟡 Corregir en tiempo real
+  }
+
+  return true;
 }
 
 seleccionarCompanero(companero: any): void {
@@ -711,6 +959,45 @@ private validarCompaneroSeleccionable(companero: any): boolean {
   }
 
   return true;
+}
+
+// Agregar estos métodos en la clase EstudianteChat
+
+// 🟢 AGREGAR: Método para obtener icono según tipo de archivo
+obtenerIconoArchivo(msg: Mensaje): string {
+  if (!msg.archivo?.tipo) {
+    return 'fas fa-file text-gray-400';
+  }
+  
+  const tipo = msg.archivo.tipo.toLowerCase();
+  const nombre = msg.archivo.nombre.toLowerCase();
+  
+  if (tipo.includes('pdf')) return 'fas fa-file-pdf text-red-500';
+  if (tipo.includes('word') || nombre.endsWith('.doc') || nombre.endsWith('.docx')) 
+    return 'fas fa-file-word text-blue-500';
+  if (tipo.includes('excel') || nombre.endsWith('.xls') || nombre.endsWith('.xlsx')) 
+    return 'fas fa-file-excel text-green-500';
+  if (tipo.includes('powerpoint') || nombre.endsWith('.ppt') || nombre.endsWith('.pptx')) 
+    return 'fas fa-file-powerpoint text-orange-500';
+  if (tipo.includes('image')) return 'fas fa-file-image text-purple-500';
+  if (tipo.includes('zip') || tipo.includes('rar') || tipo.includes('compressed')) 
+    return 'fas fa-file-archive text-yellow-600';
+  if (tipo.includes('text')) return 'fas fa-file-alt text-gray-500';
+  
+  return 'fas fa-file text-gray-400';
+}
+
+
+// 🟢 AGREGAR: Método para obtener nombre del archivo
+obtenerNombreArchivo(msg: Mensaje): string {
+  return msg.archivo?.nombre || 'Archivo adjunto';
+}
+
+// 🟢 AGREGAR: Método para obtener tipo de archivo
+obtenerTipoArchivo(msg: Mensaje): string {
+  if (!msg.archivo?.tipo) return 'Archivo';
+  const tipo = msg.archivo.tipo.split('/')[1]?.toUpperCase() || 'Archivo';
+  return tipo;
 }
 
 private inicializarChatExistenteCompanero(companero: any): void {
@@ -813,24 +1100,46 @@ trackByCompaneroId(index: number, companero: any): number {
   return companero.id_estudiante;
 }
 
-  seleccionarDocente(docente: Docente): void {
-    console.log('🎯 Seleccionando docente:', docente.nombre);
+  // estudiante-chat.ts - MEJORAR seleccionarDocente con validación
+// 🟢 CORREGIDO: No eliminar todas las suscripciones
+seleccionarDocente(docente: Docente): void {
+  console.log('🎯 Seleccionando docente:', docente);
 
-    if (!this.validarDocenteSeleccionable(docente)) {
-      return;
-    }
-
-    try {
-      if (docente.tieneChat && docente.chatExistente?.id_chat) {
-        this.inicializarChatExistente(docente);
-      } else {
-        this.crearNuevoChat(docente);
-      }
-    } catch (error) {
-      console.error('❌ Error al seleccionar docente:', error);
-      this.mostrarError('Error al seleccionar docente: ' + this.obtenerMensajeError(error));
-    }
+  if (!this.validarDocenteSeleccionable(docente)) {
+    return;
   }
+
+  if (!this.validarDocenteCompleto(docente)) {
+    this.mostrarError('Datos del docente incompletos o inválidos');
+    return;
+  }
+
+  try {
+    // 🟢 LIMPIAR solo datos del chat anterior, NO suscripciones
+    this.limpiarChatAnterior();
+    
+    if (docente.tieneChat && docente.chatExistente?.id_chat) {
+      this.inicializarChatExistente(docente);
+    } else {
+      this.crearNuevoChat(docente);
+    }
+  } catch (error) {
+    console.error('❌ Error al seleccionar docente:', error);
+    this.mostrarError('Error al seleccionar docente: ' + this.obtenerMensajeError(error));
+  }
+}
+
+// 🟢 AGREGAR: Método para limpiar chat anterior
+private limpiarChatAnterior(): void {
+  this.mensajes = [];
+  this.nuevoMensaje = '';
+  this.archivoSeleccionado = null;
+  this.uploadProgreso = 0;
+  
+  if (this.chatSeleccionado) {
+    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+  }
+}
 
   
 
@@ -882,15 +1191,43 @@ trackByCompaneroId(index: number, companero: any): number {
   this.configurarChatParaEstudiante(docente.chatExistente.id_chat);
   }
 
-  private crearNuevoChat(docente: Docente): void {
+  // estudiante-chat.ts - CORREGIR método crearNuevoChat
+private crearNuevoChat(docente: Docente): void {
+  console.log('🔍 DEBUG - Datos del docente en crearNuevoChat:', {
+    docente: docente,
+    cursos: docente.cursos,
+    tipoCursos: typeof docente.cursos,
+    esArray: Array.isArray(docente.cursos),
+    tieneLength: docente.cursos ? docente.cursos.length : 'NO TIENE'
+  });
+  try {
+    console.log('🆕 Creando nuevo chat para docente:', docente);
+
+    // 🟢 VALIDACIÓN MEJORADA - Verificar que docente.cursos existe
+    if (!docente || !docente.id_docente) {
+      console.error('❌ Docente inválido:', docente);
+      this.mostrarError('Datos del docente incompletos');
+      return;
+    }
+
+    if (!this.currentUser?.id_estudiante) {
+      console.error('❌ No hay estudiante actual');
+      this.mostrarError('No se pudo identificar al estudiante');
+      return;
+    }
+
+    // 🟢 CORRECCIÓN CRÍTICA: Verificar que cursos existe y tiene elementos
+    const cursosDocente = docente.cursos || [];
+    console.log('📚 Cursos del docente:', cursosDocente);
+
     const chatData = {
       id_docente: docente.id_docente,
       id_estudiante: this.currentUser.id_estudiante,
-      id_curso: docente.cursos.length > 0 ? null : null, // El backend manejará esto
-      id_seccion: null // El backend manejará esto
+      id_curso: cursosDocente.length > 0 ? null : null, // 🟡 CORREGIDO: No usar .length directamente
+      id_seccion: null
     };
 
-    console.log('🆕 Creando nuevo chat para docente:', docente.nombre);
+    console.log('📤 Datos para crear chat:', chatData);
 
     this.subscriptions.add(
       this.chatService.crearChat(chatData).subscribe({
@@ -913,7 +1250,11 @@ trackByCompaneroId(index: number, companero: any): number {
         }
       })
     );
+  } catch (error) {
+    console.error('❌ Error inesperado en crearNuevoChat:', error);
+    this.mostrarError('Error inesperado al crear chat');
   }
+}
 
   private inicializarChatDesdeRespuesta(docente: Docente, nuevoChat: any): void {
     this.chatSeleccionado = {
@@ -979,25 +1320,85 @@ trackByCompaneroId(index: number, companero: any): number {
     );
   }
 
-  private procesarMensajesBackend(mensajesData: any[]): Mensaje[] {
-    return mensajesData
-      .filter(msg => msg && msg.id_mensaje && msg.contenido && msg.fecha && msg.id_remitente)
-      .map(msg => ({
+  // 🟢 CORREGIR: Método procesarMensajesBackend con manejo seguro del remitente
+private procesarMensajesBackend(mensajesData: any[]): Mensaje[] {
+  if (!Array.isArray(mensajesData)) {
+    console.error('❌ mensajesData no es array:', mensajesData);
+    return [];
+  }
+
+  return mensajesData
+    .filter(msg => {
+      const esValido = msg && 
+        msg.id_mensaje && 
+        (msg.contenido || msg.archivo) &&
+        msg.fecha &&
+        msg.id_remitente;
+      
+      if (!esValido) {
+        console.warn('⚠️ Mensaje inválido filtrado:', msg);
+      }
+      
+      return esValido;
+    })
+    .map(msg => {
+      // 🟢 PROCESAR ARCHIVOS CORRECTAMENTE
+      let archivoProcesado = null;
+      if (msg.archivo) {
+        archivoProcesado = {
+          url: msg.archivo.url || msg.archivo,
+          ruta: msg.archivo.ruta || '',
+          nombre: msg.archivo.nombre || this.obtenerNombreArchivoDesdeUrl(msg.archivo.url || msg.archivo),
+          tipo: msg.archivo.tipo || 'application/octet-stream',
+          tamano: msg.archivo.tamano || msg.archivo.tamano || 0
+        };
+      }
+
+      // 🟢 CORRECCIÓN CRÍTICA: Manejo seguro del remitente
+      let remitenteProcesado;
+      
+      if (msg.remitente && typeof msg.remitente === 'object') {
+        // Caso 1: remitente existe y es un objeto
+        remitenteProcesado = {
+          id_usuario: msg.remitente.id_usuario || msg.id_remitente,
+          correo: msg.remitente.correo || 'sin-correo',
+          rol: msg.remitente.rol || 'estudiante'
+        };
+      } else {
+        // Caso 2: remitente no existe o no es un objeto válido
+        remitenteProcesado = {
+          id_usuario: msg.id_remitente,
+          correo: 'sin-correo',
+          rol: 'estudiante'
+        };
+      }
+
+      return {
         id_mensaje: msg.id_mensaje,
-        contenido: msg.contenido,
+        contenido: msg.contenido || '📎 Archivo compartido',
         fecha: msg.fecha,
         id_chat: msg.id_chat,
         id_remitente: msg.id_remitente,
-        remitente: msg.remitente || {
-          id_usuario: msg.id_remitente,
-          correo: msg.remitente?.correo || 'sin-correo',
-          rol: msg.remitente?.rol || 'docente'
-        },
-        archivo: msg.archivo
-      }));
+        remitente: remitenteProcesado, // 🟢 Usar el objeto procesado
+        archivo: archivoProcesado
+      };
+    });
+}
+
+// 🟢 AGREGAR: Método auxiliar para obtener nombre de archivo desde URL
+private obtenerNombreArchivoDesdeUrl(url: string): string {
+  if (!url) return 'archivo';
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    return pathname.split('/').pop() || 'archivo';
+  } catch {
+    return 'archivo';
   }
+}
 
 // 🟢 MEJORAR el método de conexión WebSocket
+// 🟢 CORREGIR TYPO y AGREGAR MÉTODOS FALTANTES
 private conectarWebSocket(): void {
   if (this.chatSeleccionado) {
     console.log('💬 Conectando WebSocket al chat:', this.chatSeleccionado.id_chat);
@@ -1006,6 +1407,29 @@ private conectarWebSocket(): void {
     // 🟢 LIMPIAR MENSAJES ANTERIORES al cambiar de chat
     this.chatService.limpiarMensajes();
   }
+}
+
+private inicializarWebSocket(): void {
+  console.log('🔄 Inicializando WebSocket específico para estudiante...');
+  
+  // Esperar a que el usuario esté disponible
+  setTimeout(() => {
+    if (!this.currentUser) {
+      console.log('⏳ Esperando usuario para conectar WebSocket...');
+      this.inicializarWebSocket();
+      return;
+    }
+
+    // Forzar reconexión si es necesario
+    if (!this.isWebSocketConnected()) {
+      console.log('🔌 WebSocket desconectado, reconectando para estudiante...');
+      this.chatService.reconectarWebSocket();
+    }
+
+    // 🟢 CONFIGURACIÓN ESPECÍFICA PARA ESTUDIANTE
+    this.setupWebSocketListeners();
+    
+  }, 1000);
 }
 
 
@@ -1024,6 +1448,8 @@ private conectarWebSocket(): void {
   }
 
 // 🟢 CORREGIR: Método enviarMensaje para estudiante
+// 🟢 MEJORAR: Verificación más robusta en enviarMensaje
+// 🟢 CORREGIR COMPLETAMENTE: Método enviarMensaje unificado
 async enviarMensaje(): Promise<void> {
   // 🔴 PROTECCIÓN MEJORADA CONTRA DOBLE ENVÍO
   if (this.enviandoMensaje) {
@@ -1031,9 +1457,16 @@ async enviarMensaje(): Promise<void> {
     return;
   }
 
-  const contenido = this.nuevoMensaje.trim();
+  const contenido = this.nuevoMensaje?.trim() || '';
   const tieneContenido = contenido.length > 0;
   const tieneArchivo = !!this.archivoSeleccionado;
+
+  console.log('🔍 Verificando condiciones de envío:', {
+    tieneContenido,
+    tieneArchivo,
+    archivoSeleccionado: this.archivoSeleccionado,
+    contenido
+  });
 
   if (!tieneContenido && !tieneArchivo) {
     this.mostrarError('El mensaje no puede estar vacío');
@@ -1050,24 +1483,26 @@ async enviarMensaje(): Promise<void> {
     return;
   }
 
-  // 🟢 EVITAR ENVÍOS DUPLICADOS RÁPIDOS
-  const mensajeIdentificador = `${contenido}_${tieneArchivo}_${Date.now()}`;
-  if (this.ultimoMensajeEnviado === mensajeIdentificador && Date.now() - this.ultimoEnvioTimestamp < 2000) {
-    console.warn('🚫 Mensaje duplicado detectado');
-    return;
+  // 🟢 VERIFICACIÓN ESPECÍFICA MEJORADA PARA ARCHIVOS
+  if (tieneArchivo) {
+    console.log('📎 Verificando archivo seleccionado:', {
+      nombre: this.archivoSeleccionado?.name,
+      tamano: this.archivoSeleccionado?.size,
+      tipo: this.archivoSeleccionado?.type,
+      esFile: this.archivoSeleccionado instanceof File
+    });
+
+    if (!this.archivoSeleccionado || !(this.archivoSeleccionado instanceof File)) {
+      console.error('❌ Archivo seleccionado no es válido:', this.archivoSeleccionado);
+      this.mostrarError('Error: El archivo seleccionado no es válido');
+      return;
+    }
   }
 
   this.enviandoMensaje = true;
-  this.ultimoMensajeEnviado = mensajeIdentificador;
-  this.ultimoEnvioTimestamp = Date.now();
-
-  console.log('📤 Iniciando envío de mensaje (estudiante):', { 
-    tieneContenido, 
-    tieneArchivo,
-    chatId: this.chatSeleccionado.id_chat 
-  });
 
   try {
+    // 🟢 ESTRATEGIA UNIFICADA: HTTP para archivos, WebSocket para texto
     if (tieneArchivo) {
       await this.enviarMensajeConArchivo(contenido);
     } else {
@@ -1080,68 +1515,167 @@ async enviarMensaje(): Promise<void> {
     // 🔴 RESETEO GARANTIZADO CON TIMEOUT DE SEGURIDAD
     setTimeout(() => {
       this.enviandoMensaje = false;
-    }, 500);
+      console.log('✅ Estado de envío reseteado');
+    }, 1000);
   }
 }
 
   // 🟢 MÉTODO PARA ENVIAR MENSAJE CON ARCHIVO
-// 🟢 CORREGIR: Enviar mensaje con archivo
-private async enviarMensajeConArchivo(contenido: string): Promise<void> {
-  // 🟢 VERIFICAR que el archivo existe ANTES de continuar
+// estudiante-chat.ts - MODIFICAR el método enviarMensajeConArchivo
 
+private async enviarMensajeConArchivo(contenido: string): Promise<void> {
   if (!this.archivoSeleccionado) {
     console.error('❌ No hay archivo seleccionado para enviar');
     this.mostrarError('No se ha seleccionado ningún archivo');
     return;
   }
-  // Mensaje optimista para UI inmediata
-  const mensajeOptimista: Mensaje = {
-    id_mensaje: Date.now(),
-    contenido: contenido || '📎 Archivo compartido',
-    fecha: new Date().toISOString(),
-    id_chat: this.chatSeleccionado!.id_chat,
-    id_remitente: this.currentUser.id_usuario,
-    remitente: {
-      id_usuario: this.currentUser.id_usuario,
-      correo: this.currentUser.correo,
-      rol: this.currentUser.rol
-    },
-    archivo: {
-      url: '', // Se llenará con la respuesta del servidor
-      ruta: '',
-      nombre: this.archivoSeleccionado!.name,
-      tipo: this.archivoSeleccionado!.type
-    }
-  };
 
-  this.mensajes.push(mensajeOptimista);
-  this.nuevoMensaje = '';
-  this.autoScrollEnabled = true;
-  setTimeout(() => this.scrollToBottom(), 50);
+  console.log('📤 Preparando archivo para envío:', {
+    nombre: this.archivoSeleccionado.name,
+    tamano: this.archivoSeleccionado.size,
+    tipo: this.archivoSeleccionado.type
+  });
 
-  return new Promise((resolve, reject) => {
-    const subscription = this.chatService.enviarMensajeConArchivo({
+  // 🆕 CREAR mensaje de carga (NO optimista)
+  const mensajeCargando = this.chatService.crearMensajeCargando(
+    this.chatSeleccionado!.id_chat,
+    this.currentUser!,
+    this.archivoSeleccionado
+  );
+
+  // 🆕 AGREGAR mensaje de carga a la UI
+  this.agregarMensajeCargando(mensajeCargando);
+
+  try {
+    const resultado = this.chatService.enviarMensajeConArchivo({
       contenido: contenido || '📎 Archivo compartido',
       id_chat: this.chatSeleccionado!.id_chat,
-      id_remitente: this.currentUser.id_usuario
-    }, this.archivoSeleccionado!).subscribe({
-      next: (response: any) => {
-        console.log('✅ Mensaje con archivo enviado:', response);
-        this.procesarRespuestaMensaje(response, mensajeOptimista);
-        this.archivoSeleccionado = null;
-        this.enviandoMensaje = false;
-        resolve();
-        subscription.unsubscribe();
-      },
-      error: (error: any) => {
-        console.error('❌ Error enviando mensaje con archivo:', error);
-        this.manejarErrorEnvioMensaje(mensajeOptimista, error);
-        this.enviandoMensaje = false;
-        reject(error);
-        subscription.unsubscribe();
-      }
+      id_remitente: this.currentUser!.id_usuario
+    }, this.archivoSeleccionado);
+
+    if (resultado) {
+      await new Promise((resolve, reject) => {
+        console.log('🔄 Iniciando envío real del archivo:', this.archivoSeleccionado!.name);
+        
+        const subscription = resultado.subscribe({
+          next: (response: any) => {
+            console.log('✅ Respuesta completa del servidor:', response);
+            
+            if (response && response.success) {
+              // 🆕 ELIMINAR mensaje de carga y agregar el real
+              this.procesarRespuestaArchivo(response, mensajeCargando);
+              
+              // Limpiar archivo después de éxito
+              this.archivoSeleccionado = null;
+              this.removerArchivoDelInput();
+              resolve(response);
+            } else {
+              console.error('❌ Respuesta inválida del servidor:', response);
+              this.manejarErrorArchivo(mensajeCargando, 'Respuesta inválida del servidor');
+              reject(new Error('Respuesta inválida del servidor'));
+            }
+          },
+          error: (error: any) => {
+            console.error('❌ Error enviando mensaje con archivo:', error);
+            this.manejarErrorArchivo(mensajeCargando, error);
+            reject(error);
+          },
+          complete: () => {
+            console.log('✅ Envío de archivo completado');
+            subscription.unsubscribe();
+          }
+        });
+      });
+    } else {
+      throw new Error('No se pudo iniciar el envío del archivo');
+    }
+  } catch (error) {
+    console.error('❌ Error inesperado:', error);
+    this.manejarErrorArchivo(mensajeCargando, error);
+    throw error;
+  }
+}
+
+// 🆕 AGREGAR: Método para agregar mensaje de carga
+private agregarMensajeCargando(mensaje: Mensaje): void {
+  this.mensajes.push(mensaje);
+  
+  // Limpiar campos
+  this.nuevoMensaje = '';
+  
+  this.autoScrollEnabled = true;
+  setTimeout(() => this.scrollToBottom(), 50);
+  this.cdRef.detectChanges();
+  
+  console.log('⏳ Mensaje de carga agregado:', mensaje._idTemporal);
+}
+
+// 🆕 CORREGIDO: Método para procesar respuesta de archivo
+private procesarRespuestaArchivo(response: any, mensajeCargando: Mensaje): void {
+  console.log('🔄 Procesando respuesta de archivo:', response);
+  
+  let nuevoMensaje: any;
+  
+  if (response && response.success && response.data) {
+    nuevoMensaje = response.data;
+  } else if (response && response.id_mensaje) {
+    nuevoMensaje = response;
+  } else {
+    console.error('❌ Formato de respuesta inválido:', response);
+    this.manejarErrorArchivo(mensajeCargando, 'Formato de respuesta inválido');
+    return;
+  }
+
+  console.log('✅ Archivo subido correctamente:', nuevoMensaje);
+
+  // 🆕 REEMPLAZAR mensaje de carga por el real
+  const index = this.mensajes.findIndex(m => m._idTemporal === mensajeCargando._idTemporal);
+  
+  if (index !== -1) {
+    this.mensajes[index] = {
+      ...nuevoMensaje,
+      _estado: 'confirmado'
+    };
+    console.log('✅ Mensaje de carga reemplazado por mensaje real');
+  } else {
+    // Si no encuentra el de carga, agregar el nuevo mensaje
+    this.mensajes.push({
+      ...nuevoMensaje,
+      _estado: 'confirmado'
     });
-  });
+    console.log('✅ Nuevo mensaje con archivo agregado');
+  }
+  
+  this.actualizarUltimoMensajeEnLista(nuevoMensaje);
+  
+  // Actualizar UI
+  setTimeout(() => this.scrollToBottom(), 100);
+  this.cdRef.detectChanges();
+}
+
+// 🆕 CORREGIDO: Método para manejar error de archivo
+private manejarErrorArchivo(mensajeCargando: Mensaje, error: any): void {
+  console.error('❌ Error subiendo archivo, removiendo mensaje de carga:', mensajeCargando._idTemporal);
+  
+  // Remover mensaje de carga
+  const index = this.mensajes.findIndex(m => m._idTemporal === mensajeCargando._idTemporal);
+  if (index !== -1) {
+    this.mensajes.splice(index, 1);
+    this.cdRef.detectChanges();
+    console.log('🗑️ Mensaje de carga removido por error');
+  }
+  
+  this.mostrarError('Error al subir archivo: ' + this.obtenerMensajeError(error));
+}
+
+// 🆕 AGREGAR: Método para verificar si es mensaje de carga
+esMensajeCargando(msg: Mensaje): boolean {
+  return msg._estado === 'cargando';
+}
+
+// 🆕 AGREGAR: Método para obtener progreso (si lo necesitas)
+obtenerProgresoArchivo(): number {
+  return this.uploadProgreso;
 }
 
 // 🟢 AGREGAR: Actualizar último mensaje en la lista
@@ -1168,7 +1702,14 @@ private actualizarUltimoMensajeEnLista(nuevoMensaje: any): void {
 
   // 🟢 MÉTODO PARA ENVIAR MENSAJE NORMAL
 // 🟢 CORREGIDO: Enviar mensaje normal SIN procesamiento duplicado
+// 🟢 CORREGIR: Enviar mensaje normal con tipo de retorno consistente
 private async enviarMensajeNormal(contenido: string): Promise<void> {
+  const mensajeData = {
+    contenido,
+    id_chat: this.chatSeleccionado!.id_chat,
+    id_remitente: this.currentUser.id_usuario
+  };
+
   // Mensaje optimista para UI inmediata
   const mensajeOptimista: Mensaje = {
     id_mensaje: Date.now(), // ID temporal
@@ -1187,12 +1728,8 @@ private async enviarMensajeNormal(contenido: string): Promise<void> {
   this.agregarMensajeOptimista(mensajeOptimista);
 
   try {
-    // 🟢 USAR SOLO EL SERVICIO PRINCIPAL
-    const resultado = this.chatService.enviarMensaje({
-      contenido,
-      id_chat: this.chatSeleccionado!.id_chat,
-      id_remitente: this.currentUser.id_usuario
-    }, true); // true = usar WebSocket
+    // 🟢 USAR EL MÉTODO CORREGIDO DEL SERVICIO
+    const resultado = this.chatService.enviarMensaje(mensajeData);
 
     if (resultado && 'subscribe' in resultado) {
       // 🟢 SOLO HTTP: Suscribirse para confirmación
@@ -1213,7 +1750,8 @@ private async enviarMensajeNormal(contenido: string): Promise<void> {
     } else {
       // 🟢 WEBSOCKET: No hacer nada más - el mensaje real llegará por WebSocket
       console.log('✅ Mensaje enviado por WebSocket, esperando llegada automática...');
-      // NO llamar a procesarRespuestaMensaje - el WebSocket lo hará
+      // Limpiar el campo de texto inmediatamente
+      this.nuevoMensaje = '';
     }
   } catch (error) {
     console.error('❌ Error al enviar mensaje:', error);
@@ -1222,7 +1760,16 @@ private async enviarMensajeNormal(contenido: string): Promise<void> {
   }
 }
 
+// 🟢 AGREGAR: Método para limpiar el input de archivo
+private removerArchivoDelInput(): void {
+  this.archivoSeleccionado = null;
+  if (this.fileInput && this.fileInput.nativeElement) {
+    this.fileInput.nativeElement.value = '';
+  }
+  console.log('🗑️ Input de archivo limpiado');
+}
 // 🟢 MEJORADO: Agregar mensaje optimista con verificación
+// 🟢 CORREGIR: Agregar mensaje optimista
 private agregarMensajeOptimista(mensaje: Mensaje): void {
   // Verificar que no sea duplicado
   const esDuplicado = this.mensajes.some(m => 
@@ -1233,8 +1780,10 @@ private agregarMensajeOptimista(mensaje: Mensaje): void {
 
   if (!esDuplicado) {
     this.mensajes.push(mensaje);
+    
+    // 🟢 LIMPIAR SOLO EL TEXTO, NO EL ARCHIVO (se limpia después del éxito)
     this.nuevoMensaje = '';
-    this.archivoSeleccionado = null;
+    
     this.autoScrollEnabled = true;
     
     setTimeout(() => this.scrollToBottom(), 50);
@@ -1281,7 +1830,25 @@ private puedeEnviarMensaje(): boolean {
   this.ultimoEnvioTime = ahora;
   return true;
 }
+// 🟢 AGREGAR EN estudiante-chat.ts
+obtenerIconoArchivoPorTipo(tipo: string): string {
+  if (tipo.match(/pdf/)) return 'fas fa-file-pdf text-red-500';
+  if (tipo.match(/word/)) return 'fas fa-file-word text-blue-500';
+  if (tipo.match(/excel|spreadsheet/)) return 'fas fa-file-excel text-green-500';
+  if (tipo.match(/powerpoint|presentation/)) return 'fas fa-file-powerpoint text-orange-500';
+  if (tipo.match(/image/)) return 'fas fa-file-image text-purple-500';
+  if (tipo.match(/zip|rar|compressed/)) return 'fas fa-file-archive text-yellow-600';
+  if (tipo.match(/text/)) return 'fas fa-file-alt text-gray-500';
+  return 'fas fa-file text-gray-400';
+}
 
+obtenerTipoArchivoDeFile(file: File): string {
+  const tipo = file.type.split('/')[1]?.toUpperCase() || 'ARCHIVO';
+  return tipo;
+}
+
+// 🟢 AGREGAR propiedad para progreso de upload
+uploadProgreso: number = 0;
 
   // 🆕 MÉTODO PARA ENVÍO HTTP
 private async enviarMensajePorHTTP(contenido: string, mensajeOptimista: Mensaje): Promise<void> {
@@ -1290,7 +1857,7 @@ private async enviarMensajePorHTTP(contenido: string, mensajeOptimista: Mensaje)
       contenido,
       id_chat: this.chatSeleccionado!.id_chat,
       id_remitente: this.currentUser.id_usuario
-    }, false); // 🟢 false para usar HTTP
+    }); // 🟢 false para usar HTTP
 
     if (resultado && 'subscribe' in resultado) {
       resultado.subscribe({
@@ -1316,18 +1883,53 @@ private async enviarMensajePorHTTP(contenido: string, mensajeOptimista: Mensaje)
 
    // 🆕 PROCESAR RESPUESTA DEL SERVIDOR
 // 🟢 MEJORAR: Procesar respuesta del mensaje
+// 🟢 CORREGIR: Procesar respuesta de mensajes con archivo
 private procesarRespuestaMensaje(response: any, mensajeOptimista: Mensaje): void {
-  const nuevoMensaje = response.data || response;
-  console.log('✅ Mensaje confirmado por servidor:', nuevoMensaje);
+  console.log('🔄 Procesando respuesta del servidor:', response);
   
-  // Reemplazar mensaje optimista con el real del servidor
+  // 🟢 EXTRAER correctamente el mensaje de la respuesta
+  let nuevoMensaje: any;
+  
+  if (response && response.success && response.data) {
+    // Caso: respuesta con formato { success: true, data: mensaje }
+    nuevoMensaje = response.data;
+  } else if (response && response.id_mensaje) {
+    // Caso: respuesta es directamente el mensaje
+    nuevoMensaje = response;
+  } else {
+    console.error('❌ Formato de respuesta inválido:', response);
+    return;
+  }
+
+  console.log('✅ Mensaje extraído:', nuevoMensaje);
+
+  // 🟢 BUSCAR y reemplazar el mensaje optimista
   const index = this.mensajes.findIndex(m => m.id_mensaje === mensajeOptimista.id_mensaje);
+  
   if (index !== -1) {
+    // 🟢 PRESERVAR información del archivo si es necesario
+    if (mensajeOptimista.archivo && (!nuevoMensaje.archivo || !nuevoMensaje.archivo.url)) {
+      nuevoMensaje.archivo = {
+        ...mensajeOptimista.archivo,
+        // Mantener la URL real si existe, sino usar la del optimista
+        url: nuevoMensaje.archivo?.url || mensajeOptimista.archivo.url,
+        ruta: nuevoMensaje.archivo?.ruta || mensajeOptimista.archivo.ruta
+      };
+    }
+    
     this.mensajes[index] = nuevoMensaje;
+    console.log('✅ Mensaje optimista reemplazado con archivo');
+  } else {
+    // Si no encuentra el optimista, agregar el nuevo mensaje
+    this.mensajes.push(nuevoMensaje);
+    console.log('✅ Nuevo mensaje con archivo agregado');
   }
   
   this.actualizarUltimoMensajeEnLista(nuevoMensaje);
   this.enviandoMensaje = false;
+  
+  // 🟢 ACTUALIZAR UI
+  setTimeout(() => this.scrollToBottom(), 100);
   this.cdRef.detectChanges();
 }
 
@@ -1337,6 +1939,107 @@ private limpiarMensajesAlCambiarChat(): void {
   this.mensajes = [];
   this.chatService.limpiarMensajes();
   this.cdRef.detectChanges();
+}
+
+// 🟢 ACTUALIZAR: Método para verificar si un mensaje tiene archivo válido
+tieneArchivoValido(msg: Mensaje): boolean {
+  if (!msg.archivo) return false;
+  
+  // Verificar estructura básica
+  if (!msg.archivo.url || !msg.archivo.nombre || !msg.archivo.tipo) {
+    return false;
+  }
+  
+  // Verificar que no sea un archivo en proceso de upload
+  if (msg.archivo.nombre === 'uploading...' || msg.archivo.ruta === 'uploading...') {
+    return false;
+  }
+  
+  return true;
+}
+
+obtenerUrlDescarga(mensaje: Mensaje): string {
+  if (!this.tieneArchivoValido(mensaje)) {
+    return '';
+  }
+  
+  if (mensaje.archivo!.url.startsWith('http')) {
+    return mensaje.archivo!.url;
+  }
+  
+  if (mensaje.archivo!.ruta) {
+    return `http://localhost:4000/api/chat/archivo/${encodeURIComponent(mensaje.archivo!.ruta)}`;
+  }
+  
+  return '';
+}
+// 🟢 AGREGAR: Método auxiliar para obtener tamaño seguro
+obtenerTamanoArchivoSeguro(msg: Mensaje): number {
+  return msg.archivo?.tamano || 0;
+}
+// 🟢 MEJORAR: Método para descargar archivo
+async descargarArchivo(mensaje: Mensaje): Promise<void> {
+  if (!this.tieneArchivoValido(mensaje)) {
+    console.error('❌ No se puede descargar: archivo no válido', mensaje);
+    this.mostrarError('No se puede descargar el archivo: información incompleta');
+    return;
+  }
+
+  try {
+    const urlDescarga = this.obtenerUrlDescarga(mensaje);
+    
+    if (!urlDescarga) {
+      console.error('❌ No hay URL de descarga disponible');
+      this.mostrarError('No se puede descargar el archivo: URL no disponible');
+      return;
+    }
+
+    console.log('📥 Iniciando descarga:', {
+      nombre: mensaje.archivo!.nombre,
+      url: urlDescarga
+    });
+
+    const link = document.createElement('a');
+    link.href = urlDescarga;
+    link.download = mensaje.archivo!.nombre;
+    link.target = '_blank';
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      link.setAttribute('Authorization', `Bearer ${token}`);
+    }
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Descarga iniciada para:', mensaje.archivo!.nombre);
+    
+  } catch (error) {
+    console.error('❌ Error al descargar archivo:', error);
+    this.mostrarError('Error al descargar el archivo: ' + this.obtenerMensajeError(error));
+  }
+}
+
+// 🟢 AGREGAR: Método para visualizar archivo (abrir en nueva pestaña)
+verArchivo(mensaje: Mensaje): void {
+  if (!this.tieneArchivoValido(mensaje)) {
+    return;
+  }
+
+  const url = this.obtenerUrlDescarga(mensaje);
+  if (url) {
+    window.open(url, '_blank');
+  }
+}
+
+// 🟢 AGREGAR: Método para formatear el tamaño del archivo
+formatearTamanoArchivo(bytes: number = 0): string {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // 🟢 AGREGAR: Método para manejar error de envío (FALTANTE)
@@ -1379,22 +2082,25 @@ private manejarErrorEnvioMensaje(mensajeOptimista: Mensaje, error: any): void {
     return true;
   }
 
-  volverALista(): void {
+volverALista(): void {
   console.log('🔙 Volviendo a la lista');
   
-  // 🆕 Limpiar WebSocket
-  if (this.chatSeleccionado) {
-    this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
-    this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat);
+  if (this.isMobile) {
+    // En móvil: volver a la lista de chats
+    if (this.chatSeleccionado) {
+      this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
+      this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat);
+    }
+    
+    this.chatSeleccionado = null;
+    this.mensajes = [];
+    this.nuevoMensaje = '';
+    this.autoScrollEnabled = true;
+    this.chatService.limpiarMensajes();
+  } else {
+    // En desktop: volver al dashboard del estudiante
+    this.volverAEstudiante();
   }
-  
-  this.chatSeleccionado = null;
-  this.mensajes = [];
-  this.nuevoMensaje = '';
-  this.autoScrollEnabled = true;
-  
-  // 🆕 Limpiar mensajes del servicio
-  this.chatService.limpiarMensajes();
   
   this.cdRef.detectChanges();
 }

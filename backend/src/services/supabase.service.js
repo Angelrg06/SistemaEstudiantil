@@ -31,6 +31,8 @@ class SupabaseService {
         console.log('🔗 URL:', supabaseUrl);
     }
 
+    
+
     // 🟢 MÉTODO PARA VERIFICAR CONEXIÓN
     async verificarConexion() {
         try {
@@ -107,7 +109,7 @@ class SupabaseService {
                 url: urlData.publicUrl,
                 nombre: nombreLimpio,
                 tipo: tipoMime,
-                tamaño: archivoBuffer.length
+                tamano: archivoBuffer.length
             };
 
         } catch (error) {
@@ -115,6 +117,43 @@ class SupabaseService {
             throw error;
         }
     }
+
+    // 🟢 MÉTODO DE DIAGNÓSTICO MEJORADO
+async diagnosticarUpload(archivoBuffer, nombreArchivo, carpeta, tipoMime) {
+  console.log('🔍 DIAGNÓSTICO UPLOAD:', {
+    nombreArchivo,
+    carpeta,
+    tipoMime,
+    tamanoBuffer: archivoBuffer?.length || 0,
+    esBuffer: Buffer.isBuffer(archivoBuffer),
+    variablesConfiguradas: {
+      supabaseUrl: !!process.env.SUPABASE_URL,
+      supabaseKey: !!process.env.SUPABASE_SERVICE_KEY
+    }
+  });
+
+  // Verificar conexión
+  const conexionOk = await this.verificarConexion();
+  if (!conexionOk) {
+    throw new Error('No se pudo conectar a Supabase Storage');
+  }
+
+  // Verificar bucket
+  const { data: buckets, error: bucketsError } = await this.supabase.storage.listBuckets();
+  if (bucketsError) {
+    console.error('❌ Error listando buckets:', bucketsError);
+    throw new Error(`Error de buckets: ${bucketsError.message}`);
+  }
+
+  const bucketExiste = buckets.some(bucket => bucket.name === 'archivos');
+  console.log('📦 Bucket "archivos" existe:', bucketExiste);
+  
+  if (!bucketExiste) {
+    throw new Error('El bucket "archivos" no existe en Supabase');
+  }
+
+  return true;
+}
 
     // 🟢 NUEVO MÉTODO: ELIMINAR ARCHIVO
     async eliminarArchivo(rutaArchivo) {

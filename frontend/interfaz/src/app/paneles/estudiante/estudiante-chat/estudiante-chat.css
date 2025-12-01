@@ -1,0 +1,341 @@
+/* 🟢 ESTILOS MEJORADOS Y RESPONSIVOS PARA ARCHIVOS */
+
+/* Contenedor de archivos - Responsivo */
+.file-message {
+  transition: all 0.2s ease;
+  max-width: 100%;
+}
+
+.file-message:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Botón de descarga - Responsivo */
+.download-btn {
+  transition: all 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.download-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Mobile: Botones más grandes para touch */
+@media (max-width: 640px) {
+  .file-message {
+    padding: 12px;
+    margin: 8px 0;
+  }
+  
+  .download-btn {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 10px;
+  }
+  
+  .file-message:hover {
+    transform: none; /* Desactivar hover en móvil */
+  }
+}
+
+/* Colores para tipos de archivo - Consistentes */
+.text-red-500 { color: #dc3545; }
+.text-blue-500 { color: #0d6efd; }
+.text-green-500 { color: #198754; }
+.text-orange-500 { color: #fd7e14; }
+.text-purple-500 { color: #6f42c1; }
+.text-yellow-600 { color: #ffc107; }
+.text-gray-400 { color: #6c757d; }
+
+/* Iconos de archivo - Responsivos */
+.file-icon {
+  font-size: 1.25rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .file-icon {
+    font-size: 1.5rem;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Estilos para mensajes de carga - Responsivos */
+.loading-file-message {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Mobile: Reducir animación para rendimiento */
+@media (prefers-reduced-motion: reduce) {
+  .loading-file-message {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/* Estilos para la barra de progreso - Responsivos */
+.progress-container {
+  animation: slideIn 0.3s ease-out;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background-color: #e5e7eb;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Mobile: Barras más gruesas para mejor visibilidad */
+@media (max-width: 640px) {
+  .progress-bar {
+    height: 8px;
+  }
+  
+  .progress-container {
+    margin-top: 12px;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para el indicador de upload - Responsivos */
+.upload-progress {
+  animation: slideUp 0.3s ease-out;
+  margin-top: 12px;
+}
+
+/* Mobile: Upload progress más compacto */
+@media (max-width: 640px) {
+  .upload-progress {
+    margin-top: 8px;
+    padding: 12px;
+  }
+  
+  .upload-progress .progress-bar {
+    height: 6px;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🆕 ESTILOS RESPONSIVOS ADICIONALES */
+
+/* Contenedor de información de archivo - Responsivo */
+.file-details {
+  min-width: 0; /* Permitir que se ajuste */
+}
+
+.file-name {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Mobile: Ajustar texto de archivos */
+@media (max-width: 640px) {
+  .file-name {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .file-info {
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+/* 🆕 ESTILOS PARA DIFERENTES TAMAÑOS DE PANTALLA */
+
+/* Tablets (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .file-message {
+    padding: 14px;
+  }
+  
+  .file-icon {
+    font-size: 1.375rem;
+    width: 26px;
+    height: 26px;
+  }
+  
+  .download-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+/* Desktop grande (> 1024px) */
+@media (min-width: 1024px) {
+  .file-message {
+    max-width: 400px;
+  }
+  
+  .file-message:hover .download-btn {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  /* Ocultar botón de descarga en hover en desktop */
+  .file-message .download-btn {
+    opacity: 0.7;
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+  }
+}
+
+/* 🆕 MEJORAS DE ACCESIBILIDAD */
+
+/* Mejorar contraste para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .file-message {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .upload-progress {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Mejorar focus para accesibilidad */
+.download-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.file-message:focus-within {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* 🆕 OPTIMIZACIONES PARA TACTIL */
+
+/* Mejorar targets táctiles en móvil */
+@media (max-width: 640px) {
+  .download-btn,
+  .attach-btn,
+  .send-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .file-message {
+    padding: 16px;
+    margin: 12px 0;
+  }
+}
+
+/* 🆕 ESTILOS PARA ESTADOS DE CARGA MEJORADOS */
+
+/* Animación de carga responsiva */
+.loading-spinner {
+  gap: 4px;
+}
+
+.spinner-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+@media (max-width: 640px) {
+  .loading-spinner {
+    gap: 6px;
+  }
+  
+  .spinner-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* 🆕 TRANSICIONES SUAVES PARA TODOS LOS ESTADOS */
+
+/* Transiciones suaves para todos los elementos interactivos */
+.file-message,
+.download-btn,
+.attach-btn,
+.send-btn,
+.progress-fill {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile: Reducir transiciones para rendimiento */
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .file-message,
+  .download-btn,
+  .attach-btn,
+  .send-btn,
+  .progress-fill {
+    transition: none;
+  }
+}
+
+/* 🆕 ESTILOS PARA MENSAJES DE ERROR */
+
+.error-message {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 8px 0;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Mobile: Mensajes de error más compactos */
+@media (max-width: 640px) {
+  .error-message {
+    padding: 16px;
+    margin: 12px 0;
+    font-size: 0.875rem;
+  }
+}

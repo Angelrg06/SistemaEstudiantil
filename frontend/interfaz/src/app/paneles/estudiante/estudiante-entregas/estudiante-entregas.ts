@@ -110,7 +110,7 @@ export class EstudianteEntregas implements OnInit {
     const file: File = event.target.files[0];
 
     if (file) {
-      // Validar tamaño (5MB máximo)
+      // Validar tamano (5MB máximo)
       const maxSize = 5 * 1024 * 1024;
 
       if (file.size > maxSize) {

@@ -38,8 +38,10 @@ export interface MensajeSocket {
     ruta: string;
     nombre: string;
     tipo: string;
-    tamaño?: number;
+    tamano?: number;
   };
+  _estado?: 'pendiente' | 'cargando' | 'confirmado' | 'error'; // 🆕 AGREGAR 'cargando'
+  _idTemporal?: string; // 🆕 ID temporal para tracking
 }
 
 export interface ConnectionState {
@@ -47,6 +49,7 @@ export interface ConnectionState {
   lastError?: string;
   reconnectAttempts: number;
 }
+
 
 @Injectable({
   providedIn: 'root'
@@ -92,47 +95,66 @@ export class WebsocketService {
     return this.recentMessagesCache.get(chatId) || [];
   }
 
-  private addToRecentMessages(chatId: number, message: any): void {
-    if (!this.recentMessagesCache.has(chatId)) {
-      this.recentMessagesCache.set(chatId, []);
-    }
-    
-    const messages = this.recentMessagesCache.get(chatId)!;
-    messages.unshift(message);
-    
-    // Mantener solo los mensajes más recientes
-    if (messages.length > this.MAX_RECENT_MESSAGES) {
-      messages.pop();
-    }
-    
-    // Limpiar mensajes antiguos automáticamente
-    this.cleanOldMessages(chatId);
-  }
+  
+  // 🆕 AGREGAR: Subject para estado de carga de archivos
+private fileUploadSubject = new BehaviorSubject<{chatId: number, estado: 'subiendo' | 'completado' | 'error', progreso?: number, idTemporal?: string} | null>(null);
+public fileUpload$ = this.fileUploadSubject.asObservable();
 
-  private cleanOldMessages(chatId: number): void {
-    if (!this.recentMessagesCache.has(chatId)) return;
-    
-    const now = Date.now();
-    const messages = this.recentMessagesCache.get(chatId)!;
-    const filteredMessages = messages.filter(msg => {
-      const messageTime = new Date(msg.fecha).getTime();
-      return (now - messageTime) < this.DUPLICATE_TIME_WINDOW;
-    });
-    
-    this.recentMessagesCache.set(chatId, filteredMessages);
-  }
+// 🆕 AGREGAR: Método para emitir estado de carga
+notificarEstadoArchivo(chatId: number, estado: 'subiendo' | 'completado' | 'error', progreso?: number, idTemporal?: string): void {
+  this.fileUploadSubject.next({
+    chatId,
+    estado,
+    progreso,
+    idTemporal
+  });
+}
+// websocket.service.ts - MEJORAR la detección de duplicados
+// websocket.service.ts - CORREGIR el método isDuplicateMessage
 
-  private isDuplicateMessage(contenido: string, chatId: number): boolean {
-    const recentMessages = this.getRecentMessages(chatId);
-    const now = Date.now();
+private isDuplicateMessage(contenido: string, chatId: number, archivo?: any): boolean {
+  const recentMessages = this.getRecentMessages(chatId);
+  const now = Date.now();
+  
+  // 🟢 CORRECCIÓN: Obtener usuario actual desde AuthService
+  const currentUser = this.authService.getCurrentUser();
+  if (!currentUser) return false;
+
+  return recentMessages.some((msg: any) => {
+    const messageTime = new Date(msg.fecha).getTime();
+    const timeDiff = now - messageTime;
     
-    return recentMessages.some((msg: any) => {
-      const messageTime = new Date(msg.fecha).getTime();
-      const timeDiff = now - messageTime;
-      
-      return msg.contenido === contenido && timeDiff < this.DUPLICATE_TIME_WINDOW;
-    });
+    // 🟢 CORRECCIÓN: Comparar también archivos
+    const mismoContenido = msg.contenido === contenido;
+    const mismoArchivo = msg.archivo?.nombre === archivo?.nombre;
+    const mismoRemitente = msg.id_remitente === currentUser.id_usuario; // 🟢 Usar currentUser de authService
+    
+    return ((mismoContenido && contenido) || (mismoArchivo && archivo)) && 
+           timeDiff < this.DUPLICATE_TIME_WINDOW &&
+           mismoRemitente;
+  });
+}
+
+// 🟢 AGREGAR método para manejar archivos en la cache
+private addToRecentMessages(chatId: number, message: any): void {
+  if (!this.recentMessagesCache.has(chatId)) {
+    this.recentMessagesCache.set(chatId, []);
   }
+  
+  const messages = this.recentMessagesCache.get(chatId)!;
+  
+  // 🟢 LIMITAR tamano de la cache
+  if (messages.length >= this.MAX_RECENT_MESSAGES) {
+    messages.pop();
+  }
+  
+  messages.unshift({
+    ...message,
+    timestamp: Date.now() // 🟢 AGREGAR timestamp interno
+  });
+  
+  console.log('💾 Mensaje agregado a cache. Total en chat', chatId, ':', messages.length);
+}
 
   // 🆕 MEJORA: Inicialización con delay de seguridad
   private initializeWithSafetyDelay(): void {
@@ -142,18 +164,24 @@ export class WebsocketService {
     }, 1000);
   }
 
-  private initializeConnection(): void {
-    console.log('🔄 Inicializando conexión WebSocket optimizada...');
-    
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) {
-      console.warn('⏳ Usuario no disponible aún, reintentando en 2 segundos...');
-      setTimeout(() => this.initializeConnection(), 2000);
-      return;
-    }
-
-    this.connect();
+  // 🟢 CORREGIR: Configuración más conservadora
+private initializeConnection(): void {
+  console.log('🔄 Inicializando conexión WebSocket...');
+  
+  const currentUser = this.authService.getCurrentUser();
+  if (!currentUser) {
+    console.warn('⏳ Usuario no disponible, esperando autenticación...');
+    // No reintentar automáticamente - esperar a que el usuario esté autenticado
+    return;
   }
+
+  // 🟢 ESPERAR que Angular esté completamente inicializado
+  setTimeout(() => {
+    this.connect();
+  }, 2000);
+}
+
+
 
   // 🆕 MEJORA: Conexión completamente optimizada
   connect(): void {
@@ -296,26 +324,26 @@ export class WebsocketService {
   private setupChatEvents(): void {
     if (!this.socket) return;
 
-    this.socket.on('new_message', (message: MensajeSocket) => {
-      console.log('📥 Nuevo mensaje recibido:', {
-        id: message.id_mensaje,
-        chat: message.id_chat,
-        remitente: message.remitente?.id_usuario,
-        contenido: message.contenido?.substring(0, 50)
-      });
+  this.socket.on('new_message', (message: MensajeSocket) => {
+    console.log('📥 Nuevo mensaje recibido en WebSocket:', {
+      id: message.id_mensaje,
+      chat: message.id_chat,
+      remitente: message.remitente?.id_usuario,
+      contenido: message.contenido?.substring(0, 50)
+    });
 
-      // 🟢 AGREGAR A MENSAJES RECIENTES cuando recibimos mensajes
-    if (message.contenido) {
+    // 🟢 SOLUCIÓN: Solo agregar a cache mensajes de otros usuarios
+    const currentUser = this.authService.getCurrentUser();
+    if (message.contenido && currentUser && message.id_remitente !== currentUser.id_usuario) {
       this.addToRecentMessages(message.id_chat, {
         contenido: message.contenido,
         fecha: message.fecha,
         id_remitente: message.id_remitente
       });
     }
-      this.messageSubject.next(message);
-    });
-
     
+    this.messageSubject.next(message);
+  });
 
     this.socket.on('message_notification', (notification) => {
       console.log('🔔 Notificación recibida para chat:', notification.chatId);
@@ -474,43 +502,123 @@ export class WebsocketService {
   }
 
   // 🆕 MEJORA: Envío de mensajes con cola y verificación
-  sendMessage(messageData: {
-    id_chat: number;
-    contenido: string;
-    id_remitente: number;
-    archivo?: any;
-  }): void {
-    // Validación exhaustiva
-    if (!this.validateMessageData(messageData)) {
-      return;
-    }
+// websocket.service.ts - CORREGIR el método sendMessage
 
-     // 🟢 AGREGAR TIMESTAMP PARA EVITAR DUPLICADOS
-  const mensajeConTimestamp = {
-    ...messageData,
-    _timestamp: Date.now(),
-    _socketId: this.socket?.id
-  };
+// 🟢 CORRECCIÓN COMPLETA: Método sendMessage mejorado
+sendMessage(messageData: {
+  id_chat: number;
+  contenido: string;
+  id_remitente: number;
+  archivo?: any;
+}): void {
+  // 🟢 CORRECCIÓN: Validación exhaustiva
+  if (!this.validateMessageData(messageData)) {
+    return;
+  }
 
-  console.log('📤 Enviando mensaje por WebSocket:', {
-    id_chat: messageData.id_chat,
+  // 🟢 OBTENER usuario actual para la validación
+  const currentUser = this.authService.getCurrentUser();
+  if (!currentUser) {
+    console.error('❌ No hay usuario autenticado');
+    return;
+  }
+
+  const contenido = messageData.contenido?.trim() || '';
+  const chatId = messageData.id_chat;
+  
+  // 🟢 CORRECCIÓN: Mejorar la detección de duplicados
+  if (this.isDuplicateMessageImproved(messageData)) {
+    console.error('🚫 MENSAJE DUPLICADO BLOQUEADO:', {
+      contenido: contenido.substring(0, 50),
+      chatId: chatId,
+      tieneArchivo: !!messageData.archivo,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.errorSubject.next('Mensaje duplicado detectado. Espera unos segundos antes de enviar otro mensaje.');
+    return;
+  }
+
+  // 🟢 CORRECCIÓN: Solo agregar a cache después de validación exitosa
+  this.addToRecentMessages(chatId, {
+    contenido: contenido,
+    fecha: new Date().toISOString(),
     id_remitente: messageData.id_remitente,
-    timestamp: mensajeConTimestamp._timestamp,
-    socketId: mensajeConTimestamp._socketId
+    archivo: messageData.archivo ? {
+      nombre: messageData.archivo.nombre,
+      tipo: messageData.archivo.tipo
+    } : undefined
   });
 
-   // 🟢 AGREGAR A MENSAJES RECIENTES ANTES DE ENVIAR
-    if (messageData.contenido?.trim()) {
-      this.addToRecentMessages(messageData.id_chat, {
-        contenido: messageData.contenido.trim(),
-        fecha: new Date().toISOString(),
-        id_remitente: messageData.id_remitente
-      });
-    }
+  console.log('📤 Enviando mensaje por WebSocket (VALIDADO):', {
+    id_chat: chatId,
+    id_remitente: messageData.id_remitente,
+    contenido: contenido.substring(0, 100),
+    tieneArchivo: !!messageData.archivo
+  });
 
-    // 🆕 MEJORA: Usar envío interno que maneja la cola
-    this.sendMessageInternal(messageData);
+  this.sendMessageInternal(messageData);
+}
+
+// 🟢 AGREGAR: Método mejorado para detectar duplicados
+private isDuplicateMessageImproved(messageData: any): boolean {
+  const recentMessages = this.getRecentMessages(messageData.id_chat);
+  const now = Date.now();
+  const currentUser = this.authService.getCurrentUser();
+  
+  if (!currentUser) return false;
+
+  return recentMessages.some((cachedMsg: any) => {
+    const messageTime = new Date(cachedMsg.fecha).getTime();
+    const timeDiff = now - messageTime;
+    
+    // 🟢 CORRECCIÓN: Comparaciones más estrictas
+    const mismoContenido = cachedMsg.contenido === messageData.contenido;
+    const mismoArchivo = cachedMsg.archivo?.nombre === messageData.archivo?.nombre;
+    const mismoRemitente = cachedMsg.id_remitente === currentUser.id_usuario;
+    const mismoChat = cachedMsg.id_chat === messageData.id_chat;
+    
+    // 🟢 CORRECCIÓN: Solo considerar duplicado si es del mismo usuario, mismo chat y mismo contenido en ventana de tiempo
+    return ((mismoContenido && messageData.contenido) || (mismoArchivo && messageData.archivo)) && 
+           timeDiff < this.DUPLICATE_TIME_WINDOW &&
+           mismoRemitente &&
+           mismoChat;
+  });
+}
+
+// 🟢 CORREGIR: Método validateMessageData
+private validateMessageData(messageData: any): boolean {
+  if (!messageData.id_chat || !messageData.id_remitente) {
+    console.error('❌ Datos de mensaje incompletos:', messageData);
+    this.errorSubject.next('Datos de mensaje incompletos');
+    return false;
   }
+
+  // 🟢 CORRECCIÓN: Permitir mensajes con solo archivos
+  const contenido = messageData.contenido?.trim() || '';
+  const tieneArchivo = !!messageData.archivo;
+  
+  if (!contenido && !tieneArchivo) {
+    console.error('❌ Mensaje vacío - debe tener contenido o archivo');
+    this.errorSubject.next('El mensaje no puede estar vacío');
+    return false;
+  }
+
+  // 🟢 OBTENER usuario actual para validación
+  const currentUser = this.authService.getCurrentUser();
+  if (!currentUser) {
+    console.error('❌ No hay usuario autenticado');
+    return false;
+  }
+
+  // 🟢 VERIFICAR que el remitente sea el usuario actual
+  if (messageData.id_remitente !== currentUser.id_usuario) {
+    console.error('❌ ID de remitente no coincide con usuario actual');
+    return false;
+  }
+
+  return true;
+}
 
   // 🟢 AGREGAR: Método para limpiar la cache de mensajes
   clearRecentMessages(chatId?: number): void {
@@ -537,58 +645,51 @@ export class WebsocketService {
     };
   }
 
-  private validateMessageData(messageData: any): boolean {
-    if (!messageData.id_chat || !messageData.id_remitente) {
-      console.error('❌ Datos de mensaje incompletos:', messageData);
-      this.errorSubject.next('Datos de mensaje incompletos');
-      return false;
-    }
 
-    if (!messageData.contenido?.trim() && !messageData.archivo) {
-      console.error('❌ Mensaje vacío - debe tener contenido o archivo');
-      this.errorSubject.next('El mensaje no puede estar vacío');
-      return false;
-    }
+// websocket.service.ts - CORRECCIONES
 
-    if (messageData.contenido && messageData.contenido.length > 4000) {
-      console.error('❌ Mensaje demasiado largo');
-      this.errorSubject.next('El mensaje es demasiado largo (máximo 4000 caracteres)');
-      return false;
+// 🟢 CORREGIR: En el método sendMessageInternal
+private sendMessageInternal(messageData: any): void {
+  if (!this.socket?.connected) {
+    console.log('📝 Mensaje agregado a la cola (WebSocket desconectado)');
+    this.messageQueue.push(messageData);
+    
+    // 🆕 MEJORA: Intentar reconexión si no hay conexión
+    if (this.connectionState.value.status === 'disconnected') {
+      this.connect();
     }
-
-    // 🟢 EVITAR MENSAJES DUPLICADOS POR CONTENIDO
-  const contenido = messageData.contenido?.trim() || '';
-  if (contenido && this.isDuplicateMessage(contenido, messageData.id_chat)) {
-    console.error('❌ Mensaje duplicado detectado');
-    this.errorSubject.next('Mensaje duplicado detectado. Espera unos segundos.');
-    return false;
+    return;
   }
 
-    return true;
-  }
+  console.log('📤 Enviando mensaje por WebSocket:', {
+    id_chat: messageData.id_chat,
+    id_remitente: messageData.id_remitente,
+    contenido: messageData.contenido?.substring(0, 100),
+    tieneArchivo: !!messageData.archivo,
+    // 🟢 AGREGAR: Verificar estructura del archivo
+    archivoInfo: messageData.archivo ? {
+      nombre: messageData.archivo.nombre,
+      tipo: messageData.archivo.type || messageData.archivo.tipo,
+      tamano: messageData.archivo.size || messageData.archivo.tamano
+    } : null
+  });
 
+  // 🟢 CORRECCIÓN CRÍTICA: Asegurar que el archivo tenga la estructura correcta
+  const mensajeParaEnviar = {
+    ...messageData,
+    archivo: messageData.archivo ? {
+      nombre: messageData.archivo.nombre || messageData.archivo.name,
+      tipo: messageData.archivo.tipo || messageData.archivo.type,
+      tamano: messageData.archivo.tamano || messageData.archivo.size,
+      // 🟢 AGREGAR: Asegurar que buffer esté presente
+      buffer: messageData.archivo.buffer || messageData.archivoBuffer
+    } : undefined,
+    // 🟢 CORRECCIÓN: Mantener archivoBuffer para compatibilidad con backend
+    archivoBuffer: messageData.archivoBuffer || messageData.archivo?.buffer
+  };
 
-  private sendMessageInternal(messageData: any): void {
-    if (!this.socket?.connected) {
-      console.log('📝 Mensaje agregado a la cola (WebSocket desconectado)');
-      this.messageQueue.push(messageData);
-      
-      // 🆕 MEJORA: Intentar reconexión si no hay conexión
-      if (this.connectionState.value.status === 'disconnected') {
-        this.connect();
-      }
-      return;
-    }
-
-    console.log('📤 Enviando mensaje por WebSocket:', {
-      id_chat: messageData.id_chat,
-      id_remitente: messageData.id_remitente,
-      contenido: messageData.contenido?.substring(0, 100) + (messageData.contenido?.length > 100 ? '...' : ''),
-      tieneArchivo: !!messageData.archivo
-    });
-
-    this.socket.emit('send_message', messageData);
-  }
+  this.socket.emit('send_message', mensajeParaEnviar);
+}
 
   // 🆕 MEJORA: Indicador de escritura optimizado
   startTyping(chatId: number, userId: number): void {

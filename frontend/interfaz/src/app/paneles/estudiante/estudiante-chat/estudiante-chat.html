@@ -1,12 +1,13 @@
 <div class="chat-container flex h-screen bg-gray-50 relative overflow-hidden">
   
   <!-- Panel izquierdo - Lista de docentes y compañeros -->
-  <aside class="chat-sidebar w-full sm:w-96 sm:min-w-80 border-r border-gray-200 bg-white flex flex-col h-full transition-all duration-300 ease-in-out"
-         [class.hidden]="chatSeleccionado && isMobile"
-         [class.flex]="!chatSeleccionado || !isMobile"
-         [class.absolute]="isMobile && !chatSeleccionado"
-         [class.inset-0]="isMobile && !chatSeleccionado"
-         [class.z-40]="isMobile && !chatSeleccionado">
+  <!-- 🟢 CORREGIR lógica de visibilidad móvil -->
+<aside class="chat-sidebar w-full sm:w-96 sm:min-w-80 border-r border-gray-200 bg-white flex flex-col h-full transition-all duration-300 ease-in-out"
+       [class.hidden]="chatSeleccionado && isMobile"
+       [class.flex]="!chatSeleccionado || !isMobile"
+       [class.absolute]="isMobile"
+       [class.inset-0]="isMobile"
+       [class.z-40]="isMobile">
     
     <!-- Header del panel -->
     <header class="sidebar-header bg-gradient-to-r from-green-600 to-green-700 px-4 py-4 border-b border-green-500/30 shadow-sm">
@@ -19,11 +20,19 @@
           <p class="text-green-100/90 text-sm mt-1 truncate">
             {{ vistaActiva === 'docentes' ? docentes.length + ' docentes' : companeros.length + ' compañeros' }}
           </p>
+          
         </div>
+        <button (click)="volverAEstudiante()"
+        class="ml-4 w-10 h-10 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-gray-200 hover:border-gray-400 flex-shrink-0"
+        title="Cerrar chat y volver">
+  <i class="fas fa-arrow-left text-sm"></i>
+</button>
       </div>
+
+      
     </header>
 
-    <!-- 🆕 Selector de cursos -->
+    <!-- Selector de cursos -->
     <div class="sidebar-controls space-y-3 p-3 bg-white border-b border-gray-100">
       
       <!-- Selector de cursos -->
@@ -97,7 +106,7 @@
         </div>
       </div>
 
-      <!-- 🆕 Pestañas de navegación -->
+      <!-- Pestañas de navegación -->
       <div *ngIf="cursoSeleccionado" class="view-tabs flex border border-gray-200 rounded-lg bg-gray-50 p-1">
         <button (click)="cambiarVista('docentes')"
                 [class.text-green-600]="vistaActiva === 'docentes'"
@@ -127,7 +136,7 @@
       </div>
     </div>
 
-    <!-- 🆕 Contenido de la lista (Docentes o Compañeros) -->
+    <!-- Contenido de la lista (Docentes o Compañeros) -->
     <div class="sidebar-content flex-1 overflow-hidden flex flex-col">
       
       <!-- Estados de carga -->
@@ -141,7 +150,7 @@
         <p class="text-gray-600 text-sm">Cargando {{ vistaActiva === 'docentes' ? 'docentes' : 'compañeros' }}...</p>
       </div>
 
-      <!-- 🆕 Lista de DOCENTES -->
+      <!-- Lista de DOCENTES -->
       <div *ngIf="!cargandoDocentes && vistaActiva === 'docentes' && cursoSeleccionado" class="h-full">
         
         <div *ngIf="docentes.length === 0" 
@@ -213,7 +222,7 @@
         </div>
       </div>
 
-      <!-- 🆕 Lista de COMPAÑEROS -->
+      <!-- Lista de COMPAÑEROS -->
       <div *ngIf="!cargandoDocentes && vistaActiva === 'companeros' && cursoSeleccionado" class="h-full">
         
         <div *ngIf="companeros.length === 0" 
@@ -339,76 +348,170 @@
           </div>
 
           <!-- Indicador de conexión -->
-<!-- En el header del chat, después de la información del usuario -->
-<div class="flex items-center gap-2 ml-auto">
-  <div class="connection-status flex items-center gap-1 text-xs"
-       [class]="getConnectionClass()">
-    <i class="fas fa-circle text-[8px]"></i>
-    <span class="hidden sm:inline">
-      {{ getConnectionText() }}
-    </span>
-    
-  </div>
-</div>
+          <div class="flex items-center gap-2 ml-auto">
+            <div class="connection-status flex items-center gap-1 text-xs"
+                 [class]="getConnectionClass()">
+              <i class="fas fa-circle text-[8px]"></i>
+              <span class="hidden sm:inline">
+                {{ getConnectionText() }}
+              </span>
+            </div>
+            
+          </div>
+          
         </div>
+        
       </div>
+      
     </header>
 
     <!-- Área de mensajes -->
     <div class="messages-container flex-1 overflow-hidden flex flex-col">
       
       <!-- Estado de carga -->
-      <div *ngIf="cargandoMensajes" 
-           class="loading-state flex flex-col items-center justify-center h-full gap-3 text-gray-500">
-        <div class="loading-spinner flex gap-1.5 items-center justify-center">
-          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
-          <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
-        </div>
-        <p class="text-sm">Cargando mensajes...</p>
-      </div>
+      <!-- 🟢 MEJORAR estados de carga -->
+<div *ngIf="cargandoMensajes" 
+     class="loading-state flex flex-col items-center justify-center h-full gap-3 text-gray-500">
+  <div class="loading-spinner flex gap-1.5 items-center justify-center">
+    <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+    <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+    <div class="spinner-dot w-2 h-2 bg-green-500 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+  </div>
+  <p class="text-sm">Cargando mensajes...</p>
+  <p class="text-xs text-gray-400">Conectado como {{ currentUser?.nombre || 'Estudiante' }}</p>
+</div>
 
-      <!-- Mensajes -->
-      <div #messagesContainer 
-           class="messages-area flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6 space-y-3 min-h-full"
-           (scroll)="onMessagesScroll()"
-           *ngIf="!cargandoMensajes && mensajes.length > 0">
-        
-        <!-- Mensajes -->
-        <div *ngFor="let msg of mensajes; trackBy: trackByMensajeId" 
-             class="message-wrapper flex w-full animate-message-in"
-             [class.justify-end]="esMensajePropio(msg)">
+      <!--******************** Mensajes - SECCIÓN CORREGIDA -->
+      <!-- Mensajes - SECCIÓN ACTUALIZADA CON CARGA -->
+<div #messagesContainer 
+     class="messages-area flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6 space-y-3 min-h-full"
+     (scroll)="onMessagesScroll()"
+     *ngIf="!cargandoMensajes && mensajes.length > 0">
+  
+  <div *ngFor="let msg of mensajes; trackBy: trackByMensajeId" 
+       class="message-wrapper flex w-full animate-message-in"
+       [class.justify-end]="esMensajePropio(msg)">
+
+    <!-- Mensaje recibido (normal) -->
+    <div *ngIf="!esMensajePropio(msg) && !esMensajeCargando(msg)" class="message received flex max-w-[85%]">
+      <div class="flex flex-col gap-1 items-start w-full">
+        <div class="message-bubble px-4 py-2.5 rounded-xl bg-white border border-gray-200 rounded-tl-sm shadow-xs">
+          <p class="message-text text-sm leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
+            {{ msg.contenido }}
+          </p>
           
-          <!-- Mensaje recibido -->
-          <div *ngIf="!esMensajePropio(msg)" class="message received flex max-w-[85%]">
-            <div class="flex flex-col gap-1 items-start w-full">
-              <div class="message-bubble px-4 py-2.5 rounded-xl bg-white border border-gray-200 rounded-tl-sm shadow-xs">
-                <p class="message-text text-sm leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
-                  {{ msg.contenido }}
-                </p>
+          <!-- Archivo en mensajes recibidos -->
+          <div *ngIf="tieneArchivoValido(msg)" class="file-message mt-2 p-3 rounded-lg border bg-gray-50 border-gray-200">
+            <div class="flex items-center gap-3 cursor-pointer" (click)="verArchivo(msg)">
+              <i [class]="obtenerIconoArchivo(msg)" class="text-lg"></i>
+              
+              <div class="file-details flex-1 min-w-0">
+                <div class="file-name text-sm font-medium text-gray-800 truncate">
+                  {{ obtenerNombreArchivo(msg) }}
+                </div>
+                <div class="file-info flex items-center gap-2 text-xs mt-1">
+                  <span class="text-gray-600">{{ obtenerTipoArchivo(msg) }}</span>
+                  <span class="text-gray-400">•</span>
+                  <span class="text-gray-600" *ngIf="tieneTamanoArchivo(msg)">
+                    {{ formatearTamanoArchivo(obtenerTamanoArchivoSeguro(msg)) }}
+                  </span>
+                </div>
               </div>
-              <div class="message-time text-xs text-gray-500 px-1">
-                {{ formatearFecha(msg.fecha) }}
-              </div>
+              
+              <button (click)="descargarArchivo(msg); $event.stopPropagation()" 
+                      class="download-btn p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors"
+                      title="Descargar archivo">
+                <i class="fas fa-download text-sm"></i>
+              </button>
             </div>
           </div>
+        </div>
+        <div class="message-time text-xs text-gray-500 px-1">
+          {{ formatearFecha(msg.fecha) }}
+        </div>
+      </div>
+    </div>
 
-          <!-- Mensaje enviado -->
-          <div *ngIf="esMensajePropio(msg)" class="message sent flex max-w-[85%]">
-            <div class="flex flex-col gap-1 items-end w-full">
-              <div class="message-bubble px-4 py-2.5 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white rounded-tr-sm shadow-xs">
-                <p class="message-text text-sm leading-relaxed break-words whitespace-pre-wrap">
-                  {{ msg.contenido }}
-                </p>
+    <!-- Mensaje enviado (normal) -->
+    <div *ngIf="esMensajePropio(msg) && !esMensajeCargando(msg)" class="message sent flex max-w-[85%]">
+      <div class="flex flex-col gap-1 items-end w-full">
+        <div class="message-bubble px-4 py-2.5 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white rounded-tr-sm shadow-xs">
+          <p class="message-text text-sm leading-relaxed break-words whitespace-pre-wrap">
+            {{ msg.contenido }}
+          </p>
+          
+          <!-- Archivo en mensajes enviados -->
+          <div *ngIf="tieneArchivoValido(msg)" class="file-message mt-2 p-3 rounded-lg border bg-green-50 border-green-200">
+            <div class="flex items-center gap-3 cursor-pointer" (click)="verArchivo(msg)">
+              <i [class]="obtenerIconoArchivo(msg)" class="text-lg"></i>
+              
+              <div class="file-details flex-1 min-w-0">
+                <div class="file-name text-sm font-medium text-green-800 truncate">
+                  {{ obtenerNombreArchivo(msg) }}
+                </div>
+                <div class="file-info flex items-center gap-2 text-xs mt-1">
+                  <span class="text-green-600">{{ obtenerTipoArchivo(msg) }}</span>
+                  <span class="text-green-400">•</span>
+                  <span class="text-green-600" *ngIf="tieneTamanoArchivo(msg)">
+                    {{ formatearTamanoArchivo(obtenerTamanoArchivo(msg)) }}
+                  </span>
+                </div>
               </div>
-              <div class="message-time text-xs text-gray-500 px-1 flex items-center gap-1">
-                <i class="fas fa-check-double text-green-500 text-xs"></i>
-                {{ formatearFecha(msg.fecha) }}
+              
+              <button (click)="descargarArchivo(msg); $event.stopPropagation()" 
+                      class="download-btn p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+                      title="Descargar archivo">
+                <i class="fas fa-download text-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="message-time text-xs text-gray-500 px-1 flex items-center gap-1">
+          <i class="fas fa-check-double text-green-500 text-xs"></i>
+          {{ formatearFecha(msg.fecha) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 MENSAJE DE CARGA (solo para archivos) -->
+    <div *ngIf="esMensajeCargando(msg)" class="message sent flex max-w-[85%]">
+      <div class="flex flex-col gap-1 items-end w-full">
+        <div class="message-bubble px-4 py-2.5 rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white rounded-tr-sm shadow-xs">
+          <div class="loading-file-message">
+            <div class="flex items-center gap-3 p-3 bg-green-50/20 rounded-lg border border-green-200/50">
+              <i class="fas fa-spinner fa-spin text-green-200 text-lg"></i>
+              <div class="flex-1 min-w-0">
+                <div class="file-name text-sm font-medium text-green-100 truncate">
+                  Subiendo: {{ msg.archivo?.nombre }}
+                </div>
+                <div class="file-info flex items-center gap-2 text-xs mt-1 text-green-200">
+                  <span>{{ obtenerTipoArchivo(msg) }}</span>
+                  <span>•</span>
+                  <span>{{ formatearTamanoArchivo(obtenerTamanoArchivo(msg)) }}</span>
+                </div>
+                <!-- Barra de progreso -->
+                <div class="progress-container mt-2">
+                  <div class="w-full bg-green-500/30 rounded-full h-2">
+                    <div class="bg-green-200 h-2 rounded-full transition-all duration-300"
+                         [style.width]="uploadProgreso + '%'"></div>
+                  </div>
+                  <div class="flex justify-between text-xs text-green-200 mt-1">
+                    <span>Progreso:</span>
+                    <span>{{ uploadProgreso }}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <div class="message-time text-xs text-gray-500 px-1">
+          <i class="fas fa-clock text-gray-400 text-xs"></i>
+          Enviando...
+        </div>
       </div>
+    </div>
+  </div>
+</div>
 
       <!-- Estado sin mensajes -->
       <div *ngIf="!cargandoMensajes && mensajes.length === 0" 
@@ -423,11 +526,11 @@
       </div>
     </div>
 
-    <!-- Input de mensaje -->
-    <footer class="message-input-area bg-white border-t border-gray-200 px-4 py-3">
-      <div class="input-container flex items-end gap-3">
+    <!-- Input de mensaje - ACTUALIZADO -->
+<footer class="message-input-area bg-white border-t border-gray-200 px-4 py-3">
+  <div class="input-container flex items-end gap-3">
 
-        <!-- 🆕 BOTÓN DE ADJUNTAR ARCHIVO -->
+    <!-- Botón de adjuntar archivo -->
     <div class="relative">
       <input type="file" 
              #fileInput
@@ -442,49 +545,78 @@
       </button>
     </div>
 
-        <!-- Área de texto -->
-        <div class="input-wrapper flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 transition-all duration-200 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-100">
-          <textarea
-            [(ngModel)]="nuevoMensaje"
-            placeholder="Escribe tu mensaje..."
-            (keydown)="manejarEnter($event)"
-            [disabled]="enviandoMensaje || !chatSeleccionado"
-            rows="1"
-            maxlength="1000"
-            class="message-input w-full border-none bg-transparent resize-none outline-none text-sm leading-relaxed max-h-24 font-inherit placeholder-gray-400"></textarea>
-        <!-- 🆕 INDICADOR DE ARCHIVO SELECCIONADO -->
-      <div *ngIf="archivoSeleccionado" class="mt-2 p-2 bg-green-50 rounded border border-green-200">
-        <div class="flex items-center gap-2 text-xs">
-          <i class="fas fa-paperclip text-green-500"></i>
-          <span class="text-green-700 font-medium truncate flex-1">
-            {{ archivoSeleccionado.name }}
-          </span>
+    <!-- Área de texto -->
+    <div class="input-wrapper flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 transition-all duration-200 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-100">
+      <textarea
+        [(ngModel)]="nuevoMensaje"
+        placeholder="Escribe tu mensaje..."
+        (keydown)="manejarEnter($event)"
+        [disabled]="enviandoMensaje || !chatSeleccionado"
+        rows="1"
+        maxlength="1000"
+        class="message-input w-full border-none bg-transparent resize-none outline-none text-sm leading-relaxed max-h-24 font-inherit placeholder-gray-400"></textarea>
+      
+      <!-- Indicador de archivo seleccionado -->
+      <div *ngIf="archivoSeleccionado" class="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <i [class]="obtenerIconoArchivoPorTipo(archivoSeleccionado.type)" 
+               class="text-green-500 text-lg"></i>
+            <div class="file-info flex-1 min-w-0">
+              <div class="file-name text-sm font-medium text-green-800 truncate">
+                {{ archivoSeleccionado.name }}
+              </div>
+              <div class="file-details flex items-center gap-2 text-xs text-green-600 mt-0.5">
+                <span>{{ obtenerTipoArchivoDeFile(archivoSeleccionado) }}</span>
+                <span>•</span>
+                <span>{{ formatearTamanoArchivo(archivoSeleccionado.size) }}</span>
+              </div>
+            </div>
+          </div>
           <button (click)="removerArchivo()" 
-                  class="text-green-500 hover:text-green-700"
+                  class="text-green-500 hover:text-green-700 p-1 rounded transition-colors"
                   title="Remover archivo">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-times text-sm"></i>
           </button>
         </div>
       </div>
-          </div>
-        
-        <!-- Botón de enviar -->
-        <button
-          (click)="enviarMensaje()"
-          [disabled]="!nuevoMensaje.trim() || !chatSeleccionado || enviandoMensaje"
-          class="send-btn w-10 h-10 bg-green-600 border-none rounded-lg text-white cursor-pointer flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:bg-green-700 hover:shadow-sm active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
-          [class.animate-pulse]="enviandoMensaje"
-          title="Enviar mensaje">
-          <i *ngIf="!enviandoMensaje" class="fas fa-paper-plane text-xs"></i>
-          <i *ngIf="enviandoMensaje" class="fas fa-spinner fa-spin text-xs"></i>
-        </button>
+    </div>
+    
+    <!-- Botón de enviar -->
+    <button
+      (click)="enviarMensaje()"
+[disabled]="(!nuevoMensaje.trim() && !archivoSeleccionado) || !chatSeleccionado || enviandoMensaje"      class="send-btn w-10 h-10 bg-green-600 border-none rounded-lg text-white cursor-pointer flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:bg-green-700 hover:shadow-sm active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+      [class.animate-pulse]="enviandoMensaje"
+      title="Enviar mensaje">
+      <i *ngIf="!enviandoMensaje" class="fas fa-paper-plane text-xs"></i>
+      <i *ngIf="enviandoMensaje" class="fas fa-spinner fa-spin text-xs"></i>
+    </button>
+  </div>
+  
+  <!-- Contador de caracteres -->
+  <div *ngIf="nuevoMensaje" class="text-right mt-2">
+    <span class="text-xs text-gray-500">{{ nuevoMensaje.length }}/1000 caracteres</span>
+  </div>
+
+  <!-- 🆕 Indicador de progreso de upload MEJORADO -->
+  <div *ngIf="uploadProgreso > 0 && uploadProgreso < 100" 
+       class="upload-progress mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+    <div class="flex items-center gap-3">
+      <i class="fas fa-upload text-blue-500 text-lg"></i>
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-sm font-medium text-blue-800">Subiendo archivo...</span>
+          <span class="text-sm text-blue-600">{{ uploadProgreso }}%</span>
+        </div>
+        <div class="progress-bar w-full bg-blue-200 rounded-full h-2">
+          <div class="progress-fill bg-blue-500 h-2 rounded-full transition-all duration-300"
+               [style.width]="uploadProgreso + '%'"></div>
+        </div>
+        <p class="text-xs text-blue-600 mt-1">No cierres la ventana mientras se sube el archivo</p>
       </div>
-      
-      <!-- Contador de caracteres -->
-      <div *ngIf="nuevoMensaje" class="text-right mt-2">
-        <span class="text-xs text-gray-500">{{ nuevoMensaje.length }}/1000 caracteres</span>
-      </div>
-    </footer>
+    </div>
+  </div>
+</footer>
   </main>
 
   <!-- Estado sin chat seleccionado -->

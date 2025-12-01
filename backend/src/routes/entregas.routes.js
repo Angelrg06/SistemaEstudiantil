@@ -2,6 +2,8 @@ import express from 'express';
 import { crearEntrega, descargarArchivo } from '../controllers/entrega.Controller.js';
 import upload from '../middlewares/uploadMiddleware.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { uploadEntrega } from '../config/multer.config.js'; // 🟢 USAR CONFIG UNIFICADA
+
 
 const router = express.Router();
 
@@ -15,6 +17,7 @@ router.post('/subir',
 // Ruta para descargar el archivo
 router.get('/descargar/:ruta',
     authMiddleware,
+    uploadEntrega,
     descargarArchivo
 );
 

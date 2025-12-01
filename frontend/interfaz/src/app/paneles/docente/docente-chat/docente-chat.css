@@ -1,0 +1,72 @@
+/* 🟢 ESTILOS MEJORADOS PARA ARCHIVOS */
+.file-message {
+  transition: all 0.2s ease;
+}
+
+.file-message:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.download-btn {
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Colores para tipos de archivo */
+.text-red-500 { color: #dc3545; }
+.text-blue-500 { color: #0d6efd; }
+.text-green-500 { color: #198754; }
+.text-orange-500 { color: #fd7e14; }
+.text-purple-500 { color: #6f42c1; }
+.text-yellow-600 { color: #ffc107; }
+.text-gray-400 { color: #6c757d; }
+
+/* Estilos para mensajes de carga */
+.loading-file-message {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Estilos para la barra de progreso */
+.progress-container {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para el indicador de upload */
+.upload-progress {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
