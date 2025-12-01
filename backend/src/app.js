@@ -16,6 +16,7 @@ import chatRoutes from "./routes/chat.routes.js";
 import entregaRoutes from './routes/entregas.routes.js';
 import notificacionesRoutes from './routes/notificaciones.routes.js';
 import WebSocketService from './services/websocket.service.js';
+import retroalimentacionRoutes from './routes/retroalimentacion.routes.js';
 
 dotenv.config();
 
@@ -54,6 +55,9 @@ app.use('/api/estudiante', authMiddleware, estudianteRoutes);
 app.use("/api/chat", authMiddleware, chatRoutes);
 app.use('/api/entregas', authMiddleware, entregaRoutes);
 app.use('/api/notificaciones', authMiddleware, notificacionesRoutes);
+// Y en las rutas protegidas:
+app.use('/api/retroalimentaciones', authMiddleware, retroalimentacionRoutes);
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,

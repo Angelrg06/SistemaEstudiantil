@@ -266,7 +266,7 @@ ngOnInit(): void {
   this.setupSearchDebounce();
   this.setupGlobalListeners();
   this.startConnectionMonitoring(); // 🆕 AGREGAR esta línea
-  this.inicializarWebSocket();
+  this.setupWebSocketListeners(); // <- Mantener solo este
   
   // 🆕 AGREGAR esta suscripción para upload progress
   this.subscriptions.add(
@@ -287,7 +287,7 @@ ngOnDestroy(): void {
   
   if (this.chatSeleccionado) {
     this.chatService.salirDelChat(this.chatSeleccionado.id_chat);
-    this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat); // 🆕 AGREGAR esta línea
+    this.chatService.limpiarCacheChat(this.chatSeleccionado.id_chat);
   }
   
   this.subscriptions.unsubscribe();
@@ -325,6 +325,20 @@ ngOnDestroy(): void {
       })
     );
   } 
+
+  // Evitar múltiples conexiones WebSocket
+private socketConnected = false;
+
+conectarWebSocket(): void {
+  if (this.socketConnected) {
+    console.warn('⚠️ WebSocket ya conectado');
+    return;
+  }
+  
+  // Tu lógica de conexión...
+  this.socketConnected = true;
+}
+
 
 // 🆕 En configurarWebSocketParaChat(), cambiar MensajeSocket por Mensaje
 private configurarWebSocketParaChat(id_chat: number): void {
@@ -1060,7 +1074,23 @@ private configurarSuscripcionMensajes(): void {
     );
   }
 
+  // Agrega esta propiedad en la clase DocenteChat
+private mensajesProcesados = new Set<number>();
+
+// Y este método para verificar duplicados
+private esMensajeYaProcesado(mensaje: Mensaje): boolean {
+  if (this.mensajesProcesados.has(mensaje.id_mensaje)) {
+    return true;
+  }
+  this.mensajesProcesados.add(mensaje.id_mensaje);
   
+  // Limpiar periódicamente para evitar crecimiento infinito
+  if (this.mensajesProcesados.size > 1000) {
+    this.mensajesProcesados.clear();
+  }
+  
+  return false;
+}
 
   // 🟢 CORREGIR: Procesamiento de mensajes con archivos mejorado
 // 🟢 CORREGIR: Reemplazar estas líneas problemáticas
@@ -1151,15 +1181,6 @@ private obtenerNombreArchivoDesdeUrl(url: string): string {
     this.cargarMensajes(this.chatSeleccionado.id_chat, siguientePagina, true);
   }
 
-  // 🆕 CONECTAR WEBSOCKET AL INICIAR CHAT
-private conectarWebSocket(): void {
-  const currentUser = this.authService.getCurrentUser();
-  if (currentUser) {
-    this.chatService.unirseAlChat(this.chatSeleccionado!.id_chat);
-    
-  }
-}
-
 // 🟢 CORREGIR COMPLETAMENTE: Método enviarMensaje unificado
 async enviarMensaje(): Promise<void> {
   // 🔴 PROTECCIÓN MEJORADA CONTRA DOBLE ENVÍO
@@ -1216,6 +1237,16 @@ async enviarMensaje(): Promise<void> {
 
 // 🟢 AGREGAR: Método para enviar mensaje solo texto
 private async enviarMensajeNormal(contenido: string): Promise<void> {
+  // 🔴 PREVENIR DOBLE ENVÍO
+  const ahora = Date.now();
+  if (ahora - this.ultimoEnvioTimestamp < 1000 && 
+      contenido === this.ultimoMensajeEnviado) {
+    console.warn('🚫 Mensaje duplicado detectado, ignorando');
+    return;
+  }
+
+  this.ultimoMensajeEnviado = contenido;
+  this.ultimoEnvioTimestamp = ahora;
   const mensajeData = {
     contenido: contenido,
     id_chat: this.chatSeleccionado!.id_chat,
@@ -2139,7 +2170,7 @@ private setupWebSocketListeners(): void {
 }
 // En estudiante-chat.ts y docente-chat.ts
 private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
-  if (!mensajesSocket || mensajesSocket.length === 0) return;
+  if (!mensajesSocket || mensajesSocket.length === 0 || !this.chatSeleccionado) return;
 
   console.log('🔄 Procesando mensajes tiempo real:', mensajesSocket.length);
   
@@ -2147,39 +2178,52 @@ private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
   let mensajesAgregados = 0;
 
   mensajesSocket.forEach(mensaje => {
-    // 🟢 VERIFICACIÓN MÁS ROBUSTA CONTRA DUPLICADOS
-    const esDuplicado = idsExistentes.has(mensaje.id_mensaje) || 
-                       this.mensajes.some(m => 
-                         m.id_remitente === mensaje.id_remitente && 
-                         m.contenido === mensaje.contenido && 
-                         (!mensaje.archivo || m.archivo?.nombre === mensaje.archivo?.nombre) &&
-                         Math.abs(new Date(m.fecha).getTime() - new Date(mensaje.fecha).getTime()) < 3000
-                       );
-
-    if (!esDuplicado) {
-      // 🟢 NORMALIZAR ESTRUCTURA DEL ARCHIVO
-      if (mensaje.archivo) {
-        mensaje.archivo = {
-          url: mensaje.archivo.url || '',
-          ruta: mensaje.archivo.ruta || '',
-          nombre: mensaje.archivo.nombre || 'Archivo sin nombre',
-          tipo: mensaje.archivo.tipo || 'application/octet-stream',
-          tamano: mensaje.archivo.tamano || mensaje.archivo.tamano || 0
-        };
-      }
-      
-      this.mensajes.push(mensaje);
-      mensajesAgregados++;
-      idsExistentes.add(mensaje.id_mensaje);
-      
-      console.log('✅ Mensaje agregado en tiempo real:', {
-        id: mensaje.id_mensaje,
-        remitente: mensaje.id_remitente,
-        tieneArchivo: !!mensaje.archivo
-      });
-    } else {
-      console.log('⚠️ Mensaje duplicado ignorado en tiempo real:', mensaje.id_mensaje);
+    // 🟢 USAR el método de verificación
+    if (!mensaje || !mensaje.id_mensaje || !this.chatSeleccionado || 
+        mensaje.id_chat !== this.chatSeleccionado.id_chat) {
+      return;
     }
+
+    // Evitar mensajes propios recientes
+    if (this.currentUser && mensaje.id_remitente === this.currentUser.id_usuario) {
+      const esReciente = Date.now() - new Date(mensaje.fecha).getTime() < 5000;
+      if (esReciente) {
+        console.log('🚫 Ignorando mensaje propio reciente:', mensaje.id_mensaje);
+        return;
+      }
+    }
+
+    // Verificar duplicados con el método auxiliar
+    const mensajeCast = mensaje as Mensaje;
+    if (idsExistentes.has(mensajeCast.id_mensaje) || this.esMensajeYaProcesado(mensajeCast)) {
+      console.log('⚠️ Mensaje duplicado ignorado:', mensaje.id_mensaje);
+      return;
+    }
+
+    // Normalizar estructura del mensaje
+    const mensajeNormalizado: Mensaje = {
+      id_mensaje: mensaje.id_mensaje,
+      contenido: mensaje.contenido || '📎 Archivo compartido',
+      fecha: mensaje.fecha,
+      id_chat: mensaje.id_chat,
+      id_remitente: mensaje.id_remitente,
+      remitente: mensaje.remitente || {
+        id_usuario: mensaje.id_remitente,
+        correo: 'sin-correo',
+        rol: 'estudiante'
+      },
+      archivo: mensaje.archivo ? {
+        url: mensaje.archivo.url || '',
+        ruta: mensaje.archivo.ruta || '',
+        nombre: mensaje.archivo.nombre || 'Archivo',
+        tipo: mensaje.archivo.tipo || 'application/octet-stream',
+        tamano: mensaje.archivo.tamano || 0
+      } : null
+    };
+
+    this.mensajes.push(mensajeNormalizado);
+    mensajesAgregados++;
+    idsExistentes.add(mensaje.id_mensaje);
   });
 
   if (mensajesAgregados > 0) {
@@ -2188,7 +2232,6 @@ private procesarMensajesTiempoReal(mensajesSocket: any[]): void {
     // Ordenar por fecha
     this.mensajes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     
-    // Scroll automático solo si el usuario está abajo
     if (this.autoScrollEnabled) {
       setTimeout(() => this.scrollToBottom(), 100);
     }

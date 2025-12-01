@@ -11,7 +11,8 @@ import {
   obtenerActividadesPorMes,
   getCursosPorSeccion,
   uploadActividad,
-  actividadesEstudiante
+  actividadesEstudiante,
+  diagnosticarPermisos
 } from "../controllers/actividad.controller.js";
 
 const router = express.Router();
@@ -29,5 +30,6 @@ router.put("/:id", authMiddleware, uploadActividad, actualizarActividad);
 router.delete("/:id", authMiddleware, eliminarActividad);
 router.get('/estado/:estado', obtenerActividadesPorEstado); // Ruta para filtrar por estado
 router.get("/mes/:mes", authMiddleware, obtenerActividadesPorMes);
-
+// Agregar esta ruta temporalmente
+router.get("/diagnosticar-permisos/:id_seccion", authMiddleware, diagnosticarPermisos);
 export default router;

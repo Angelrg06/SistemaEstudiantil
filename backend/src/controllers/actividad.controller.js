@@ -116,46 +116,42 @@ export const getActividadesBySeccion = async (req, res) => {
       );
     }
 
-    // 🟢 VERIFICAR que el docente tenga acceso a esta sección
+    // 🟢 VERIFICACIÓN MEJORADA - Primero obtener el docente
     const docente = await prisma.docente.findFirst({
+      where: { id_usuario: id_usuario }
+    });
+
+    if (!docente) {
+      console.log('❌ Usuario no es un docente válido');
+      return res.status(403).json(
+        errorResponse('No tienes permisos para acceder a estas actividades')
+      );
+    }
+
+    console.log('🔍 Docente encontrado:', docente.id_docente);
+
+    // 🟢 VERIFICAR relación con la sección
+    const seccionDocente = await prisma.seccion.findFirst({
       where: {
-        id_usuario: id_usuario,
-        secciones: {
+        id_seccion: id_seccion,
+        docentes: {
           some: {
-            id_seccion: id_seccion
+            id_docente: docente.id_docente
           }
         }
       }
     });
 
-    console.log('🔍 Docente encontrado:', docente ? `ID ${docente.id_docente} - ${docente.nombre} ${docente.apellido}` : 'NO ENCONTRADO');
-
-    if (!docente) {
+    if (!seccionDocente) {
+      console.log('❌ Docente no tiene acceso a esta sección');
       return res.status(403).json(
         errorResponse('No tienes permisos para ver actividades de esta sección')
       );
     }
 
-    // 🟢 DEBUG: Verificar todas las actividades del docente en esta sección
-    const actividadesDebug = await prisma.actividad.findMany({
-      where: {
-        id_docente: docente.id_docente
-      },
-      select: {
-        id_actividad: true,
-        titulo: true,
-        id_seccion: true,
-        seccion: {
-          select: {
-            nombre: true
-          }
-        }
-      }
-    });
+    console.log('✅ Docente tiene acceso a la sección:', seccionDocente.nombre);
 
-    console.log('🔍 DEBUG - Todas las actividades del docente:', actividadesDebug);
-
-    // 🟢 OBTENER actividades de ESTA sección y ESTE docente
+    // 🟢 OBTENER actividades
     const actividades = await prisma.actividad.findMany({
       where: {
         id_seccion: id_seccion,
@@ -193,9 +189,8 @@ export const getActividadesBySeccion = async (req, res) => {
       }
     });
 
-    console.log(`📚 Actividades encontradas para sección ${id_seccion}: ${actividades.length}`);
+    console.log(`📚 Actividades encontradas: ${actividades.length}`);
 
-    // 🟢 FORMATEAR respuesta para el frontend
     const actividadesFormateadas = actividades.map(act => ({
       id_actividad: act.id_actividad,
       curso: act.curso?.nombre || 'Sin curso',
@@ -211,9 +206,9 @@ export const getActividadesBySeccion = async (req, res) => {
       docente: act.docente,
       seccion: act.seccion,
       total_entregas: act._count.entregas,
-      max_intentos: act.max_intentos || 1,        // 🔹 aquí
-      archivo: act.archivo || null,               // 🔹 aquí
-      archivo_ruta: act.archivo_ruta || null      // 🔹 si lo usas
+      max_intentos: act.max_intentos || 1,
+      archivo: act.archivo || null,
+      archivo_ruta: act.archivo_ruta || null
     }));
 
     res.json(successResponse(
@@ -341,6 +336,62 @@ export const crearActividad = async (req, res) => {
     res.status(500).json(
       errorResponse("Error al crear actividad", error)
     );
+  }
+};
+
+// En actividad.controller.js - Endpoint de diagnóstico
+export const diagnosticarPermisos = async (req, res) => {
+  try {
+    const id_usuario = req.user.id_usuario;
+    const id_seccion = parseInt(req.params.id_seccion);
+
+    console.log('🔍 DIAGNÓSTICO DE PERMISOS');
+    console.log('Usuario:', id_usuario);
+    console.log('Sección solicitada:', id_seccion);
+
+    // 1. Obtener docente
+    const docente = await prisma.docente.findFirst({
+      where: { id_usuario: id_usuario },
+      include: {
+        secciones: {
+          select: {
+            id_seccion: true,
+            nombre: true
+          }
+        }
+      }
+    });
+
+    if (!docente) {
+      return res.json({
+        error: 'Usuario no es docente',
+        id_usuario: id_usuario
+      });
+    }
+
+    // 2. Verificar secciones del docente
+    const seccionesDocente = docente.secciones.map(s => s.id_seccion);
+    console.log('Secciones del docente:', seccionesDocente);
+
+    // 3. Verificar acceso específico
+    const tieneAcceso = seccionesDocente.includes(id_seccion);
+
+    res.json({
+      docente: {
+        id: docente.id_docente,
+        nombre: `${docente.nombre} ${docente.apellido}`,
+        secciones: docente.secciones
+      },
+      seccion_solicitada: id_seccion,
+      tiene_acceso: tieneAcceso,
+      mensaje: tieneAcceso 
+        ? '✅ Tiene acceso a la sección' 
+        : '❌ NO tiene acceso a la sección'
+    });
+
+  } catch (error) {
+    console.error('Error en diagnóstico:', error);
+    res.status(500).json({ error: error.message });
   }
 };
 

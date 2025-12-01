@@ -11,6 +11,7 @@ import { AuthService } from '../../../services/auth.service';
 // Importar componentes necesarios
 import { DocenteChat } from '../docente-chat/docente-chat';
 import { DocenteNotificaciones } from '../docente-notificaciones/docente-notificaciones';
+import { DocenteRetroalimentaciones } from '../docente-retroalimentaciones/docente-retroalimentaciones';
 
 interface Actividad {
   id_actividad: number;
@@ -45,6 +46,7 @@ interface Seccion {
     FormsModule,
     DocenteChat,
     DocenteNotificaciones,
+    DocenteRetroalimentaciones,
   ],
   templateUrl: './docente-actividades.html',
 })
@@ -930,6 +932,26 @@ export class Actividades implements OnInit, OnDestroy {
     alert('Sesión expirada. Por favor, inicie sesión nuevamente.');
     window.location.href = '/login';
   }
+
+  // En docente-actividades.ts, agrega estas propiedades:
+showCalificaciones = false;
+actividadSeleccionadaParaCalificar: any = null;
+
+// Agrega estos métodos:
+
+// 🟢 Abrir panel de calificaciones
+abrirPanelCalificaciones(actividad: any): void {
+  this.actividadSeleccionadaParaCalificar = actividad;
+  this.showCalificaciones = true;
+}
+
+// 🟢 Cerrar panel de calificaciones
+cerrarPanelCalificaciones(): void {
+  this.showCalificaciones = false;
+  this.actividadSeleccionadaParaCalificar = null;
+}
+
+// Modifica el HTML de la actividad para agregar el botón:
 
   private obtenerMensajeError(error: any): string {
     if (error.status === 0) return 'No se puede conectar al servidor. Verifique su conexión.';

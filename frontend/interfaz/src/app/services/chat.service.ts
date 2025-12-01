@@ -1424,12 +1424,60 @@ obtenerUrlDescargaArchivo(rutaArchivo: string): Observable<{ url: string }> {
     this.mensajesSubject.next([]);
   }
 
-  // 🆕 MEJORA: Limpiar cache específico
-  limpiarCacheChat(id_chat: number): void {
-    this.messagesCache.delete(id_chat);
-    this.cacheTimestamp.delete(id_chat);
-    console.log('🗑️ Cache limpiado para chat:', id_chat);
+ // 🟢 AGREGAR: Método para limpiar cache de chat (FALTANTE)
+limpiarCacheChat(id_chat: number): void {
+  console.log('🗑️ Limpiando cache del chat:', id_chat);
+  
+  // Limpiar del Map de cache
+  this.messagesCache.delete(id_chat);
+  this.cacheTimestamp.delete(id_chat);
+  
+  // También limpiar del localStorage si existe
+  const cacheKey = `chat_cache_mensajes_${id_chat}`;
+  localStorage.removeItem(cacheKey);
+  
+  // Filtrar mensajes del subject para este chat
+  const mensajesActuales = this.mensajesSubject.value;
+  const mensajesFiltrados = mensajesActuales.filter(m => m.id_chat !== id_chat);
+  
+  if (mensajesFiltrados.length !== mensajesActuales.length) {
+    this.mensajesSubject.next(mensajesFiltrados);
+    console.log(`✅ Cache del chat ${id_chat} limpiado correctamente`);
   }
+}
+
+// 🟢 AGREGAR: Método para desconectar WebSocket (FALTANTE)
+desconectarWebSocket(): void {
+  console.log('🔌 Desconectando WebSocket desde ChatService...');
+  this.websocketService.disconnect();
+  
+  // Actualizar estado
+  this.connectionState.next({
+    status: 'disconnected',
+    reconnectAttempts: 0,
+    lastError: 'Desconexión manual'
+  });
+  
+  // Limpiar suscripciones específicas de WebSocket
+  this.wsSubscriptions.unsubscribe();
+  this.wsSubscriptions = new Subscription();
+}
+
+// 🟢 AGREGAR: Método para obtener mensajes actuales con tipado correcto
+obtenerMensajesActualesConTipo(): MensajeSocket[] {
+  return this.mensajesSubject.value;
+}
+
+// 🟢 AGREGAR: Método para limpiar todos los mensajes de un chat específico
+limpiarMensajesDelChat(id_chat: number): void {
+  const mensajesActuales = this.mensajesSubject.value;
+  const mensajesFiltrados = mensajesActuales.filter(m => m.id_chat !== id_chat);
+  
+  if (mensajesFiltrados.length !== mensajesActuales.length) {
+    this.mensajesSubject.next(mensajesFiltrados);
+    console.log(`🗑️ Mensajes del chat ${id_chat} limpiados. Antes: ${mensajesActuales.length}, Después: ${mensajesFiltrados.length}`);
+  }
+}
 
   // 🆕 MEJORA: Limpiar toda la cache
   limpiarCacheCompleta(): void {
