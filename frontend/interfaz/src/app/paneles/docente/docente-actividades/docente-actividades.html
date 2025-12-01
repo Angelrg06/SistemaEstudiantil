@@ -1,15 +1,16 @@
-<div class="min-h-screen w-full flex flex-col" 
-     style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
+<div class="min-h-screen w-full flex flex-col" style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
   <!-- 🟢 Header Unificado -->
-  <header class="sticky top-0 z-50 bg-gradient-to-r from-blue-800 to-cyan-600 border-b border-white/20 shadow-lg backdrop-blur-sm">
+  <header
+    class="sticky top-0 z-50 bg-gradient-to-r from-blue-800 to-cyan-600 border-b border-white/20 shadow-lg backdrop-blur-sm">
     <div class="w-full px-3 sm:px-4 md:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
 
         <!-- Logo y navegación -->
         <div class="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
           <div class="flex-shrink-0 flex items-center">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-2 sm:mr-3">
+            <div
+              class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-2 sm:mr-3">
               <i class="fas fa-tasks text-lg sm:text-xl md:text-2xl text-white"></i>
             </div>
             <div class="hidden sm:block">
@@ -17,22 +18,21 @@
               <p class="text-blue-100 text-xs mt-0.5 hidden md:block">{{ getSeccionNombre() }}</p>
             </div>
           </div>
-          
+
           <!-- Navegación principal -->
           <nav class="hidden lg:flex items-center space-x-1 ml-2 md:ml-4 lg:ml-6">
             <a class="px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2"
-               routerLink="/docente">
+              routerLink="/docente">
               <i class="fas fa-tachometer-alt text-xs"></i>
               Inicio
             </a>
             <button (click)="toggleChat()"
               class="px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2 relative"
-              [class.bg-white/20]="showChat"
-              [class.text-white]="showChat">
+              [class.bg-white/20]="showChat" [class.text-white]="showChat">
               <i class="fas fa-comments text-xs"></i>
               Chat
-              <span *ngIf="unreadMessages > 0" 
-                    class="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+              <span *ngIf="unreadMessages > 0"
+                class="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                 {{ unreadMessages > 99 ? '99+' : unreadMessages }}
               </span>
             </button>
@@ -42,29 +42,30 @@
         <!-- Usuario y notificaciones -->
         <div class="flex items-center space-x-2 sm:space-x-3">
           <!-- Información de sección -->
-          <div class="hidden sm:flex items-center px-3 py-1.5 bg-white/15 rounded-lg border border-white/25 backdrop-blur-sm">
+          <div
+            class="hidden sm:flex items-center px-3 py-1.5 bg-white/15 rounded-lg border border-white/25 backdrop-blur-sm">
             <i class="fas fa-users text-cyan-300 text-xs mr-2"></i>
             <span class="text-white text-sm font-medium">{{ getSeccionNombre() }}</span>
           </div>
-          
+
           <!-- Botón de notificaciones -->
           <button (click)="toggleNotificaciones()"
-                  class="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 border border-white/20"
-                  [class.bg-white/20]="showNotificaciones"
-                  [class.text-white]="showNotificaciones">
+            class="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 border border-white/20"
+            [class.bg-white/20]="showNotificaciones" [class.text-white]="showNotificaciones">
             <i class="fas fa-bell text-base sm:text-lg"></i>
-            <span *ngIf="totalNotificaciones > 0" 
-                  class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
+            <span *ngIf="totalNotificaciones > 0"
+              class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
               {{ totalNotificaciones > 99 ? '99+' : totalNotificaciones }}
             </span>
           </button>
-          
+
           <!-- Botón de usuario -->
           <div class="relative">
             <button (click)="toggleUserMenu()"
               class="flex items-center text-sm text-white transition-all duration-300 rounded-xl px-2 py-1.5 sm:px-4 sm:py-2.5 hover:bg-white/10 border border-white/20"
               [class.bg-white/20]="showUserMenu">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+              <div
+                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                 {{ getUserDisplayName().charAt(0) || 'D' }}
               </div>
               <div class="hidden sm:block text-left ml-2">
@@ -73,8 +74,8 @@
                   {{ getUserEmail() }}
                 </p>
               </div>
-              <i class="fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform duration-300" 
-                 [class.rotate-180]="showUserMenu"></i>
+              <i class="fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform duration-300"
+                [class.rotate-180]="showUserMenu"></i>
             </button>
 
             <!-- Overlay -->
@@ -86,7 +87,8 @@
 
               <!-- Información del docente -->
               <div class="py-2 space-y-1">
-                <div class="flex items-center w-full px-4 sm:px-5 py-3 sm:py-4 bg-blue-50 rounded-lg border border-blue-100 mx-2">
+                <div
+                  class="flex items-center w-full px-4 sm:px-5 py-3 sm:py-4 bg-blue-50 rounded-lg border border-blue-100 mx-2">
                   <div class="flex-shrink-0 mr-3">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center">
                       <i class="fas fa-user-graduate text-white text-sm sm:text-base"></i>
@@ -110,13 +112,12 @@
 
                 <!-- Acciones rápidas -->
                 <a class="flex items-center w-full px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
-                   (click)="refreshActividades(); showUserMenu = false">
+                  (click)="refreshActividades(); showUserMenu = false">
                   <i class="fas fa-sync-alt mr-3 text-blue-500 text-sm sm:text-base"></i>
                   Actualizar actividades
                 </a>
                 <a class="flex items-center w-full px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 transition-all duration-300"
-                   routerLink="/docente"
-                   (click)="showUserMenu = false">
+                  routerLink="/docente" (click)="showUserMenu = false">
                   <i class="fas fa-chalkboard-teacher mr-3 text-blue-500 text-sm sm:text-base"></i>
                   Panel Principal
                 </a>
@@ -129,7 +130,7 @@
               <div class="px-4 sm:px-5 py-2">
                 <button (click)="logout()"
                   class="flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg font-medium">
-                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> 
+                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i>
                   Cerrar sesión
                 </button>
               </div>
@@ -138,12 +139,12 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Navegación móvil -->
     <div class="lg:hidden border-t border-white/10 py-2 px-3 sm:px-4">
       <nav class="flex justify-around">
         <a class="flex flex-col items-center text-white/80 hover:text-white transition-all duration-300 text-xs py-1"
-           routerLink="/docente">
+          routerLink="/docente">
           <i class="fas fa-tachometer-alt text-sm mb-1"></i>
           <span>Inicio</span>
         </a>
@@ -152,23 +153,21 @@
           [class.text-white]="showChat">
           <i class="fas fa-comments text-sm mb-1"></i>
           <span>Chat</span>
-          <span *ngIf="unreadMessages > 0" 
-                class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+          <span *ngIf="unreadMessages > 0"
+            class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
         </button>
       </nav>
     </div>
   </header>
 
   <!-- 🟢 Componente de Chat -->
-  <div *ngIf="showChat" 
-       class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm transition-all duration-300"
-       (click)="closeChat()">
+  <div *ngIf="showChat" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm transition-all duration-300"
+    (click)="closeChat()">
   </div>
 
   <!-- 🟢 Componente de Chat Modal -->
-  <div *ngIf="showChat" 
-       class="fixed inset-0 z-[9999] bg-white overflow-hidden animate-scale-in">
-    
+  <div *ngIf="showChat" class="fixed inset-0 z-[9999] bg-white overflow-hidden animate-scale-in">
+
     <!-- Header del chat modal -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
       <div class="flex items-center gap-3">
@@ -180,34 +179,29 @@
           <p class="text-gray-600 text-sm">Comunícate con tus alumnos</p>
         </div>
       </div>
-      <button (click)="closeChat()" 
-              class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
+      <button (click)="closeChat()"
+        class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
         <i class="fas fa-times text-xl"></i>
       </button>
     </div>
 
     <!-- Componente DocenteChat -->
     <div class="h-[calc(100vh-80px)]">
-      <app-docente-chat 
-        [seccionesDesdePadre]="seccionInfo ? [seccionInfo] : []"
-        (seccionesActualizadas)="onSeccionesActualizadas($event)"
-        class="h-full w-full">
+      <app-docente-chat [seccionesDesdePadre]="seccionInfo ? [seccionInfo] : []"
+        (seccionesActualizadas)="onSeccionesActualizadas($event)" class="h-full w-full">
       </app-docente-chat>
     </div>
   </div>
 
   <!-- 🟢 Componente de Notificaciones -->
-  <app-docente-notificaciones 
-    *ngIf="showNotificaciones"
-    [idDocente]="currentUser?.id_docente"
+  <app-docente-notificaciones *ngIf="showNotificaciones" [idDocente]="currentUser?.id_docente"
     (cerrar)="cerrarNotificaciones()">
   </app-docente-notificaciones>
 
   <!-- 🟢 Contenido principal -->
-  <main class="flex-1 pt-6 pb-6 sm:pt-8 sm:pb-8 w-full px-3 sm:px-4 md:px-6 lg:px-8 text-white" 
-        [class.opacity-30]="showChat"
-        [class.pointer-events-none]="showChat">
-    
+  <main class="flex-1 pt-6 pb-6 sm:pt-8 sm:pb-8 w-full px-3 sm:px-4 md:px-6 lg:px-8 text-white"
+    [class.opacity-30]="showChat" [class.pointer-events-none]="showChat">
+
     <!-- Encabezado de la página -->
     <div class="max-w-7xl mx-auto mb-6 sm:mb-8">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -217,25 +211,27 @@
             Gestiona actividades para <span class="font-semibold text-white">{{ getSeccionNombre() }}</span>
           </p>
         </div>
-        
+
         <div class="mt-4 md:mt-0 flex space-x-2 sm:space-x-3 flex-shrink-0">
           <!-- Filtro de estado -->
-          <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()"
-                  class="px-3 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white font-medium hover:bg-white/30 transition-all duration-300 text-sm">
+          <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()" class="px-4 py-2 rounded-xl bg-white/30 backdrop-blur-sm text-gray-800 font-medium
+           shadow-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500
+           hover:bg-white/50 transition duration-200 ease-in-out cursor-pointer">
             <option value="todas">Todas las actividades</option>
             <option value="activas">Activas</option>
             <option value="completadas">Completadas</option>
             <option value="pendientes">Pendientes</option>
           </select>
-          
+
+
           <button (click)="refreshActividades()"
-                  class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2 text-sm"
-                  [disabled]="cargando">
+            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2 text-sm"
+            [disabled]="cargando">
             <i class="fas fa-sync-alt text-xs" [class.animate-spin]="cargando"></i>
             Actualizar
           </button>
-          <button (click)="mostrarFormActividad()" 
-                  class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm">
+          <button (click)="mostrarFormActividad()"
+            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm">
             <i class="fas fa-plus text-xs"></i>
             Nueva Actividad
           </button>
@@ -245,9 +241,11 @@
 
     <!-- 🟢 Tarjetas de estadísticas -->
     <div class="max-w-7xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-      <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
+      <div
+        class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
             <i class="fas fa-tasks text-white text-sm"></i>
           </div>
           <div>
@@ -256,10 +254,12 @@
           </div>
         </div>
       </div>
-      
-      <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
+
+      <div
+        class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
             <i class="fas fa-play-circle text-white text-sm"></i>
           </div>
           <div>
@@ -268,10 +268,12 @@
           </div>
         </div>
       </div>
-      
-      <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
+
+      <div
+        class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
             <i class="fas fa-check-circle text-white text-sm"></i>
           </div>
           <div>
@@ -280,10 +282,12 @@
           </div>
         </div>
       </div>
-      
-      <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
+
+      <div
+        class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300 group">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
             <i class="fas fa-clock text-white text-sm"></i>
           </div>
           <div>
@@ -293,6 +297,17 @@
         </div>
       </div>
     </div>
+
+    <!-- 🔷 Filtro por mes
+    <div class="max-w-7xl mx-auto mt-4 mb-6 flex justify-end">
+      <select [(ngModel)]="filtroMes" (change)="filtrarPorMes()" class="px-4 py-2 rounded-xl bg-white/30 backdrop-blur-sm text-gray-800 font-medium
+           shadow-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500
+           hover:bg-white/50 transition duration-200 ease-in-out cursor-pointer">
+        <option value="">Todos los meses</option>
+        <option *ngFor="let mes of meses; let i = index" [value]="i + 1">{{ mes }}</option>
+      </select>
+    </div>-->
+
 
     <!-- 🟢 Estados de carga y error -->
     <div *ngIf="cargando" class="max-w-7xl mx-auto">
@@ -315,13 +330,15 @@
             <h4 class="text-white font-semibold mb-1 text-sm">Error al cargar actividades</h4>
             <p class="text-blue-100 text-xs">{{ error }}</p>
           </div>
-          <button (click)="cargarActividades()" 
+          <!--
+          <button (click)="cargarActividades()"
                   class="px-3 py-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 text-xs">
             Reintentar
-          </button>
+          </button>-->
         </div>
       </div>
     </div>
+
 
     <!-- 🟢 Estado sin actividades -->
     <div *ngIf="!tieneActividades() && !cargando && !hayError()" class="max-w-7xl mx-auto">
@@ -334,7 +351,7 @@
           Aún no has creado actividades para <span class="font-semibold text-white">{{ getSeccionNombre() }}</span>
         </p>
         <button (click)="mostrarFormActividad()"
-                class="px-6 py-3 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm">
+          class="px-6 py-3 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm">
           <i class="fas fa-plus text-sm"></i>
           Crear Primera Actividad
         </button>
@@ -349,8 +366,7 @@
 
           <!-- Badge de estado -->
           <div class="flex justify-between items-start mb-3">
-            <span class="px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm"
-                  [ngClass]="{
+            <span class="px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm" [ngClass]="{
                     'bg-green-100 text-green-800': act.estado === 'completada',
                     'bg-blue-100 text-blue-800': act.estado === 'activo',
                     'bg-yellow-100 text-yellow-800': act.estado === 'pendiente',
@@ -364,7 +380,8 @@
 
           <!-- Header de la actividad -->
           <div class="mb-3">
-            <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-1 line-clamp-2">
+            <h3
+              class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-1 line-clamp-2">
               {{ act.titulo || 'Sin título' }}
             </h3>
             <p class="text-blue-600 font-semibold text-sm flex items-center gap-1">
@@ -394,9 +411,8 @@
 
           <!-- Botón de acción -->
           <div class="mt-4 pt-3 border-t border-gray-100">
-            <button (click)="abrirModal(i)"
-              class="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg 
-                     shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all duration-300 
+            <button (click)="abrirModal(i)" class="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg
+                     shadow-md hover:from-blue-700 hover:to-cyan-600 transition-all duration-300
                      font-medium text-sm flex items-center justify-center gap-2">
               <i class="fas fa-edit text-xs"></i>
               Gestionar Actividad
@@ -411,10 +427,11 @@
   <footer class="bg-gradient-to-r from-blue-900 to-cyan-800 border-t border-white/10 text-white py-4 sm:py-6">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center">
-        
+
         <!-- Información del sistema -->
         <div class="flex items-center mb-3 sm:mb-4 md:mb-0">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+          <div
+            class="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
             <i class="fas fa-graduation-cap text-white text-xs sm:text-sm"></i>
           </div>
           <div>
@@ -424,7 +441,8 @@
         </div>
 
         <!-- Enlaces y copyright -->
-        <div class="flex flex-col md:flex-row items-center space-y-1 sm:space-y-2 md:space-y-0 md:space-x-4 lg:space-x-6 text-xs">
+        <div
+          class="flex flex-col md:flex-row items-center space-y-1 sm:space-y-2 md:space-y-0 md:space-x-4 lg:space-x-6 text-xs">
           <span class="text-blue-100 text-xs">
             © 2024 Sistema Académico. Todos los derechos reservados.
           </span>
@@ -439,20 +457,22 @@
   </footer>
 
   <!-- 🟢 Modal para crear nueva actividad -->
-  <div *ngIf="nuevaActividad" 
-       class="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+  <div *ngIf="nuevaActividad"
+    class="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/20">
-      
+
       <!-- Header del modal -->
-      <div class="flex justify-between items-center border-b border-gray-200 px-6 py-4 sticky top-0 bg-white rounded-t-2xl">
+      <div
+        class="flex justify-between items-center border-b border-gray-200 px-6 py-4 sticky top-0 bg-white rounded-t-2xl">
         <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-xl flex items-center justify-center">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-400 rounded-xl flex items-center justify-center">
             <i class="fas fa-plus text-white text-base"></i>
           </div>
           Nueva Actividad
         </h2>
-        <button (click)="cerrarFormActividad()" 
-                class="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:scale-110">
+        <button (click)="cerrarFormActividad()"
+          class="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:scale-110">
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
@@ -467,21 +487,32 @@
 
       <!-- Formulario -->
       <div class="p-6 space-y-4">
-        
+
+        <!-- Máx. Intentos -->
+        <div class="space-y-2">
+          <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-redo text-blue-500"></i>
+            Máx. Intentos *
+          </label>
+          <input type="number"
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="max_intentos_nuevos" name="max_intentos" min="1"
+            placeholder="Ingrese número máximo de intentos" required>
+        </div>
+
         <!-- Curso -->
         <div class="space-y-2">
           <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
             <i class="fas fa-book text-blue-500"></i>
             Curso *
           </label>
-          <select class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                  [(ngModel)]="curso_nuevo" name="curso" required>
+          <select
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="curso_nuevo" name="curso" required>
             <option value="" disabled selected>Seleccione un curso...</option>
-            <option value="historia">Historia</option>
-            <option value="ciencias">Ciencias</option>
-            <option value="matematicas">Matemáticas</option>
-            <option value="literatura">Literatura</option>
-            <option value="religion">Religión</option>
+            <option *ngFor="let curso of cursosDisponibles" [value]="curso.nombre">
+              {{ curso.nombre }}
+            </option>
           </select>
         </div>
 
@@ -491,14 +522,22 @@
             <i class="fas fa-heading text-blue-500"></i>
             Título de la Actividad *
           </label>
-          <input type="text" 
-                 class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                 [(ngModel)]="titulo_nuevo" 
-                 name="titulo"
-                 placeholder="Ingrese el título de la actividad..."
-                 maxlength="100"
-                 required>
+          <input type="text"
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="titulo_nuevo" name="titulo" placeholder="Ingrese el título de la actividad..." maxlength="100"
+            required>
           <p class="text-xs text-gray-500">{{ titulo_nuevo.length || 0 }}/100 caracteres</p>
+        </div>
+
+        <!-- Archivo opcional -->
+        <div class="space-y-2">
+          <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-file-upload text-blue-500"></i>
+            Archivo (opcional)
+          </label>
+          <input type="file" name="archivo" (change)="onArchivoSeleccionado($event)"
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 text-base" />
+          <p class="text-xs text-gray-500">Solo para material extra (opcional)</p>
         </div>
 
         <!-- Descripción -->
@@ -507,14 +546,10 @@
             <i class="fas fa-align-left text-blue-500"></i>
             Descripción *
           </label>
-          <textarea 
+          <textarea
             class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 resize-none text-base"
-            rows="4" 
-            [(ngModel)]="descripcion_nuevo" 
-            name="descripcion"
-            placeholder="Describa la actividad..."
-            maxlength="500"
-            required></textarea>
+            rows="4" [(ngModel)]="descripcion_nuevo" name="descripcion" placeholder="Describa la actividad..."
+            maxlength="500" required></textarea>
           <p class="text-xs text-gray-500">{{ descripcion_nuevo.length || 0 }}/500 caracteres</p>
         </div>
 
@@ -524,8 +559,9 @@
             <i class="fas fa-tasks text-blue-500"></i>
             Tipo de Actividad *
           </label>
-          <select class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                  [(ngModel)]="tipo_nuevo" name="tipo" required>
+          <select
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="tipo_nuevo" name="tipo" required>
             <option value="" disabled selected>Seleccione una opción...</option>
             <option value="Tarea">Tarea</option>
             <option value="Proyecto">Proyecto</option>
@@ -541,11 +577,9 @@
               <i class="fas fa-play-circle text-green-500"></i>
               Fecha Inicio *
             </label>
-            <input type="datetime-local" 
-                   class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-base"
-                   [(ngModel)]="fecha_ini_nuevo" 
-                   name="f-inicio"
-                   required>
+            <input type="datetime-local"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-base"
+              [(ngModel)]="fecha_ini_nuevo" name="f-inicio" required>
           </div>
 
           <div class="space-y-2">
@@ -553,11 +587,9 @@
               <i class="fas fa-flag-checkered text-red-500"></i>
               Fecha Final *
             </label>
-            <input type="datetime-local" 
-                   class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 text-base"
-                   [(ngModel)]="fecha_fini_nuevo" 
-                   name="f-final"
-                   required>
+            <input type="datetime-local"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 text-base"
+              [(ngModel)]="fecha_fini_nuevo" name="f-final" required>
           </div>
         </div>
       </div>
@@ -565,12 +597,12 @@
       <!-- Footer del modal -->
       <div class="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl sticky bottom-0">
         <div class="flex justify-end gap-3">
-          <button (click)="cerrarFormActividad()" 
-                  class="px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-base hover:scale-105">
+          <button (click)="cerrarFormActividad()"
+            class="px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-base hover:scale-105">
             Cancelar
           </button>
-          <button (click)="crearActividad()" 
-                  class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-xl hover:from-green-600 hover:to-emerald-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
+          <button (click)="crearActividad()"
+            class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-xl hover:from-green-600 hover:to-emerald-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
             <i class="fas fa-check text-base"></i>
             Crear Actividad
           </button>
@@ -580,20 +612,20 @@
   </div>
 
   <!-- 🟢 Modal para editar actividad -->
-  <div *ngIf="isModalOpen" 
-       class="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/20">
-      
+
       <!-- Header del modal -->
-      <div class="flex justify-between items-center border-b border-gray-200 px-6 py-4 sticky top-0 bg-white rounded-t-2xl">
+      <div
+        class="flex justify-between items-center border-b border-gray-200 px-6 py-4 sticky top-0 bg-white rounded-t-2xl">
         <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
           <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center">
             <i class="fas fa-edit text-white text-base"></i>
           </div>
           Editar Actividad
         </h2>
-        <button (click)="cerrarModal()" 
-                class="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:scale-110">
+        <button (click)="cerrarModal()"
+          class="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:scale-110">
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
@@ -608,21 +640,31 @@
 
       <!-- Formulario de edición -->
       <div class="p-6 space-y-4">
-        
+
+        <!-- Máximo intentos -->
+        <div class="space-y-2">
+          <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-redo text-blue-500"></i>
+            Máximo Intentos *
+          </label>
+          <input type="number" min="1" max="10"
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="intentos_nuevo" name="maxIntentos" required>
+        </div>
+
         <!-- Curso -->
         <div class="space-y-2">
           <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
             <i class="fas fa-book text-blue-500"></i>
             Curso *
           </label>
-          <select class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                  [(ngModel)]="curso_temporal" name="curso" required>
-            <option value="" disabled>Seleccione un curso...</option>
-            <option value="historia">Historia</option>
-            <option value="ciencias">Ciencias</option>
-            <option value="matematicas">Matemáticas</option>
-            <option value="literatura">Literatura</option>
-            <option value="religion">Religión</option>
+          <select
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="curso_temporal" name="curso" required>
+            <option value="" disabled selected>Seleccione un curso...</option>
+            <option *ngFor="let curso of cursosDisponibles" [value]="curso.nombre">
+              {{ curso.nombre }}
+            </option>
           </select>
         </div>
 
@@ -632,13 +674,30 @@
             <i class="fas fa-heading text-blue-500"></i>
             Título *
           </label>
-          <input type="text" 
-                 class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                 [(ngModel)]="titulo_temporal" 
-                 name="titulo"
-                 maxlength="100"
-                 required>
+          <input type="text"
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="titulo_temporal" name="titulo" maxlength="100" required>
           <p class="text-xs text-gray-500">{{ titulo_temporal.length || 0 }}/100 caracteres</p>
+        </div>
+
+        <!-- Mostrar archivo actual si existe -->
+        <div *ngIf="archivo_ruta_nuevo" class="mb-2">
+          <p class="text-xs text-gray-500">
+            Archivo actual:
+            <a [href]="archivo_ruta_nuevo" target="_blank">
+              {{ archivo_ruta_nuevo.split('/').pop() }}
+            </a>
+          </p>
+        </div>
+
+        <!-- Input para subir un nuevo archivo -->
+        <div class="space-y-2">
+          <label class="block text-base font-semibold text-gray-700 flex items-center gap-2">
+            <i class="fas fa-file-upload text-blue-500"></i>
+            Reemplazar archivo (opcional)
+          </label>
+          <input type="file" (change)="onArchivoSeleccionado($event)" />
+          <p class="text-xs text-gray-500">{{ archivoNombre || 'No se ha seleccionado archivo' }}</p>
         </div>
 
         <!-- Descripción -->
@@ -647,13 +706,9 @@
             <i class="fas fa-align-left text-blue-500"></i>
             Descripción *
           </label>
-          <textarea 
+          <textarea
             class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 resize-none text-base"
-            rows="4" 
-            [(ngModel)]="descripcion_temporal" 
-            name="descripcion"
-            maxlength="500"
-            required></textarea>
+            rows="4" [(ngModel)]="descripcion_temporal" name="descripcion" maxlength="500" required></textarea>
           <p class="text-xs text-gray-500">{{ descripcion_temporal.length || 0 }}/500 caracteres</p>
         </div>
 
@@ -663,8 +718,9 @@
             <i class="fas fa-tasks text-blue-500"></i>
             Tipo de Actividad *
           </label>
-          <select class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
-                  [(ngModel)]="tipo_actividad" name="tipo" required>
+          <select
+            class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base"
+            [(ngModel)]="tipo_actividad" name="tipo" required>
             <option value="Tarea">Tarea</option>
             <option value="Proyecto">Proyecto</option>
             <option value="Examen">Examen</option>
@@ -679,11 +735,9 @@
               <i class="fas fa-play-circle text-green-500"></i>
               Fecha Inicio *
             </label>
-            <input type="datetime-local" 
-                   class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-base"
-                   [(ngModel)]="fecha_temporal_inicio" 
-                   name="fechaIncio"
-                   required>
+            <input type="datetime-local"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-base"
+              [(ngModel)]="fecha_temporal_inicio" name="fechaIncio" required>
           </div>
 
           <div class="space-y-2">
@@ -691,11 +745,9 @@
               <i class="fas fa-flag-checkered text-red-500"></i>
               Fecha Final *
             </label>
-            <input type="datetime-local" 
-                   class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 text-base"
-                   [(ngModel)]="fecha_temporal_final" 
-                   name="fechaFinal"
-                   required>
+            <input type="datetime-local"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 text-base"
+              [(ngModel)]="fecha_temporal_final" name="fechaFinal" required>
           </div>
         </div>
       </div>
@@ -703,19 +755,19 @@
       <!-- Footer del modal -->
       <div class="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-2xl sticky bottom-0">
         <div class="flex justify-between items-center">
-          <button (click)="eliminarActividad()" 
-                  class="px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-400 text-white rounded-xl hover:from-red-600 hover:to-pink-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
+          <button (click)="eliminarActividad()"
+            class="px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-400 text-white rounded-xl hover:from-red-600 hover:to-pink-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
             <i class="fas fa-trash text-base"></i>
             Eliminar
           </button>
-          
+
           <div class="flex gap-3">
-            <button (click)="cerrarModal()" 
-                    class="px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-base hover:scale-105">
+            <button (click)="cerrarModal()"
+              class="px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-base hover:scale-105">
               Cancelar
             </button>
-            <button (click)="actualizarActividad()" 
-                    class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-xl hover:from-green-600 hover:to-emerald-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
+            <button (click)="actualizarActividad()"
+              class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-xl hover:from-green-600 hover:to-emerald-500 transition-all duration-300 font-bold text-base flex items-center gap-2 hover:scale-105 shadow-lg">
               <i class="fas fa-save text-base"></i>
               Guardar Cambios
             </button>

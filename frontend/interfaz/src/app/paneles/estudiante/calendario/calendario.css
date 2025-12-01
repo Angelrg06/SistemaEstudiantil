@@ -1,0 +1,122 @@
+/* Estilos personalizados para FullCalendar */
+:host ::ng-deep .fc {
+  font-family: inherit;
+}
+
+:host ::ng-deep .fc-theme-standard .fc-scrollgrid {
+  border: none;
+}
+
+:host ::ng-deep .fc-theme-standard td, 
+:host ::ng-deep .fc-theme-standard th {
+  border: 1px solid #e5e7eb;
+}
+
+:host ::ng-deep .fc-daygrid-day-frame {
+  min-height: 100px;
+  padding: 2px;
+}
+
+:host ::ng-deep .fc-daygrid-day-events {
+  margin: 2px 0;
+  min-height: 20px;
+}
+
+:host ::ng-deep .fc-event {
+  margin: 1px 2px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:host ::ng-deep .fc-event-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep .fc-daygrid-event-dot {
+  display: none;
+}
+
+:host ::ng-deep .fc-daygrid-block-event .fc-event-time,
+:host ::ng-deep .fc-daygrid-block-event .fc-event-title {
+  padding: 2px 4px;
+}
+
+:host ::ng-deep .fc-day-today {
+  background-color: #dbeafe !important;
+}
+
+:host ::ng-deep .fc-col-header-cell-cushion {
+  font-weight: 600;
+  color: #374151;
+  text-decoration: none;
+}
+
+:host ::ng-deep .fc-daygrid-day-number {
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  padding: 4px 6px;
+}
+
+:host ::ng-deep .fc-daygrid-day-top {
+  justify-content: center;
+}
+
+:host ::ng-deep .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+:host ::ng-deep .fc-button {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: white !important;
+  font-weight: 500;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .fc-button:hover {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  transform: translateY(-1px);
+}
+
+:host ::ng-deep .fc-button-active {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Limitar número de eventos visibles y mostrar contador */
+:host ::ng-deep .fc-daygrid-more-link {
+  font-size: 0.7rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 2px;
+}
+
+/* Asegurar que el calendario ocupe el espacio disponible */
+:host ::ng-deep .fc-view-harness {
+  min-height: 600px;
+}

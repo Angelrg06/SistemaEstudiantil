@@ -1,6 +1,34 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+// 🟢 AGREGAR: Función auxiliar para obtener tipo de archivo
+function obtenerTipoArchivo(url) {
+  if (!url) return 'application/octet-stream';
+  
+  const extension = url.split('.').pop()?.toLowerCase();
+  
+  if (!extension) return 'application/octet-stream';
+  
+  const tipos = {
+    'pdf': 'application/pdf',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'txt': 'text/plain',
+    'zip': 'application/zip',
+    'rar': 'application/x-rar-compressed',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  };
+  
+  return tipos[extension] || 'application/octet-stream';
+}
+
 // Helper functions para convertir IDs
 const obtenerIdUsuarioDocente = async (id_docente) => {
   const docente = await prisma.docente.findUnique({
@@ -113,6 +141,7 @@ export const getChatsByDocente = async (id_docente) => {
   }
 };
 
+
 /**
  * 🟢 Obtener todos los alumnos del docente (con y sin chat) - CORREGIDO
  */
@@ -175,6 +204,8 @@ export const getAlumnosByDocente = async (id_docente, id_seccion = null) => {
         }
       });
     });
+
+    
 
     const usuariosEstudiantes = await prisma.usuario.findMany({
       where: {
@@ -307,12 +338,10 @@ export const getAlumnosByDocente = async (id_docente, id_seccion = null) => {
   }
 };
 
-/**
- * 🟢 Obtener mensajes de un chat - CORREGIDO
- */
+// chat.service.js - ACTUALIZAR métodos de obtención
 export const getMensajesByChat = async (id_chat) => {
   try {
-    return await prisma.mensaje.findMany({
+    const mensajes = await prisma.mensaje.findMany({
       where: { id_chat: Number(id_chat) },
       orderBy: { fecha: "asc" },
       select: {
@@ -320,21 +349,56 @@ export const getMensajesByChat = async (id_chat) => {
         contenido: true,
         fecha: true,
         id_remitente: true,
+        archivo: true,
+        archivo_ruta: true,
         remitente: {
           select: { 
             id_usuario: true, 
             correo: true, 
             rol: true,
-            // ✅ CORRECCIÓN: Usar relaciones correctas
             docente: {
-              select: { nombre: true, apellido: true }
+              select: { 
+                nombre: true, 
+                apellido: true,
+                id_docente: true  // 🟢 AGREGAR para identificar docente
+              }
             },
             estudiante: {
-              select: { nombre: true, apellido: true }
+              select: { 
+                nombre: true, 
+                apellido: true,
+                id_estudiante: true  // 🟢 AGREGAR para identificar estudiante
+              }
             }
           }
         }
       }
+    });
+
+    // 🟢 PROCESAR ARCHIVOS MEJORADO
+    return mensajes.map(mensaje => {
+      // Determinar tipo de remitente
+      const esDocente = !!mensaje.remitente.docente;
+      const remitenteInfo = esDocente ? 
+        { ...mensaje.remitente.docente, tipo: 'docente' } : 
+        { ...mensaje.remitente.estudiante, tipo: 'estudiante' };
+
+      return {
+        ...mensaje,
+        remitente: {
+          ...mensaje.remitente,
+          info: remitenteInfo
+        },
+        archivo: mensaje.archivo ? {
+          url: mensaje.archivo,
+          ruta: mensaje.archivo_ruta,
+          nombre: mensaje.archivo.split('/').pop() || 'archivo',
+          tipo: obtenerTipoArchivo(mensaje.archivo),
+          // 🟢 AGREGAR INFORMACIÓN ADICIONAL
+          puedeDescargar: true,
+          esArchivo: true
+        } : null
+      };
     });
   } catch (error) {
     console.error("❌ Error al obtener mensajes:", error);
@@ -401,12 +465,15 @@ export const getMensajesByChatPaginado = async (id_chat, pagina = 1, limite = 50
   }
 };
 
+
+
 /**
  * 🟢 Enviar un mensaje nuevo
  */
-export const enviarMensaje = async ({ contenido, id_chat, id_remitente }) => {
+// En chat.service.js - CORREGIR el método enviarMensaje
+export const enviarMensaje = async ({ contenido, id_chat, id_remitente, archivo = null }) => {
   try {
-    // 🟢 MEJORA: Validar que el chat existe
+    // 🟢 VALIDAR QUE EL CHAT EXISTE
     const chat = await prisma.chat.findUnique({
       where: { id_chat: Number(id_chat) },
       select: { id_chat: true }
@@ -416,22 +483,50 @@ export const enviarMensaje = async ({ contenido, id_chat, id_remitente }) => {
       throw new Error(`Chat con ID ${id_chat} no encontrado`);
     }
 
+    // 🟢 CORRECCIÓN: DEFINIR LA VARIABLE hace5Segundos
+    const ahora = new Date();
+    const hace5Segundos = new Date(ahora.getTime() - 5000); // 🟡 ESTA LÍNEA FALTABA
+
+    // 🟢 PROTECCIÓN CONTRA MENSAJES DUPLICADOS
+    const mensajeDuplicado = await prisma.mensaje.findFirst({
+      where: {
+        id_chat: Number(id_chat),
+        id_remitente: Number(id_remitente),
+        contenido: contenido?.trim() || '',
+        fecha: {
+          gte: hace5Segundos // 🟡 AHORA ESTÁ DEFINIDA
+        }
+      }
+    });
+
+    if (mensajeDuplicado) {
+      console.log('⚠️ Mensaje duplicado detectado en servicio para chat:', id_chat);
+      throw new Error('Mensaje duplicado detectado');
+    }
+    
+    // 🟢 GUARDAR EN BD
     return await prisma.mensaje.create({
       data: { 
-        contenido: contenido.trim(), 
+        contenido: contenido?.trim() || '', 
         id_chat: Number(id_chat), 
-        id_remitente: Number(id_remitente)
+        id_remitente: Number(id_remitente),
+        archivo: archivo?.url || null,
+        archivo_ruta: archivo?.ruta || null
       },
       select: {
         id_mensaje: true,
         contenido: true,
         fecha: true,
         id_remitente: true,
+        archivo: true,
+        archivo_ruta: true,
         remitente: {
           select: { 
             id_usuario: true, 
             correo: true, 
-            rol: true 
+            rol: true,
+            docente: { select: { nombre: true, apellido: true } },
+            estudiante: { select: { nombre: true, apellido: true } }
           }
         }
       }
@@ -774,6 +869,61 @@ export const healthCheck = async () => {
   }
 };
 
+// 🟢 FUNCIÓN AUXILIAR: Verificar integridad de archivos
+export const verificarArchivosMensajes = async (id_chat) => {
+  try {
+    const mensajes = await prisma.mensaje.findMany({
+      where: { 
+        id_chat: Number(id_chat),
+        archivo: { not: null }
+      },
+      select: {
+        id_mensaje: true,
+        contenido: true,
+        archivo: true,
+        archivo_ruta: true,
+        fecha: true
+      }
+    });
+
+    const resultados = await Promise.all(
+      mensajes.map(async (mensaje) => {
+        try {
+          // Verificar si el archivo existe en Supabase
+          const { data, error } = await supabaseService.supabase.storage
+            .from('archivos')
+            .list(mensaje.archivo_ruta ? 
+              mensaje.archivo_ruta.split('/').slice(0, -1).join('/') : 
+              '');
+
+          const existeEnStorage = !error && data && data.length > 0;
+
+          return {
+            id_mensaje: mensaje.id_mensaje,
+            archivo_url: mensaje.archivo,
+            archivo_ruta: mensaje.archivo_ruta,
+            existe_en_storage: existeEnStorage,
+            error: error?.message || null
+          };
+        } catch (error) {
+          return {
+            id_mensaje: mensaje.id_mensaje,
+            archivo_url: mensaje.archivo,
+            archivo_ruta: mensaje.archivo_ruta,
+            existe_en_storage: false,
+            error: error.message
+          };
+        }
+      })
+    );
+
+    return resultados;
+  } catch (error) {
+    console.error("❌ Error verificando archivos:", error);
+    throw error;
+  }
+};
+
 /**
  * 🟢 NUEVO: Obtener estadísticas de chat para dashboard
  */
@@ -806,3 +956,4 @@ export const getEstadisticasChat = async (id_docente) => {
     throw new Error(`No se pudieron obtener las estadísticas: ${error.message}`);
   }
 };
+

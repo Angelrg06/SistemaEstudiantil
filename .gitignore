@@ -19,3 +19,4 @@ logs/
 
 # Prisma
 prisma/migrations/
+backend/prisma/schema.prisma

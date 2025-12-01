@@ -15,8 +15,12 @@ export const crearEntrega = async (req, res) => {
 
         //Obtener datos de la petición
         const { id_actividad } = req.body;
+        if (!id_actividad) {
+            return res.status(400).json({ error: "ID de actividad requerido" });
+        }
+        const comentario_estudiante = req.body.comentario_estudiante || null;
         const archivo = req.file; //Archivo procesado para Multer
-        const id_usuario = req.user.id; //ID del usuario desde el token
+        const id_usuario = req.user.id_usuario; //ID del usuario desde el token
 
         //req.file contiene el archivo que Multer procesó
         //Viene del FormData que envía Angular
@@ -46,6 +50,40 @@ export const crearEntrega = async (req, res) => {
         //Verificar que obtiene el id del estudiante logueado
         console.log(`Estudiante encontrado - ID: ${id_estudiante}`);
 
+        //Validar existencia de la actividad y obtener max_intentos
+        const actividad = await prisma.actividad.findUnique({
+            where: { id_actividad: Number(id_actividad) },
+            select: { id_actividad: true, titulo: true, max_intentos: true }
+        });
+
+        if (!actividad) {
+            return res.status(404).json({
+                success: true,
+                error: 'La actividad no existe'
+            })
+        };
+
+        const maxIntentos = actividad.max_intentos ?? 3; // fallback a 3 si es null
+
+        //Determinar el siguiente intento para este estudiante y actividad
+        const ultimaEntrega = await prisma.entrega.findFirst({
+            where: { id_estudiante, id_actividad: Number(id_actividad) },
+            orderBy: { intento: 'desc' },
+            select: { intento: true }
+        })
+
+        const nextIntento = ultimaEntrega ? ultimaEntrega.intento + 1 : 1;
+
+        console.log(`Último intento: ${ultimaEntrega ? ultimaEntrega.intento : 0}, siguiente intento: ${nextIntento}, max: ${maxIntentos}`);
+
+        //Verificar si se excede el números de intentos
+        if (nextIntento > maxIntentos) {
+            return res.status(400).json({
+                success: false,
+                error: `Has superado el número máximo de intentos (${maxIntentos}) para esta actividad.`
+            });
+        }
+
         //Subir archivo a Supabase
         console.log('Subiendo archivo a Supabase');
         const archivoData = await supabaseService.subirArchivo(
@@ -67,6 +105,8 @@ export const crearEntrega = async (req, res) => {
                 archivo: archivoData.url, //URL pública de Supabase
                 archivo_ruta: archivoData.ruta, //Ruta interna en Supabase
                 fecha_entrega: new Date(),
+                comentario_estudiante: comentario_estudiante,
+                intento: nextIntento,
                 id_actividad: parseInt(id_actividad),
                 id_estudiante: id_estudiante
             },
@@ -108,8 +148,10 @@ export const crearEntrega = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            error: 'Error al procesar la entrega: ' + error.message
+            error: 'Error al procesar la entrega: ' + error.message,
         });
+
+        console.error('🔥 ERROR DETECTADO EN crearEntrega:', error);
     };
 
 }

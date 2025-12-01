@@ -1,6 +1,7 @@
-// src/app.js - VERSIÓN CORREGIDA
+// src/app.js - VERSIÓN SIMPLIFICADA Y SEGURA
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import dotenv from 'dotenv';
 import adminRoutes from './routes/admin.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -13,32 +14,65 @@ import docenteRoutes from './routes/docente.routes.js';
 import estudianteRoutes from './routes/estudiantes.routes.js';
 import chatRoutes from "./routes/chat.routes.js";
 import entregaRoutes from './routes/entregas.routes.js';
-import notificacionesRoutes from './routes/notificaciones.routes.js'; // 🆕 AÑADIR ESTA LÍNEA
+import notificacionesRoutes from './routes/notificaciones.routes.js';
+import WebSocketService from './services/websocket.service.js';
 
 dotenv.config();
 
 const app = express();
 
-// Middlewares
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+// Middlewares básicos
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || "http://localhost:4200", 
+  credentials: true 
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Health check
-app.get('/healthz', (req, res) => res.send('ok'));
+app.get('/healthz', (req, res) => {
+  res.json({ status: 'ok', service: 'backend' });
+});
 
 // Rutas públicas
 app.use('/api/auth', authRoutes);
 
+// Crear servidor HTTP
+const server = createServer(app);
+
+// Inicializar WebSockets
+WebSocketService.initialize(server);
+
 // Rutas protegidas
 app.use('/api/usuarios', authMiddleware, userRoutes);
-app.use('/api/panel', panelRoutes);
-app.use('/api/admin', adminRoutes);
-app.use("/api/secciones", seccionesRoutes);
-app.use("/api/actividades", actividadesRoutes);
-app.use('/api/docentes', docenteRoutes);
-app.use('/api/estudiante', estudianteRoutes);
-app.use("/api/chat", chatRoutes);
+app.use('/api/panel', authMiddleware, panelRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
+app.use("/api/secciones", authMiddleware, seccionesRoutes);
+app.use("/api/actividades", authMiddleware, actividadesRoutes);
+app.use('/api/docentes', authMiddleware, docenteRoutes);
+app.use('/api/estudiante', authMiddleware, estudianteRoutes);
+app.use("/api/chat", authMiddleware, chatRoutes);
 app.use('/api/entregas', authMiddleware, entregaRoutes);
-app.use('/api/notificaciones', authMiddleware, notificacionesRoutes); // 🆕 AÑADIR ESTA LÍNEA
+app.use('/api/notificaciones', authMiddleware, notificacionesRoutes);
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Ruta no encontrada'
+  });
+});
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Error interno del servidor'
+  });
+});
+
+// Iniciar servidor
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
+  console.log(`💬 WebSocket Service: ACTIVO`);
+});
 
 export default app;

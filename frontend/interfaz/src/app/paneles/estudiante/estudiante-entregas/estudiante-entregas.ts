@@ -1,16 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { EntregasService } from '../../../services/entrega.service';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-estudiante-entregas',
   standalone: true,
-  imports: [HttpClientModule, CommonModule, RouterLink],
+  imports: [HttpClientModule, CommonModule, FormsModule ,RouterLink],
   templateUrl: './estudiante-entregas.html',
   styleUrl: './estudiante-entregas.css'
 })
@@ -29,6 +30,7 @@ export class EstudianteEntregas implements OnInit {
 
   // Propiedades del componente
   archivoSeleccionado: File | null = null;
+  comentario: string = '';
   subiendo: boolean = false;
 
   constructor(private router: Router, private authService: AuthService, private route: ActivatedRoute, private http: HttpClient, private entregaService: EntregasService) { }
@@ -145,6 +147,7 @@ export class EstudianteEntregas implements OnInit {
     this.entregaService.subirEntrega(
       this.archivoSeleccionado,
       this.actividadSeleccionada, //Usamos el ID de la actividad seleccionada
+      this.comentario
     ).subscribe({
       next: (response: any) => {
         console.log('Respuesta del servidor:', response);
@@ -155,6 +158,7 @@ export class EstudianteEntregas implements OnInit {
           this.cerrarModal();
           //Recargar actividades para ver la entrega
           this.getActividades();
+          this.getMisEntregas();
         } else {
           alert('Error: ' + response.error);
         }
@@ -163,7 +167,9 @@ export class EstudianteEntregas implements OnInit {
       },
       error: (error) => {
         console.error('Error en la petición:', error);
-        alert('Error al enviar la entrega. Intenta nuevamente.');
+        // Si el backend devolvió un 400 por intentos -> mostrar mensaje específico
+        const msg = error?.error?.error || 'Error al enviar la entrega. Intenta nuevamente.';
+        alert(msg);
         this.subiendo = false;
       }
     });
@@ -172,6 +178,7 @@ export class EstudianteEntregas implements OnInit {
   //MÉTODO: Limpiar formulario
   private limpiarFormulario(): void {
     this.archivoSeleccionado = null;
+    this.comentario = '';
     // Limpiar input file
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) fileInput.value = '';

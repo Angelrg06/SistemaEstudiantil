@@ -18,4 +18,4 @@ router.get('/descargar/:ruta',
     descargarArchivo
 );
 
-export default router;
+export default router; 

@@ -1,4 +1,4 @@
-//app.routes.ts
+// app.routes.ts - ACTUALIZADO
 import { Routes } from '@angular/router';
 import { Login } from './login/login';
 
@@ -8,6 +8,13 @@ import { Estudiante } from './paneles/estudiante/estudiante';
 import { EstudianteEntregas } from './paneles/estudiante/estudiante-entregas/estudiante-entregas';
 import { Actividades } from './paneles/docente/docente-actividades/docente-actividades';
 import { AuthRoleGuard } from './guards/authRole.guard';
+
+// 🆕 IMPORTAR COMPONENTES DE CHAT
+import { DocenteChat } from './paneles/docente/docente-chat/docente-chat';
+import { EstudianteChat } from './paneles/estudiante/estudiante-chat/estudiante-chat';
+
+// 🆕 IMPORTAR COMPONENTE DE CALENDARIO
+import { Calendario } from './paneles/estudiante/calendario/calendario';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -19,6 +26,8 @@ export const routes: Routes = [
     canActivate: [AuthRoleGuard],
     data: { role: 'admin' },
   },
+  
+  // 🆕 RUTAS PARA DOCENTE
   {
     path: 'docente',
     component: Docente,
@@ -26,17 +35,40 @@ export const routes: Routes = [
     data: { role: 'docente' },
   },
   {
+    path: 'docente/chat',
+    component: DocenteChat,
+    canActivate: [AuthRoleGuard],
+    data: { role: 'docente' },
+  },
+  {
+    path: 'actividades/:id',
+    component: Actividades,
+    canActivate: [AuthRoleGuard],
+    data: { role: 'docente' },
+  },
+
+  // 🆕 RUTAS PARA ESTUDIANTE
+  {
     path: 'estudiante',
     component: Estudiante,
     canActivate: [AuthRoleGuard],
     data: { role: 'estudiante' },
   },
   {
-    path: 'entregas/:id',
-    component: EstudianteEntregas
+    path: 'estudiante/chat',
+    component: EstudianteChat,
+    canActivate: [AuthRoleGuard],
+    data: { role: 'estudiante' },
   },
-  { path: 'actividades/:id',
-    component: Actividades
+  {
+    path: 'entregas/:id',
+    component: EstudianteEntregas,
+    canActivate: [AuthRoleGuard],
+    data: { role: 'estudiante' },
+  },
+  {
+    path: 'calendario',
+    component: Calendario,
   },
 
   // Ruta fallback

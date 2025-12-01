@@ -1,4 +1,4 @@
-<div class="min-h-screen w-full flex flex-col" 
+<div class="min-h-screen w-full flex flex-col"
      style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
 
   <!-- 🟢 Header -->
@@ -17,7 +17,7 @@
               <p class="text-blue-100 text-xs mt-0.5 hidden md:block">Gestión académica integral</p>
             </div>
           </div>
-          
+
           <!-- Navegación principal -->
           <nav class="hidden lg:flex items-center space-x-1 ml-2 md:ml-4 lg:ml-6">
             <a class="px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2"
@@ -31,7 +31,7 @@
               [class.text-white]="showChat">
               <i class="fas fa-comments text-xs"></i>
               Chat
-              <span *ngIf="unreadMessages > 0" 
+              <span *ngIf="unreadMessages > 0"
                     class="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                 {{ unreadMessages > 99 ? '99+' : unreadMessages }}
               </span>
@@ -48,7 +48,7 @@
         [class.text-white]="showNotificaciones">
   <i class="fas fa-bell text-base sm:text-lg"></i>
 </button>
-          
+
           <!-- Botón de usuario -->
           <div class="relative">
             <button (click)="toggleUserMenu()"
@@ -63,7 +63,7 @@
                   {{ getUserEmail() }}
                 </p>
               </div>
-              <i class="fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform duration-300" 
+              <i class="fas fa-chevron-down ml-1 sm:ml-2 text-xs transition-transform duration-300"
                  [class.rotate-180]="showUserMenu"></i>
             </button>
 
@@ -112,7 +112,7 @@
                 <div class="border-t border-gray-200 mx-2 my-2"></div>
 
                 <!-- Acciones rápidas -->
-                
+
                 <a class="flex items-center w-full px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
                    (click)="refreshSecciones(); showUserMenu = false">
                   <i class="fas fa-sync-alt mr-3 text-blue-500 text-sm sm:text-base"></i>
@@ -134,7 +134,7 @@
               <div class="px-4 sm:px-5 py-2">
                 <button (click)="logout()"
                   class="flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg font-medium">
-                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> 
+                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i>
                   Cerrar sesión
                 </button>
               </div>
@@ -144,7 +144,7 @@
 
       </div>
     </div>
-    
+
     <!-- Navegación móvil -->
     <div class="lg:hidden border-t border-white/10 py-2 px-3 sm:px-4">
       <nav class="flex justify-around">
@@ -158,7 +158,7 @@
           [class.text-white]="showChat">
           <i class="fas fa-comments text-sm mb-1"></i>
           <span>Chat</span>
-          <span *ngIf="unreadMessages > 0" 
+          <span *ngIf="unreadMessages > 0"
                 class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
         </button>
       </nav>
@@ -166,15 +166,15 @@
   </header>
 
   <!-- 🟢 Overlay para el chat -->
-  <div *ngIf="showChat" 
+  <div *ngIf="showChat"
        class="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm transition-all duration-300"
        (click)="closeChat()">
   </div>
 
   <!-- 🟢 Componente de Chat - VERSIÓN CORREGIDA (SIN DUPLICADOS) -->
-  <div *ngIf="showChat" 
+  <div *ngIf="showChat"
        class="fixed inset-0 z-[9999] bg-white overflow-hidden animate-scale-in">
-    
+
     <!-- Header del chat modal -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
       <div class="flex items-center gap-3">
@@ -186,7 +186,7 @@
           <p class="text-gray-600 text-sm">Comunícate con tus alumnos</p>
         </div>
       </div>
-      <button (click)="closeChat()" 
+      <button (click)="closeChat()"
               class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
         <i class="fas fa-times text-xl"></i>
       </button>
@@ -194,7 +194,7 @@
 
     <!-- Componente DocenteChat importado - CON ALTURA COMPLETA -->
     <div class="h-[calc(100vh-80px)]">
-      <app-docente-chat 
+      <app-docente-chat
         [seccionesDesdePadre]="secciones"
         (seccionesActualizadas)="onSeccionesActualizadas($event)"
         class="h-full w-full">
@@ -203,17 +203,17 @@
   </div>
 
   <!-- 🟢 Componente de Notificaciones -->
-<app-docente-notificaciones 
+<app-docente-notificaciones
   *ngIf="showNotificaciones"
   [idDocente]="currentUser?.id_docente"
   (cerrar)="cerrarNotificaciones()">
 </app-docente-notificaciones>
 
   <!-- 🟢 Contenido principal -->
-  <main class="flex-1 pt-6 pb-6 sm:pt-8 sm:pb-8 w-full px-3 sm:px-4 md:px-6 lg:px-8 text-white" 
+  <main class="flex-1 pt-6 pb-6 sm:pt-8 sm:pb-8 w-full px-3 sm:px-4 md:px-6 lg:px-8 text-white"
         [class.opacity-30]="showChat"
         [class.pointer-events-none]="showChat">
-    
+
     <!-- Encabezado de la página -->
     <div class="max-w-7xl mx-auto mb-6 sm:mb-8">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -223,7 +223,7 @@
             Gestiona tus cursos, actividades y comunicación con estudiantes desde un solo lugar.
           </p>
         </div>
-        
+
         <div class="mt-4 md:mt-0 flex space-x-2 sm:space-x-3 flex-shrink-0">
           <button (click)="refreshSecciones()"
                   class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2 text-sm"
@@ -231,11 +231,7 @@
             <i class="fas fa-sync-alt text-xs" [class.animate-spin]="false"></i>
             Actualizar
           </button>
-          <button class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all duration-300 flex items-center gap-2 text-sm"
-                  [disabled]="showChat">
-            <i class="fas fa-plus text-xs"></i>
-            Nueva Actividad
-          </button>
+
         </div>
       </div>
     </div>
@@ -266,7 +262,7 @@
               {{ errorMessage }}
             </p>
           </div>
-          <button (click)="refreshSecciones()" 
+          <button (click)="refreshSecciones()"
                   class="px-3 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 text-sm">
             Reintentar
           </button>
@@ -277,7 +273,7 @@
     <!-- 🟢 Grid de cards de secciones -->
     <div class="max-w-7xl mx-auto" *ngIf="!isLoading && !errorMessage">
       <!-- Estado vacío -->
-      <div *ngIf="secciones.length === 0" 
+      <div *ngIf="secciones.length === 0"
            class="flex flex-col items-center justify-center py-12 sm:py-16 text-center">
         <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-4 sm:mb-6">
           <i class="fas fa-book-open text-2xl sm:text-3xl text-white/70"></i>
@@ -293,7 +289,7 @@
       </div>
 
       <!-- 🟢 Grid de secciones -->
-      <div *ngIf="secciones.length > 0" 
+      <div *ngIf="secciones.length > 0"
            class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
         <div *ngFor="let seccion of secciones; trackBy: trackBySeccionId"
           class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 flex flex-col transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:bg-white/20 border border-white/10 group">
@@ -354,7 +350,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 md:p-6 border border-white-10">
           <div class="flex items-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center mr-3 sm:mr-4">
@@ -390,7 +386,7 @@
   <footer class="bg-gradient-to-r from-blue-900 to-cyan-800 border-t border-white/10 text-white py-4 sm:py-6">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center">
-        
+
         <!-- Información del sistema -->
         <div class="flex items-center mb-3 sm:mb-4 md:mb-0">
           <div class="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mr-2 sm:mr-3">

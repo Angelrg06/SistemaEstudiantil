@@ -1,4 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import * as actividadService from "../services/actividad.service.js";
+import supabaseService from '../services/supabase.service.js';
+import multer from 'multer';
+
+// Middleware multer para recibir un archivo
+export const uploadActividad = multer({ storage: multer.memoryStorage() }).single('archivo');
+
 const prisma = new PrismaClient();
 
 // 🟢 FORMATO ESTANDAR DE RESPUESTA
@@ -131,7 +138,7 @@ export const getActividadesBySeccion = async (req, res) => {
 
     // 🟢 DEBUG: Verificar todas las actividades del docente en esta sección
     const actividadesDebug = await prisma.actividad.findMany({
-      where: { 
+      where: {
         id_docente: docente.id_docente
       },
       select: {
@@ -150,11 +157,11 @@ export const getActividadesBySeccion = async (req, res) => {
 
     // 🟢 OBTENER actividades de ESTA sección y ESTE docente
     const actividades = await prisma.actividad.findMany({
-      where: { 
+      where: {
         id_seccion: id_seccion,
         id_docente: docente.id_docente
       },
-      include: { 
+      include: {
         docente: {
           select: {
             id_docente: true,
@@ -203,7 +210,10 @@ export const getActividadesBySeccion = async (req, res) => {
       id_seccion: act.id_seccion,
       docente: act.docente,
       seccion: act.seccion,
-      total_entregas: act._count.entregas
+      total_entregas: act._count.entregas,
+      max_intentos: act.max_intentos || 1,        // 🔹 aquí
+      archivo: act.archivo || null,               // 🔹 aquí
+      archivo_ruta: act.archivo_ruta || null      // 🔹 si lo usas
     }));
 
     res.json(successResponse(
@@ -222,8 +232,13 @@ export const getActividadesBySeccion = async (req, res) => {
 export const crearActividad = async (req, res) => {
   try {
     const id_usuario = req.user.id_usuario;
-    
-    console.log('🆕 Creando actividad. Usuario:', id_usuario, 'Datos:', req.body);
+    const archivo = req.file;
+    console.log('Archivo recibido:', archivo);
+
+    console.log('Body:', req.body);       // campos de texto
+    console.log('Archivo:', req.file);    // archivo subido
+
+    console.log('🆕 Creando actividad. Usuario:', id_usuario);
 
     // 🟢 OBTENER el ID del docente del usuario autenticado
     const docente = await prisma.docente.findFirst({
@@ -266,6 +281,23 @@ export const crearActividad = async (req, res) => {
       );
     }
 
+
+    // Subir archivo a Supabase si existe
+    let archivo_url = null;
+    let archivo_ruta = null;
+
+    if (archivo) {
+      const resultado = await supabaseService.subirArchivo(
+        archivo.buffer,
+        archivo.originalname,
+        'actividades',           // carpeta en tu bucket
+        archivo.mimetype
+      );
+
+      archivo_ruta = resultado.ruta;
+      archivo_url = resultado.url;
+    }
+
     // 🟢 CREAR la actividad directamente
     const nuevaActividad = await prisma.actividad.create({
       data: {
@@ -276,9 +308,22 @@ export const crearActividad = async (req, res) => {
         fecha_fin: new Date(req.body.fecha_fin),
         fecha_entrega: new Date(req.body.fecha_entrega),
         estado: 'activo',
+        max_intentos: parseInt(req.body.max_intentos) || 3,
+        archivo: archivo_url,
+        archivo_ruta: archivo_ruta,
         id_curso: curso.id_curso,
         id_docente: docente.id_docente,
         id_seccion: parseInt(req.body.id_seccion)
+        /*titulo: req.body.titulo,
+        descripcion: req.body.descripcion,
+        tipo: req.body.tipo,
+        fecha_inicio: new Date(req.body.fecha_inicio),
+        fecha_fin: new Date(req.body.fecha_fin),
+        fecha_entrega: new Date(req.body.fecha_entrega),
+        estado: 'activo',
+        id_curso: curso.id_curso,
+        id_docente: docente.id_docente,
+        id_seccion: parseInt(req.body.id_seccion)*/
       },
       include: {
         curso: true,
@@ -289,10 +334,7 @@ export const crearActividad = async (req, res) => {
 
     console.log('✅ Actividad creada:', nuevaActividad.id_actividad);
 
-    res.json(successResponse(
-      nuevaActividad,
-      "Actividad creada correctamente"
-    ));
+    res.json({ success: true, message: 'Actividad creada correctamente', data: nuevaActividad });
 
   } catch (error) {
     console.error("❌ Error en crearActividad:", error);
@@ -321,7 +363,7 @@ export const actualizarActividad = async (req, res) => {
     }
 
     const actividadExistente = await prisma.actividad.findFirst({
-      where: { 
+      where: {
         id_actividad: id,
         id_docente: docente.id_docente
       }
@@ -335,7 +377,7 @@ export const actualizarActividad = async (req, res) => {
 
     // 🟢 BUSCAR curso si se proporciona
     let datosActualizacion = { ...req.body };
-    
+
     if (req.body.curso) {
       const curso = await prisma.curso.findFirst({
         where: {
@@ -361,6 +403,23 @@ export const actualizarActividad = async (req, res) => {
     }
     if (req.body.fecha_entrega) {
       datosActualizacion.fecha_entrega = new Date(req.body.fecha_entrega);
+    }
+
+    // Subir archivo si hay
+    if (req.file) {
+      const resultado = await supabaseService.subirArchivo(
+        req.file.buffer,
+        req.file.originalname,
+        'actividades',
+        req.file.mimetype
+      );
+      datosActualizacion.archivo = resultado.url;
+      datosActualizacion.archivo_ruta = resultado.ruta;
+    }
+
+    // 🔹 CONVERSIÓN DE max_intentos A NÚMERO
+    if (datosActualizacion.max_intentos !== undefined) {
+      datosActualizacion.max_intentos = parseInt(datosActualizacion.max_intentos, 10);
     }
 
     const actividadActualizada = await prisma.actividad.update({
@@ -405,7 +464,7 @@ export const eliminarActividad = async (req, res) => {
     }
 
     const actividadExistente = await prisma.actividad.findFirst({
-      where: { 
+      where: {
         id_actividad: id,
         id_docente: docente.id_docente
       }
@@ -431,5 +490,153 @@ export const eliminarActividad = async (req, res) => {
     res.status(500).json(
       errorResponse("Error al eliminar actividad", error)
     );
+  }
+};
+
+// Obtener actividades por estado
+export const obtenerActividadesPorEstado = async (req, res) => {
+  try {
+    const { estado } = req.params;
+
+    // Validar estado permitido
+    const estadosPermitidos = ['activo', 'completado', 'pendiente'];
+    if (!estadosPermitidos.includes(estado.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estado no válido. Usa: activo, completado o pendiente.'
+      });
+    }
+
+    const actividades = await actividadService.obtenerPorEstado(estado);
+    res.json({
+      success: true,
+      data: actividades,
+      message: `Actividades con estado '${estado}' obtenidas correctamente`
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener actividades por estado',
+      error: error.message
+    });
+  }
+};
+
+// Obtener actividades por mes (solo del docente autenticado)
+export const obtenerActividadesPorMes = async (req, res) => {
+  try {
+    const { mes } = req.params;
+    const id_usuario = req.user.id_usuario;
+
+    console.log(`📅 Buscando actividades del mes ${mes} para el usuario ${id_usuario}`);
+
+    // 🟢 OBTENER el docente del usuario autenticado
+    const docente = await prisma.docente.findFirst({
+      where: { id_usuario }
+    });
+
+    if (!docente) {
+      return res.status(403).json({
+        success: false,
+        message: "Usuario no autorizado o no es docente"
+      });
+    }
+
+    // 🔹 Llamar al servicio con id_docente
+    const actividades = await actividadService.obtenerPorMes(parseInt(mes), docente.id_docente);
+
+    if (!actividades || actividades.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No se encontraron actividades del docente para el mes ${mes}`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Se encontraron ${actividades.length} actividades del mes ${mes}`,
+      data: actividades
+    });
+
+  } catch (error) {
+    console.error("❌ Error al obtener actividades por mes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener actividades por mes",
+      error: error.message
+    });
+  }
+};
+
+export const getCursosPorSeccion = async (req, res) => {
+  try {
+    const id_seccion = parseInt(req.params.id_seccion);
+
+    if (isNaN(id_seccion)) {
+      return res.status(400).json(errorResponse("ID de sección inválido"));
+    }
+
+    const cursos = await prisma.seccionCurso.findMany({
+      where: { id_seccion },
+      include: { curso: true },
+    });
+
+    // Extraemos solo los cursos
+    const listaCursos = cursos.map(sc => sc.curso);
+
+    res.json(successResponse(listaCursos, "Cursos obtenidos correctamente"));
+
+  } catch (error) {
+    console.error("❌ Error al obtener cursos por sección:", error);
+    res.status(500).json(errorResponse("Error al obtener cursos", error));
+  }
+};
+
+export const actividadesEstudiante = async (req, res) => {
+  try {
+    const id_usuario = req.user.id_usuario;
+
+    // Encontrar estudiante por id_usuario
+    const estudiante = await prisma.estudiante.findUnique({
+      where: { id_usuario },
+    });
+
+    if (!estudiante) {
+      return res.status(404).json({ error: "Estudiante no encontrado" });
+    }
+
+    if (!estudiante.id_seccion) {
+      return res.status(400).json({ error: "No tienes una sección asignada" });
+    }
+
+    // Obtener actividades de esa sección
+    const actividades = await prisma.actividad.findMany({
+      where: { id_seccion: estudiante.id_seccion },
+      include: {
+        curso: true,
+        docente: true
+      }
+    });
+
+    // Formato para FullCalendar
+    const eventos = actividades.map(a => ({
+      id: a.id_actividad,
+      title: `${a.titulo} (${a.curso.nombre})`,
+      start: a.fecha_inicio,
+      end: a.fecha_fin,
+      extendedProps: {
+        descripcion: a.descripcion,
+        estado: a.estado,
+        docente: `${a.docente.nombre} ${a.docente.apellido}`,
+        curso: a.curso.nombre
+      }
+    }));
+
+    return res.json(eventos);
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    res.status(500).json({ error: "Error obteniendo actividades" });
   }
 };

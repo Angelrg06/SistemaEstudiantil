@@ -18,7 +18,7 @@
 
                     <!-- Nombre -->
                     <div class="hidden md:block">
-                        <h1 class="text-white font-bold text-x1 tracking-tight">Col. 10 Oct.</h1>
+                        <h1 class="text-white font-extrabold text-xl tracking-wide drop-shadow-md">Col. 10 Oct.</h1>
                     </div>
                     <div class="block md:hidden">
                         <h1 class="text-white font-bold text-lg tracking-tight"></h1>
@@ -171,7 +171,7 @@
 
             <!-- Modal para entregas -->
             <div *ngIf="actividadSeleccionada !== null && modalAbierto"
-                class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+                class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 transition-opacity duration-300">
 
                 <!-- Fondo de formulario -->
                 <div class="bg-white rounded-2xl shadow-xl w-[50%] p-8 max-h-[90vh] overflow-y-auto">
@@ -259,6 +259,14 @@
                     <!-- Cargar actividad -->
                     <div class="flex flex-col mt-6">
 
+                        <!-- Comentario del estudiante -->
+                        <div class="mt-4 w-full max-w-md mx-auto">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Comentario (opcional)</label>
+                            <textarea [(ngModel)]="comentario" rows="3"
+                                class="w-full px-3 py-2 border rounded-lg focus:outline-none"
+                                placeholder="Escribe un comentario para tu entrega (opcional)"></textarea>
+                        </div>
+
                         <!-- Subir actividad -->
                         <div class="flex justify-center mb-4">
                             <div class="flex items-center">
@@ -321,7 +329,7 @@
                 </div>
 
             </div>
-            
+
             <!-- Sin cursos -->
             <ng-template #SinActividades>
                 <p class="text-center text-black mt-10 text-lg">
