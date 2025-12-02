@@ -1,10 +1,9 @@
-/* estudiante-notificaciones.css */
 .notificaciones-container {
   background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -19,7 +18,11 @@
 
 .notificaciones-header h3 {
   margin: 0;
-  color: #333;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .notificaciones-actions {
@@ -28,41 +31,104 @@
 }
 
 .btn-refresh, .btn-clear {
-  padding: 8px 15px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .btn-refresh {
-  background: #4CAF50;
+  background: #3498db;
   color: white;
 }
 
-.btn-refresh:hover:not([disabled]) {
-  background: #45a049;
+.btn-refresh:hover:not(:disabled) {
+  background: #2980b9;
 }
 
 .btn-clear {
-  background: #f44336;
+  background: #e74c3c;
   color: white;
 }
 
-.btn-clear:hover:not([disabled]) {
-  background: #d32f2f;
+.btn-clear:hover:not(:disabled) {
+  background: #c0392b;
 }
 
-.btn-refresh[disabled], .btn-clear[disabled] {
+.btn-refresh:disabled, .btn-clear:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* Estados de carga y error */
+.loading-state {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-state {
+  background: #ffeaea;
+  border: 1px solid #ffcccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.error-state p {
+  color: #e74c3c;
+  margin: 0 0 15px 0;
+}
+
+.error-state button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 /* Lista de notificaciones */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #7f8c8d;
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.empty-state small {
+  color: #95a5a6;
+}
+
 .notificaciones-list {
   max-height: 500px;
   overflow-y: auto;
+  padding-right: 5px;
 }
 
 .notificacion-item {
@@ -70,25 +136,38 @@
   align-items: flex-start;
   padding: 15px;
   margin-bottom: 10px;
-  background: #f9f9f9;
   border-radius: 8px;
-  border-left: 4px solid #007bff;
-  transition: all 0.3s;
+  border-left: 4px solid #ddd;
+  background: #f9f9f9;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease;
 }
 
-.notificacion-item.unread {
-  background: #e8f4ff;
-  border-left-color: #2196F3;
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .notificacion-item:hover {
-  background: #f0f8ff;
+  background: #f0f7ff;
+  transform: translateX(5px);
+}
+
+.notificacion-item.unread {
+  background: #e8f4fd;
+  border-left-color: #3498db;
 }
 
 .notificacion-icon {
   font-size: 24px;
   margin-right: 15px;
-  margin-top: 5px;
+  flex-shrink: 0;
 }
 
 .notificacion-content {
@@ -98,43 +177,46 @@
 .notificacion-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 8px;
 }
 
 .notificacion-header strong {
-  font-size: 16px;
-  color: #333;
+  color: #2c3e50;
+  font-size: 1rem;
+  line-height: 1.4;
   flex: 1;
 }
 
 .notificacion-time {
-  color: #666;
-  font-size: 12px;
+  color: #7f8c8d;
+  font-size: 0.85rem;
   white-space: nowrap;
   margin-left: 10px;
 }
 
 .notificacion-details {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .badge {
-  padding: 4px 10px;
-  border-radius: 15px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .badge.docente {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #e1f5fe;
+  color: #0277bd;
 }
 
 .badge.actividad {
   background: #e8f5e9;
-  color: #388e3c;
+  color: #2e7d32;
 }
 
 .badge.tipo {
@@ -142,81 +224,76 @@
   color: #7b1fa2;
 }
 
-.badge.tipo-calificacion {
-  background: #fff3e0;
-  color: #f57c00;
+/* Tipos específicos de notificaciones */
+.type-calificacion {
+  border-left-color: #f39c12;
 }
 
-.badge.tipo-entrega {
-  background: #e8eaf6;
-  color: #303f9f;
+.type-entrega_nueva, .type-entrega {
+  border-left-color: #3498db;
+}
+
+.type-actividad {
+  border-left-color: #2ecc71;
+}
+
+.type-sistema {
+  border-left-color: #9b59b6;
+}
+
+.type-mensaje {
+  border-left-color: #1abc9c;
+}
+
+.type-recordatorio {
+  border-left-color: #e74c3c;
 }
 
 .btn-mark-read {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 50%;
+  background: #27ae60;
+  color: white;
+  border: none;
   width: 30px;
   height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 10px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: #666;
-  transition: all 0.3s;
-  margin-left: 10px;
 }
 
 .btn-mark-read:hover {
-  background: #4CAF50;
-  color: white;
-  border-color: #4CAF50;
-}
-
-/* Estados */
-.loading-state, .error-state, .empty-state {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error-state {
-  color: #d32f2f;
-}
-
-.error-state button {
-  margin-top: 10px;
-  padding: 8px 20px;
-  background: #f44336;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.empty-state {
-  color: #666;
+  background: #219653;
+  transform: scale(1.1);
 }
 
 .notificaciones-footer {
-  margin-top: 20px;
+  margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #eee;
   text-align: center;
-  color: #888;
-  font-size: 14px;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+/* Scrollbar personalizada */
+.notificaciones-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notificaciones-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.notificaciones-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.notificaciones-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

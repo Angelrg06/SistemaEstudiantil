@@ -1,5 +1,6 @@
 // entrega.Controller.js - VERSIÓN CORREGIDA
 import { PrismaClient } from "@prisma/client";
+import { NotificacionesService } from '../services/notificaciones.service.js';
 import supabaseService from '../services/supabase.service.js';
 const prisma = new PrismaClient();
 
@@ -110,38 +111,59 @@ export const crearEntrega = async (req, res) => {
 
         console.log('💾 Guardando en PostgreSQL...');
 
-        const entrega = await prisma.entrega.create({
-            data: {
-                archivo: archivoData.url,
-                archivo_ruta: archivoData.ruta,
-                fecha_entrega: new Date(),
-                comentario_estudiante: comentario_estudiante,
-                intento: nextIntento,
-                id_actividad: parseInt(id_actividad),
-                id_estudiante: id_estudiante,
-                estado_entrega: 'ENTREGADO'
-            },
-            include: {
-                actividad: {
-                    select: { 
-                        id_actividad: true, 
-                        titulo: true, 
-                        tipo: true, 
-                        descripcion: true 
-                    }
-                },
-                estudiante: {
-                    select: { 
-                        id_estudiante: true, 
-                        nombre: true, 
-                        apellido: true, 
-                        codigo: true 
+       const nuevaEntrega = await prisma.entrega.create({
+    data: {
+        archivo: archivoData.url,
+        archivo_ruta: archivoData.ruta,
+        fecha_entrega: new Date(),
+        comentario_estudiante: comentario_estudiante,
+        intento: nextIntento,
+        id_actividad: parseInt(id_actividad),
+        id_estudiante: id_estudiante,
+        estado_entrega: 'ENTREGADO'
+    },
+    include: {
+        actividad: {
+            select: { 
+                id_actividad: true, 
+                titulo: true, 
+                tipo: true, 
+                descripcion: true,
+                docente: {
+                    select: {
+                        id_docente: true,
+                        nombre: true,
+                        apellido: true
                     }
                 }
             }
-        });
+        },
+        estudiante: {
+            select: { 
+                id_estudiante: true, 
+                nombre: true, 
+                apellido: true, 
+                codigo: true 
+            }
+        }
+    }
+});
 
-        console.log('✅ Entrega creada exitosamente - ID:', entrega.id_entrega);
+console.log('✅ Entrega creada exitosamente - ID:', nuevaEntrega.id_entrega);
+
+// 🟢 GENERAR NOTIFICACIÓN AUTOMÁTICA PARA EL DOCENTE
+try {
+    await NotificacionesService.crearNotificacionDocente(
+        nuevaEntrega.id_entrega,
+        nuevaEntrega.actividad.docente.id_docente,
+        `Nueva entrega de ${nuevaEntrega.estudiante.nombre} ${nuevaEntrega.estudiante.apellido} en "${nuevaEntrega.actividad.titulo}" - Intento ${nuevaEntrega.intento}`
+    );
+    console.log('🔔 Notificación enviada al docente');
+} catch (notifError) {
+    console.error('⚠️ Error al crear notificación:', notifError);
+    // No fallamos la entrega si la notificación falla
+}
+
 
         // Enviar respuesta
         res.json({

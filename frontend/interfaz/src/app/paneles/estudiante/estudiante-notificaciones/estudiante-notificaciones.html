@@ -1,4 +1,4 @@
-<!-- estudiante-notificaciones.html -->
+<!-- estudiante-notificaciones.html - VERSIÓN CORREGIDA -->
 <div class="notificaciones-container">
   <div class="notificaciones-header">
     <h3>📢 Mis Notificaciones</h3>
@@ -30,8 +30,16 @@
       <small>Todas las notificaciones importantes aparecerán aquí</small>
     </div>
 
-    <div *ngFor="let notif of notificaciones" class="notificacion-item" 
-         [class.unread]="true" [class.type-{{notif.tipo}}]="notif.tipo">
+    <div *ngFor="let notif of notificaciones; trackBy: trackById" 
+    [ngClass]="getNotificacionClasses(notif.tipo)"
+         class="notificacion-item"
+         [class.unread]="true"
+         [class.type-calificacion]="notif.tipo === 'calificacion'"
+         [class.type-entrega_nueva]="notif.tipo === 'entrega_nueva' || notif.tipo === 'entrega'"
+         [class.type-actividad]="notif.tipo === 'actividad'"
+         [class.type-sistema]="notif.tipo === 'sistema' || !notif.tipo"
+         [class.type-mensaje]="notif.tipo === 'mensaje'"
+         [class.type-recordatorio]="notif.tipo === 'recordatorio'">
       
       <div class="notificacion-icon">
         {{ getIconoTipo(notif.tipo) }}
@@ -50,8 +58,12 @@
           <span *ngIf="notif.actividad" class="badge actividad">
             📝 {{ notif.actividad }}
           </span>
-          <span class="badge tipo" [class]="'tipo-' + notif.tipo">
-            {{ notif.tipo }}
+          <span class="badge tipo" 
+                [class.tipo-calificacion]="notif.tipo === 'calificacion'"
+                [class.tipo-entrega]="notif.tipo === 'entrega_nueva' || notif.tipo === 'entrega'"
+                [class.tipo-actividad]="notif.tipo === 'actividad'"
+                [class.tipo-sistema]="notif.tipo === 'sistema' || !notif.tipo">
+            {{ getTipoTexto(notif.tipo) }}
           </span>
         </div>
       </div>

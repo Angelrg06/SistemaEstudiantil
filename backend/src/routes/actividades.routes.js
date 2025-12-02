@@ -15,22 +15,20 @@ import {
   diagnosticarPermisos
 } from "../controllers/actividad.controller.js";
 
-import { docenteMiddleware } from '../middlewares/docente.middleware.js';
-
 
 const router = express.Router();
 
 // ✅ AGREGAR authMiddleware a todas las rutas
 router.get('/:id_seccion/cursos', authMiddleware, getCursosPorSeccion);
-router.get("/seccion/:id", authMiddleware, docenteMiddleware, getActividadesBySeccion);
+router.get("/seccion/:id", authMiddleware, getActividadesBySeccion);
 router.get("/diagnostico", authMiddleware, diagnosticoActividades); // 🟢 RUTA DE DIAGNÓSTICO
 
 // 👉 NUEVA RUTA PARA ESTUDIANTES
 router.get("/estudiante/mis-actividades", authMiddleware, actividadesEstudiante);
 
-router.post("/", authMiddleware, docenteMiddleware, upload.single('archivo'), crearActividad);
-router.put("/:id", authMiddleware, docenteMiddleware, uploadActividad, actualizarActividad);
-router.delete("/:id", authMiddleware, docenteMiddleware, eliminarActividad);
+router.post("/", authMiddleware, upload.single('archivo'), crearActividad);
+router.put("/:id", authMiddleware, uploadActividad, actualizarActividad);
+router.delete("/:id", authMiddleware, eliminarActividad);
 router.get('/estado/:estado', obtenerActividadesPorEstado); // Ruta para filtrar por estado
 router.get("/mes/:mes", authMiddleware, obtenerActividadesPorMes);
 // Agregar esta ruta temporalmente

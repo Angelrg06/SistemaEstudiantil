@@ -1,5 +1,7 @@
 // controllers/retroalimentacion.controller.js
 import { PrismaClient } from "@prisma/client";
+import { NotificacionesService } from '../services/notificaciones.service.js';
+
 const prisma = new PrismaClient();
 
 // 🟢 Formato estándar de respuesta
@@ -309,30 +311,11 @@ export const calificarEntrega = async (req, res) => {
     });
 
     // 🟢 7. MANEJAR NOTIFICACIÓN (con verificación de existencia)
-    const notificacionExistente = await prisma.notificacion.findUnique({
-      where: { id_entrega: parseInt(id_entrega) }
-    });
-
-    if (notificacionExistente) {
-      await prisma.notificacion.update({
-        where: { id_notificacion: notificacionExistente.id_notificacion },
-        data: {
-          mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
-          fecha_envio: new Date()
-        }
-      });
-    } else {
-      await prisma.notificacion.create({
-        data: {
-          mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
-          tipo: 'calificacion',
-          fecha_envio: new Date(),
-          id_actividad: entrega.actividad.id_actividad,
-          id_docente: docente.id_docente,
-          id_entrega: parseInt(id_entrega)
-        }
-      });
-    }
+    await NotificacionesService.crearNotificacionEstudiante(
+    parseInt(id_entrega),
+    `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20${comentario ? ' - ' + comentario.substring(0, 100) : ''}`,
+    'calificacion'
+);
 
     // 🟢 8. OBTENER RESPUESTA COMPLETA
     const respuesta = await prisma.entrega.findUnique({

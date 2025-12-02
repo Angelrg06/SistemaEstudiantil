@@ -255,33 +255,25 @@ export const getDatosEstudiantes = async (req, res) => {
 }
 
 // estudiante.controller.js - FUNCIÓN CORREGIDA
+// FUNCIÓN CORREGIDA - Obtener notificaciones de estudiante
 export const notificacionesByEstudiante = async (req, res) => {
     try {
         const id_estudiante = parseInt(req.params.id);
 
         console.log("📢 Obteniendo notificaciones para estudiante ID:", id_estudiante);
 
-        // 🟢 OPCIÓN 1: Usando entrega para encontrar notificaciones
-        const entregasConNotificaciones = await prisma.entrega.findMany({
+        // 🟢 CORRECCIÓN: Buscar notificaciones directamente relacionadas con las entregas del estudiante
+        const notificaciones = await prisma.notificacion.findMany({
             where: {
-                id_estudiante: id_estudiante,
-                notificacion: { // Relación con Notificacion
-                    isNot: null
+                entrega: {
+                    id_estudiante: id_estudiante
                 }
             },
             include: {
-                notificacion: {
+                docente: {
                     select: {
-                        id_notificacion: true,
-                        mensaje: true,
-                        tipo: true,
-                        fecha_envio: true,
-                        docente: {
-                            select: {
-                                nombre: true,
-                                apellido: true
-                            }
-                        }
+                        nombre: true,
+                        apellido: true
                     }
                 },
                 actividad: {
@@ -289,40 +281,49 @@ export const notificacionesByEstudiante = async (req, res) => {
                         titulo: true,
                         tipo: true
                     }
+                },
+                entrega: {
+                    select: {
+                        id_entrega: true,
+                        intento: true,
+                        fecha_entrega: true
+                    }
                 }
             },
             orderBy: {
-                notificacion: {
-                    fecha_envio: 'desc'
-                }
-            }
+                fecha_envio: 'desc'
+            },
+            take: 50
         });
-
-        // 🟢 Formatear respuesta
-        const notificaciones = entregasConNotificaciones
-            .filter(entrega => entrega.notificacion !== null)
-            .map(entrega => ({
-                id_notificacion: entrega.notificacion.id_notificacion,
-                mensaje: entrega.notificacion.mensaje,
-                tipo: entrega.notificacion.tipo || 'sistema',
-                fecha_envio: entrega.notificacion.fecha_envio.toLocaleString('es-PE', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                }),
-                docente: entrega.notificacion.docente 
-                    ? `${entrega.notificacion.docente.nombre} ${entrega.notificacion.docente.apellido}`
-                    : 'Sistema',
-                actividad: entrega.actividad.titulo,
-                id_entrega: entrega.id_entrega,
-                intento: entrega.intento
-            }));
 
         console.log(`✅ Encontradas ${notificaciones.length} notificaciones para estudiante ${id_estudiante}`);
 
+        const notificacionesFormateadas = notificaciones.map(notif => ({
+            id_notificacion: notif.id_notificacion,
+            mensaje: notif.mensaje,
+            tipo: notif.tipo || 'sistema',
+            fecha_envio: notif.fecha_envio.toLocaleString('es-PE', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            }),
+            docente: notif.docente 
+                ? `${notif.docente.nombre} ${notif.docente.apellido}`
+                : 'Sistema',
+            actividad: notif.actividad?.titulo || 'Actividad no disponible',
+            id_entrega: notif.id_entrega,
+            intento: notif.entrega?.intento || 1,
+            metadata: {
+                tiene_actividad: !!notif.actividad,
+                tiene_docente: !!notif.docente,
+                es_reciente: new Date() - new Date(notif.fecha_envio) < 24 * 60 * 60 * 1000
+            }
+        }));
+
         res.json({
             success: true,
-            data: notificaciones,
-            count: notificaciones.length
+            data: notificacionesFormateadas,
+            count: notificaciones.length,
+            estudiante_id: id_estudiante
         });
 
     } catch (error) {

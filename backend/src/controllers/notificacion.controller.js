@@ -26,6 +26,13 @@ export const obtenerNotificacionesDocente = async (req, res) => {
     console.log('🎯 Obteniendo notificaciones para docente ID:', req.params.id);
     const id_docente = Number(req.params.id);
     
+     // 🟢 VALIDACIÓN DE SEGURIDAD: El docente solo puede ver sus propias notificaciones
+    if (req.docente && req.docente.id_docente !== id_docente) {
+      return res.status(403).json(
+        errorResponse("Acceso denegado", "No puedes ver notificaciones de otros docentes", 403)
+      );
+    }
+
     if (!id_docente || isNaN(id_docente)) {
       return res.status(400).json(
         errorResponse("ID de docente inválido", "El ID del docente debe ser un número válido", 400)
@@ -121,6 +128,13 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
   try {
     console.log('🎯 Obteniendo notificaciones para estudiante ID:', req.params.id);
     const id_estudiante = Number(req.params.id);
+
+    // 🟢 VALIDACIÓN DE SEGURIDAD: El estudiante solo puede ver sus propias notificaciones
+    if (req.estudiante && req.estudiante.id_estudiante !== id_estudiante) {
+      return res.status(403).json(
+        errorResponse("Acceso denegado", "No puedes ver notificaciones de otros estudiantes", 403)
+      );
+    }
     
     if (!id_estudiante || isNaN(id_estudiante)) {
       return res.status(400).json(
