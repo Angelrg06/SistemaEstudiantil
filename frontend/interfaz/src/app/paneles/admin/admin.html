@@ -78,7 +78,13 @@
             <i class="fas fa-user-shield text-lg"></i>
             <span class="hidden md:inline ml-2">Administrador</span>
           </button>
-
+<button (click)="loadSection('cursos')" [ngClass]="{
+          'bg-white/20 text-white shadow-lg': currentSection==='cursos',
+          'text-blue-100 hover:text-white hover:bg-white/10': currentSection!=='cursos'
+        }"
+  class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10">
+  <i class="fas fa-book mr-2 text-sm"></i> Cursos
+</button>
           <!-- Overlay: bloquea el body -->
           @if (showUserMenu) {
             <div class="fixed inset-0 z-40 bg-black/20" (click)="closeUserMenu()"></div>
@@ -140,6 +146,8 @@
       <app-admin-estudiantes></app-admin-estudiantes>
     } @else if (currentSection === 'usuarios') {
       <app-admin-usuarios></app-admin-usuarios>
-    }
+    }@else if (currentSection === 'cursos') {
+  <app-admin-cursos></app-admin-cursos>
+}
   </main>
 </div>

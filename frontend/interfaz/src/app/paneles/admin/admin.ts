@@ -10,6 +10,7 @@ import { AdminDocentes } from './admin-docentes/admin-docentes';
 import { AdminEstudiantes } from './admin-estudiantes/admin-estudiantes';
 import { AdminUsuarios } from './admin-usuarios/admin-usuarios';
 import { AdminDashboard } from './admin-dashboard/admin-dashboard';
+import { AdminCursos } from "./admin-cursos/admin-cursos";
 
 @Component({
   selector: 'app-admin',
@@ -20,8 +21,8 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
     AdminDocentes,
     AdminEstudiantes,
     AdminUsuarios,
-
-  ],
+    AdminCursos
+],
   templateUrl: './admin.html'
 })
 export class Admin implements OnInit {

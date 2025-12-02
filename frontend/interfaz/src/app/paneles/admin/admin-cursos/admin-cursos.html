@@ -1,0 +1,285 @@
+<!-- admin-cursos.html -->
+<!-- Panel de Cursos -->
+<div class="bg-white rounded-xl shadow-lg mb-6 max-w-[1200px] mx-auto">
+  
+  <!-- Header panel -->
+  <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+    <h2 class="text-xl font-semibold text-gray-800">Gestión de Cursos</h2>
+    <div class="flex flex-col md:flex-row gap-3">
+      <!-- Búsqueda -->
+      <input 
+        type="text" 
+        placeholder="Buscar curso..."
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+        [(ngModel)]="searchTerm" 
+        (input)="buscarCursos()" />
+      
+      <!-- Botón Agregar -->
+      <button 
+        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow hover:shadow-lg transition"
+        (click)="openModal()">
+        <i class="fas fa-plus mr-2"></i> Agregar Curso
+      </button>
+
+      <!-- Botón Exportar PDF -->
+      <button 
+        class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:shadow-lg transition"
+        (click)="exportarPDF()">
+        <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla con scroll horizontal -->
+  <div class="p-4 overflow-x-auto">
+    <table class="table-auto w-full border border-gray-200 rounded-lg">
+      <thead class="bg-gray-100 text-gray-600">
+        <tr>
+          <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-left w-20">ID</th>
+          <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center w-48">Nombre</th>
+          <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center w-32">Secciones</th>
+          <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center w-32">Acciones</th>
+          <th class="px-3 py-2 text-xs font-medium uppercase tracking-wider text-center w-32">Detalles</th>
+        </tr>
+      </thead>
+      
+      <tbody class="bg-white divide-y divide-gray-200">
+        @if (cursosFiltrados.length > 0) {
+          @for (curso of cursosFiltrados; track curso.id_curso) {
+            <tr [class.bg-yellow-200]="curso.id_curso === highlightedCursoId" class="h-12">
+              <td class="px-3 py-2 text-sm text-gray-900 font-medium">#{{ curso.id_curso }}</td>
+              <td class="px-3 py-2 text-sm text-gray-900 text-center truncate">
+                <span class="font-semibold">{{ curso.nombre }}</span>
+                @if (curso.descripcion) {
+                  <p class="text-xs text-gray-500 mt-1">{{ curso.descripcion.substring(0, 50) }}...</p>
+                }
+              </td>
+              <td class="px-3 py-2 text-sm text-gray-900 text-center">
+                @if (curso.secciones && curso.secciones.length > 0) {
+                  <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                    {{ curso.secciones.length }} sección(es)
+                  </span>
+                } @else if (curso.seccionesCurso && curso.seccionesCurso.length > 0) {
+                  <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                    {{ curso.seccionesCurso.length }} sección(es)
+                  </span>
+                } @else {
+                  <span class="text-gray-400 text-xs italic">Sin asignar</span>
+                }
+              </td>
+              <td class="px-3 py-2 text-sm font-medium text-center">
+                <button class="text-blue-600 hover:text-blue-900 mr-2" (click)="openModal(curso)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="text-red-600 hover:text-red-900" (click)="deleteCurso(curso.id_curso)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+              <td class="px-3 py-2 text-center">
+                <button 
+                  class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-sm transition-colors">
+                  Ver Detalle
+                </button>
+              </td>
+            </tr>
+          }
+
+          @for (_ of filasVacias(); track $index) {
+            <tr class="h-12">
+              <td class="px-3 py-2">&nbsp;</td>
+              <td class="px-3 py-2">&nbsp;</td>
+              <td class="px-3 py-2">&nbsp;</td>
+              <td class="px-3 py-2">&nbsp;</td>
+              <td class="px-3 py-2">&nbsp;</td>
+            </tr>
+          }
+        } @else {
+          <tr>
+            <td colspan="5" class="text-center py-4 text-gray-500 italic">
+              No se encontraron cursos
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="flex flex-col md:flex-row items-center justify-between mt-10 md:mt-12 gap-3">
+      <div class="text-sm text-gray-600">
+        Página {{ paginaActual }} de {{ totalPaginas }}
+      </div>
+      <div class="flex space-x-2">
+        <button 
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaAnterior()" 
+          [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+        <button 
+          class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          (click)="paginaSiguiente()" 
+          [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agregar/Editar Curso -->
+@if (showModal) {
+<div class="absolute inset-0 z-50 flex items-start justify-center pt-7 pb-155"
+     style="background: linear-gradient(120deg, #1e3a8a 0%, #0ea5e9 100%);">
+  <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 relative">
+
+    <!-- Header Modal -->
+    <div class="p-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg rounded-t-xl flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-800">
+        {{ isEditing ? 'Editar Curso' : 'Agregar Curso' }}
+      </h3>
+      <button class="text-gray-600 text-3xl font-bold hover:text-gray-800" (click)="closeModal()">&times;</button>
+    </div>
+
+    <!-- Mensaje de éxito -->
+    @if (successMessage) {
+      <div class="m-4 p-3 rounded-lg" [class]="successMessage.includes('✅') ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'">
+        {{ successMessage }}
+      </div>
+    }
+
+    <!-- Formulario Modal -->
+    <div class="p-6 bg-white rounded-b-xl max-h-[80vh] overflow-y-auto">
+      <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- ID del Curso (solo lectura) -->
+        @if (isEditing && selectedCurso.id_curso) {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ID del Curso</label>
+            <input 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+              [value]="selectedCurso.id_curso" 
+              readonly />
+          </div>
+        }
+
+        <!-- Nombre del Curso -->
+        <div [class.md:col-span-2]="!isEditing || !selectedCurso.id_curso">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Nombre del Curso <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            [(ngModel)]="selectedCurso.nombre"
+            name="nombre"
+            placeholder="Ej: Matemáticas, Comunicación, Ciencia y Ambiente" />
+          @if (errors.nombre) {
+            <p class="text-red-600 text-sm mt-1">{{ errors.nombre }}</p>
+          }
+        </div>
+
+        
+
+        <!-- Secciones Asignadas -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Secciones Asignadas
+            <span class="text-xs font-normal text-gray-500 ml-2">
+              ({{ seccionesSeleccionadas.length }} seleccionada(s))
+            </span>
+          </label>
+          
+          @if (seccionesDisponibles.length > 0) {
+            <div class="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                @for (seccion of seccionesDisponibles; track seccion.id_seccion) {
+                  <div class="flex items-start">
+                    <label class="flex items-center space-x-2 p-2 hover:bg-blue-50 rounded cursor-pointer w-full transition-colors duration-150"
+                           [class.bg-blue-100]="isSeccionSelected(seccion.id_seccion)"
+                           [class.border-blue-300]="isSeccionSelected(seccion.id_seccion)">
+                      <input 
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        [checked]="isSeccionSelected(seccion.id_seccion)"
+                        (change)="toggleSeccion(seccion.id_seccion)"
+                        [id]="'curso-seccion-' + seccion.id_seccion">
+                      
+                      <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-900 block">
+                          {{ seccion.nombre }}
+                        </span>
+                        @if (seccion.bimestre) {
+                          <span class="text-xs text-gray-500 block">
+                            Bimestre: {{ seccion.bimestre.nombre }}
+                          </span>
+                        }
+                        @if (seccion.estadisticas) {
+                          <span class="text-xs text-blue-600 block">
+                            {{ seccion.estadisticas.total_estudiantes || 0 }} estudiantes
+                          </span>
+                        }
+                      </div>
+                      
+                      @if (isSeccionSelected(seccion.id_seccion)) {
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Asignada
+                        </span>
+                      }
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+            
+            @if (seccionesSeleccionadas.length === 0) {
+              <p class="text-xs text-amber-600 mt-2 italic">
+                <i class="fas fa-info-circle mr-1"></i>
+                El curso no estará disponible en ninguna sección si no selecciona al menos una.
+              </p>
+            } @else {
+              <p class="text-xs text-green-600 mt-2">
+                <i class="fas fa-check-circle mr-1"></i>
+                Disponible en {{ seccionesSeleccionadas.length }} sección(es)
+              </p>
+            }
+          } @else {
+            <div class="border border-gray-300 rounded-lg p-4 text-center bg-amber-50">
+              <i class="fas fa-exclamation-triangle text-amber-500 text-xl mb-2"></i>
+              <p class="text-amber-700 font-medium">No hay secciones disponibles</p>
+              <p class="text-amber-600 text-sm mt-1">
+                Primero debe crear secciones en el sistema.
+              </p>
+            </div>
+          }
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Footer Modal -->
+    <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white rounded-b-xl">
+      <button 
+        type="button"
+        class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors font-medium" 
+        (click)="closeModal()"
+        [disabled]="loading">
+        Cancelar
+      </button>
+      <button 
+        type="button"
+        [disabled]="loading" 
+        (click)="saveCurso()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+        @if (loading) {
+          <i class="fas fa-spinner fa-spin mr-2"></i>
+          {{ isEditing ? 'Actualizando...' : 'Guardando...' }}
+        } @else {
+          {{ isEditing ? 'Actualizar' : 'Guardar' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

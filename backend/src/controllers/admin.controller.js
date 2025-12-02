@@ -462,3 +462,309 @@ export const deleteSeccion = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// backend/src/controllers/admin.controller.js
+// Agrega estos métodos
+
+// 🟢 OBTENER TODOS LOS CURSOS
+export const getCursos = async (req, res) => {
+  try {
+    const cursos = await prisma.curso.findMany({
+      include: {
+        seccionesCurso: {
+          include: {
+            seccion: {
+              include: {
+                bimestre: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { nombre: 'asc' }
+    });
+    
+    // Formatear la respuesta
+    const cursosFormateados = cursos.map(curso => ({
+      id_curso: curso.id_curso,
+      nombre: curso.nombre,
+      descripcion: curso.descripcion || '',
+      secciones: curso.seccionesCurso.map(sc => ({
+        id_seccion: sc.seccion.id_seccion,
+        nombre: sc.seccion.nombre,
+        bimestre: sc.seccion.bimestre
+      }))
+    }));
+    
+    res.json(cursosFormateados);
+    
+  } catch (error) {
+    console.error('Error en getCursos:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// backend/src/controllers/admin.controller.js
+
+// 🟢 CREAR NUEVO CURSO (SIN DESCRIPCIÓN)
+export const createCurso = async (req, res) => {
+  try {
+    const { nombre, seccionesIds = [] } = req.body; // Remover descripcion
+    
+    console.log('📝 Creando curso:', { nombre, seccionesIds });
+    
+    if (!nombre || nombre.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'El nombre del curso es obligatorio' 
+      });
+    }
+    
+    // Verificar si ya existe
+    const cursoExistente = await prisma.curso.findFirst({
+      where: { 
+        nombre: { 
+          equals: nombre.trim(), 
+          mode: 'insensitive' 
+        } 
+      }
+    });
+    
+    if (cursoExistente) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Ya existe un curso con ese nombre' 
+      });
+    }
+    
+    const curso = await prisma.$transaction(async (tx) => {
+      // Crear curso SIN descripcion
+      const cursoCreado = await tx.curso.create({
+        data: {
+          nombre: nombre.trim()
+          // NO incluir descripcion
+        }
+      });
+      
+      // Asignar secciones
+      if (Array.isArray(seccionesIds) && seccionesIds.length > 0) {
+        const idsNumericos = seccionesIds
+          .map(id => parseInt(id))
+          .filter(id => !isNaN(id) && id > 0);
+        
+        if (idsNumericos.length > 0) {
+          for (const idSeccion of idsNumericos) {
+            await tx.seccionCurso.create({
+              data: {
+                id_seccion: idSeccion,
+                id_curso: cursoCreado.id_curso
+              }
+            });
+          }
+        }
+      }
+      
+      return await tx.curso.findUnique({
+        where: { id_curso: cursoCreado.id_curso },
+        include: {
+          seccionesCurso: {
+            include: {
+              seccion: {
+                include: { bimestre: true }
+              }
+            }
+          }
+        }
+      });
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Curso creado exitosamente',
+      data: curso
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en createCurso:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// 🟢 ACTUALIZAR CURSO (SIN DESCRIPCIÓN)
+export const updateCurso = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, seccionesIds = [] } = req.body; // Remover descripcion
+    
+    console.log('✏️ Actualizando curso ID:', id, { nombre, seccionesIds });
+    
+    const idCurso = parseInt(id);
+    if (isNaN(idCurso)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'ID de curso inválido' 
+      });
+    }
+    
+    // Verificar que existe
+    const cursoExistente = await prisma.curso.findUnique({
+      where: { id_curso: idCurso }
+    });
+    
+    if (!cursoExistente) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Curso no encontrado' 
+      });
+    }
+    
+    const curso = await prisma.$transaction(async (tx) => {
+      // Actualizar datos SIN descripcion
+      const cursoActualizado = await tx.curso.update({
+        where: { id_curso: idCurso },
+        data: {
+          nombre: nombre ? nombre.trim() : cursoExistente.nombre
+          // NO incluir descripcion
+        }
+      });
+      
+      // Actualizar secciones
+      if (Array.isArray(seccionesIds)) {
+        // Eliminar relaciones existentes
+        await tx.seccionCurso.deleteMany({
+          where: { id_curso: idCurso }
+        });
+        
+        // Crear nuevas
+        const idsNumericos = seccionesIds
+          .map(id => parseInt(id))
+          .filter(id => !isNaN(id) && id > 0);
+        
+        if (idsNumericos.length > 0) {
+          for (const idSeccion of idsNumericos) {
+            await tx.seccionCurso.create({
+              data: {
+                id_seccion: idSeccion,
+                id_curso: idCurso
+              }
+            });
+          }
+        }
+      }
+      
+      return await tx.curso.findUnique({
+        where: { id_curso: idCurso },
+        include: {
+          seccionesCurso: {
+            include: {
+              seccion: {
+                include: { bimestre: true }
+              }
+            }
+          }
+        }
+      });
+    });
+    
+    res.json({
+      success: true,
+      message: 'Curso actualizado exitosamente',
+      data: curso
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en updateCurso:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// 🟢 ELIMINAR CURSO (CON VERIFICACIÓN DE RELACIONES)
+export const deleteCurso = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const idCurso = parseInt(id);
+    
+    console.log('🗑️ Intentando eliminar curso ID:', idCurso);
+    
+    if (isNaN(idCurso)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'ID de curso inválido' 
+      });
+    }
+    
+    // Verificar que existe
+    const cursoExistente = await prisma.curso.findUnique({
+      where: { id_curso: idCurso },
+      include: {
+        actividades: {
+          select: { id_actividad: true },
+          take: 1 // Solo necesitamos saber si hay alguna
+        },
+        chats: {
+          select: { id_chat: true },
+          take: 1
+        }
+      }
+    });
+    
+    if (!cursoExistente) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Curso no encontrado' 
+      });
+    }
+    
+    // Verificar si tiene relaciones que impidan la eliminación
+    if (cursoExistente.actividades.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No se puede eliminar el curso porque tiene actividades asignadas. Primero elimine las actividades relacionadas.' 
+      });
+    }
+    
+    if (cursoExistente.chats.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No se puede eliminar el curso porque tiene chats asociados.' 
+      });
+    }
+    
+    // Primero eliminar relaciones en seccionesCurso (si existen)
+    await prisma.seccionCurso.deleteMany({
+      where: { id_curso: idCurso }
+    });
+    
+    // Luego eliminar el curso
+    await prisma.curso.delete({
+      where: { id_curso: idCurso }
+    });
+    
+    res.json({
+      success: true,
+      message: 'Curso eliminado exitosamente'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en deleteCurso:', error);
+    
+    // Manejar error de restricción de clave foránea
+    if (error.code === 'P2003') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No se puede eliminar el curso porque tiene elementos relacionados (actividades, chats, etc.). Elimine primero los elementos relacionados.' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};

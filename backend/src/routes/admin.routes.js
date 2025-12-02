@@ -37,6 +37,11 @@ router.put('/secciones/:id', adminController.updateSeccion);
 router.delete('/secciones/:id', adminController.deleteSeccion);
 
 
+router.get('/cursos', adminController.getCursos);
+router.post('/cursos', adminController.createCurso);
+router.put('/cursos/:id', adminController.updateCurso);
+router.delete('/cursos/:id', adminController.deleteCurso);
 
+// =========================
 
 export default router;

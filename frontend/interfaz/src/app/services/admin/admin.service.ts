@@ -185,4 +185,30 @@ export class AdminService {
     
     return throwError(() => new Error(errorMessage));
   }
+
+
+    getCursos(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/cursos`);
+  }
+
+  createCurso(cursoData: any): Observable<any> {
+    console.log('📤 Creando curso:', cursoData);
+    return this.http.post(`${this.apiUrl}/cursos`, cursoData);
+  }
+
+  updateCurso(id: number, cursoData: any): Observable<any> {
+    console.log('📤 Actualizando curso:', id, cursoData);
+    return this.http.put(`${this.apiUrl}/cursos/${id}`, cursoData);
+  }
+
+  deleteCurso(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/cursos/${id}`);
+  }
+
+  // =========================
+  // RELACIÓN CURSO-SECCIÓN
+  // =========================
+  asignarSeccionesACurso(idCurso: number, seccionesIds: number[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/cursos/${idCurso}/secciones`, { seccionesIds });
+  }
 }

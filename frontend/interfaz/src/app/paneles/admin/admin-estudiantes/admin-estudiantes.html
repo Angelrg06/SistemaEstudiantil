@@ -19,6 +19,14 @@
         (click)="openModal()">
         <i class="fas fa-plus mr-2"></i> Agregar Estudiante
       </button>
+
+      <!-- Botón Exportar PDF -->
+<button 
+  class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:shadow-lg transition"
+  (click)="exportarPDF()">
+  <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+</button>
+
     </div>
   </div>
 
@@ -220,23 +228,14 @@
           </div>
         }
 
-        <!-- Sección -->
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Sección</label>
-          <select
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            [(ngModel)]="selectedEstudiante.id_seccion" 
-            name="id_seccion" 
-            required>
-            <option value="" disabled>Seleccione una sección</option>
-            @for (s of secciones; track s.id_seccion) {
-              <option [value]="s.id_seccion">{{ s.nombre }}</option>
-            }
-          </select>
-          @if (errors.id_seccion) {
-            <p class="text-red-600 text-sm mt-1">{{ errors.id_seccion }}</p>
-          }
-        </div>
+<div *ngFor="let s of seccionesDisponibles" 
+     (click)="seccionSeleccionada = s.id_seccion"
+     class="flex items-center gap-2 cursor-pointer py-1">
+  <div class="w-4 h-4 border rounded-full flex items-center justify-center"
+       [class.bg-blue-600]="seccionSeleccionada === s.id_seccion"></div>
+  <span>{{ s.nombre }}</span>
+</div>
+
 
       </form>
     </div>
