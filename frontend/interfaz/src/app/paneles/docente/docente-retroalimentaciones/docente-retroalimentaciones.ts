@@ -1,4 +1,4 @@
-// docente-retroalimentaciones.ts
+// docente-retroalimentaciones.ts - CORRECCIONES
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,20 +16,15 @@ export interface Entrega {
   intento: number;
   fecha_entrega: string;
   archivo: string;
+  archivo_ruta?: string; // ✅ AGREGAR
   comentario_estudiante: string;
+  estado_entrega: string;
   retroalimentacion?: {
     id_retroalimentacion: number;
     calificacion: number;
     comentario: string;
     fecha: string;
   };
-}
-
-export interface ActividadParaCalificar {
-  id_actividad: number;
-  titulo: string;
-  curso: string;
-  seccion: string;
 }
 
 @Component({
@@ -45,16 +40,12 @@ export class DocenteRetroalimentaciones implements OnInit {
   @Input() seccionId?: number;
   @Output() cerrar = new EventEmitter<void>();
 
-  // Estados
   cargando: boolean = false;
   error: string = '';
 
-  // Datos
   entregas: Entrega[] = [];
-  estudiantes: any[] = [];
   estadisticas: any = {};
 
-  // Formulario
   calificacionTemp: { [key: number]: number } = {};
   comentarioTemp: { [key: number]: string } = {};
 
@@ -66,7 +57,7 @@ export class DocenteRetroalimentaciones implements OnInit {
     }
   }
 
-  // 🟢 Cargar entregas para calificar
+  // ✅ CORREGIDO: Cargar entregas
   cargarEntregasParaCalificar(): void {
     this.cargando = true;
     this.error = '';
@@ -86,10 +77,19 @@ export class DocenteRetroalimentaciones implements OnInit {
     ).subscribe({
       next: (response) => {
         this.cargando = false;
+        
         if (response.success) {
           this.entregas = this.procesarEntregas(response.data?.estudiantes || []);
           this.estadisticas = response.data?.estadisticas || {};
           console.log('✅ Entregas cargadas:', this.entregas.length);
+          
+          // Inicializar formularios temporales
+          this.entregas.forEach(entrega => {
+            if (entrega.retroalimentacion) {
+              this.calificacionTemp[entrega.id_entrega] = entrega.retroalimentacion.calificacion;
+              this.comentarioTemp[entrega.id_entrega] = entrega.retroalimentacion.comentario || '';
+            }
+          });
         } else {
           this.error = response.message || 'Error al cargar entregas';
         }
@@ -102,7 +102,7 @@ export class DocenteRetroalimentaciones implements OnInit {
     });
   }
 
-  // 🟢 Procesar entregas para formato más simple
+  // ✅ MEJORADO: Procesar entregas
   private procesarEntregas(estudiantesData: any[]): Entrega[] {
     const entregas: Entrega[] = [];
 
@@ -115,22 +115,42 @@ export class DocenteRetroalimentaciones implements OnInit {
           intento: entrega.intento,
           fecha_entrega: entrega.fecha_entrega,
           archivo: entrega.archivo,
+          archivo_ruta: entrega.archivo_ruta,
           comentario_estudiante: entrega.comentario_estudiante,
+          estado_entrega: entrega.estado_entrega,
           retroalimentacion: entrega.retroalimentacion
         });
       });
     });
 
-    return entregas;
+    // Ordenar por estudiante y luego por intento
+    return entregas.sort((a, b) => {
+      if (a.estudiante.apellido === b.estudiante.apellido) {
+        if (a.estudiante.nombre === b.estudiante.nombre) {
+          return a.intento - b.intento;
+        }
+        return a.estudiante.nombre.localeCompare(b.estudiante.nombre);
+      }
+      return a.estudiante.apellido.localeCompare(b.estudiante.apellido);
+    });
   }
 
-  // 🟢 Calificar una entrega
+  // ✅ MEJORADO: Calificar entrega con validación
   calificarEntrega(idEntrega: number): void {
     const calificacion = this.calificacionTemp[idEntrega];
     const comentario = this.comentarioTemp[idEntrega];
 
-    if (!calificacion || isNaN(calificacion) || calificacion < 0 || calificacion > 20) {
-      alert('Por favor ingresa una calificación válida (0-20)');
+    if (calificacion === undefined || isNaN(calificacion)) {
+      alert('Por favor ingresa una calificación');
+      return;
+    }
+
+    if (calificacion < 0 || calificacion > 20) {
+      alert('La calificación debe estar entre 0 y 20');
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de calificar esta entrega?')) {
       return;
     }
 
@@ -140,7 +160,7 @@ export class DocenteRetroalimentaciones implements OnInit {
     this.http.post(
       `http://localhost:4000/api/retroalimentaciones/entregas/${idEntrega}/calificar`,
       {
-        calificacion: calificacion,
+        calificacion: Number(calificacion),
         comentario: comentario || '',
         id_actividad: this.actividadId
       },
@@ -151,27 +171,61 @@ export class DocenteRetroalimentaciones implements OnInit {
       next: (response: any) => {
         if (response.success) {
           console.log('✅ Entrega calificada exitosamente');
+          alert('✅ Calificación guardada correctamente');
           
-          // Actualizar la lista
+          // Recargar datos
           this.cargarEntregasParaCalificar();
-          
-          // Limpiar campos temporales
-          delete this.calificacionTemp[idEntrega];
-          delete this.comentarioTemp[idEntrega];
-          
-          alert('Calificación guardada correctamente');
         } else {
-          alert('Error: ' + (response.message || 'Error al calificar'));
+          alert('❌ Error: ' + (response.message || 'Error al calificar'));
         }
       },
       error: (error) => {
-        alert('Error al calificar: ' + this.obtenerMensajeError(error));
+        alert('❌ Error al calificar: ' + this.obtenerMensajeError(error));
         console.error('❌ Error calificando:', error);
       }
     });
   }
 
-  // 🟢 Generar reporte de notas
+  // ✅ NUEVO: Descargar archivo de entrega
+  descargarArchivo(entrega: Entrega): void {
+    if (!entrega.archivo && !entrega.archivo_ruta) {
+      alert('❌ No hay archivo disponible para descargar');
+      return;
+    }
+
+    // Si tiene URL directa
+    if (entrega.archivo && entrega.archivo.includes('http')) {
+      window.open(entrega.archivo, '_blank');
+      return;
+    }
+
+    // Si tiene ruta de Supabase
+    if (entrega.archivo_ruta) {
+      const token = this.getToken();
+      this.http.get(
+        `http://localhost:4000/api/entregas/descargar/${encodeURIComponent(entrega.archivo_ruta)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      ).subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = entrega.archivo || `entrega_${entrega.estudiante.codigo}_intento_${entrega.intento}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (error) => {
+          console.error('❌ Error descargando:', error);
+          alert('Error al descargar el archivo');
+        }
+      });
+    }
+  }
+
+  // ✅ RESTANTE DEL CÓDIGO (igual que antes)
   generarReporteNotas(): void {
     if (!this.seccionId) {
       alert('No se puede generar reporte sin ID de sección');
@@ -200,7 +254,6 @@ export class DocenteRetroalimentaciones implements OnInit {
     });
   }
 
-  // 🟢 Descargar reporte como JSON
   private descargarReporte(data: any): void {
     const fecha = new Date().toISOString().split('T')[0];
     const nombreArchivo = `reporte-notas-${fecha}.json`;
@@ -215,15 +268,13 @@ export class DocenteRetroalimentaciones implements OnInit {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     
-    alert('Reporte descargado exitosamente');
+    alert('✅ Reporte descargado exitosamente');
   }
 
-  // 🟢 Cerrar el componente
   cerrarPanel(): void {
     this.cerrar.emit();
   }
 
-  // 🟢 Utilidades
   private getToken(): string | null {
     return localStorage.getItem('token');
   }
@@ -238,7 +289,6 @@ export class DocenteRetroalimentaciones implements OnInit {
     return 'Ha ocurrido un error inesperado';
   }
 
-  // 🟢 Formatear fecha
   formatearFecha(fecha: string): string {
     return new Date(fecha).toLocaleString('es-PE', {
       dateStyle: 'medium',
@@ -246,7 +296,6 @@ export class DocenteRetroalimentaciones implements OnInit {
     });
   }
 
-  // 🟢 Obtener estadísticas rápidas
   getEstadisticasRapidas(): any {
     const calificadas = this.entregas.filter(e => e.retroalimentacion?.calificacion);
     const promedio = calificadas.length > 0 

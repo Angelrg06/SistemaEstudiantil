@@ -1,3 +1,4 @@
+// estudiante-entregas.ts - VERSION CORREGIDA
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { EntregasService } from '../../../services/entrega.service';
@@ -11,9 +12,9 @@ import { AuthService } from '../../../services/auth.service';
 @Component({
   selector: 'app-estudiante-entregas',
   standalone: true,
-  imports: [HttpClientModule, CommonModule, FormsModule ,RouterLink],
+  imports: [HttpClientModule, CommonModule, FormsModule, RouterLink],
   templateUrl: './estudiante-entregas.html',
-  styleUrl: './estudiante-entregas.css'
+  styleUrls: ['./estudiante-entregas.css']
 })
 export class EstudianteEntregas implements OnInit {
   showUserMenu = false;
@@ -25,111 +26,204 @@ export class EstudianteEntregas implements OnInit {
   modalAbierto = false;
   actividadSeleccionada: number | null = null;
 
-  //Temporal
+  // ✅ AGREGAR: Información de intentos
+  infoIntentos: any = {
+    max_intentos: 3,
+    intento_actual: 1,
+    intentos_disponibles: 3
+  };
+
   entregasRealizadas: any[] = [];
 
-  // Propiedades del componente
   archivoSeleccionado: File | null = null;
   comentario: string = '';
   subiendo: boolean = false;
 
-  constructor(private router: Router, private authService: AuthService, private route: ActivatedRoute, private http: HttpClient, private entregaService: EntregasService) { }
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private http: HttpClient,
+    private entregaService: EntregasService
+  ) { }
 
   ngOnInit(): void {
     this.id_curso = Number(this.route.snapshot.paramMap.get('id'));
-    console.log('ID Curso:', this.id_curso);
+    console.log('📚 Curso ID:', this.id_curso);
     this.getIdEstudiante();
     this.getActividades();
     this.getMisEntregas();
   }
 
-  //Temporal
-  // Método para obtener tus entregas
+  // ✅ CORREGIDO: Obtener entregas con nuevo servicio
   getMisEntregas(): void {
+    this.entregaService.getMisEntregas(this.id_curso).subscribe({
+      next: (response) => {
+        this.entregasRealizadas = response.data || [];
+        console.log("📦 Mis entregas:", this.entregasRealizadas.length);
+      },
+      error: (err) => {
+        console.error("❌ Error obteniendo mis entregas:", err);
+        // Si el endpoint no existe, usar alternativa
+        this.getMisEntregasAlternativo();
+      }
+    });
+  }
+
+  // ✅ ALTERNATIVO: Si el endpoint no existe
+  private getMisEntregasAlternativo(): void {
     const token = localStorage.getItem('token');
     this.http.get<any>(`http://localhost:4000/api/estudiante/mis-entregas/${this.id_curso}`, {
       headers: { Authorization: `Bearer ${token}` }
     }).subscribe({
       next: (response) => {
         this.entregasRealizadas = response.data || [];
-        console.log("📦 Mis entregas:", this.entregasRealizadas);
+        console.log("📦 Mis entregas (alternativo):", this.entregasRealizadas);
       },
-      error: (err) => console.error("❌ Error obteniendo mis entregas:", err)
+      error: (err) => {
+        console.warn("⚠️ No se pudieron obtener las entregas");
+        this.entregasRealizadas = [];
+      }
     });
   }
 
-  // Método para descargar MIS entregas
+  // ✅ MEJORADO: Descargar entrega
   descargarMiEntrega(entrega: any): void {
     if (!entrega.archivo) {
       alert('❌ No hay archivo disponible para descargar');
       return;
     }
 
-    console.log('📥 Descargando mi entrega:', entrega.archivo);
+    console.log('📥 Descargando entrega:', entrega.archivo);
 
-    // Crear nombre de archivo
-    const nombreArchivo = `mi_entrega_${entrega.actividad?.titulo || 'actividad'}.pdf`;
+    // Verificar si es una URL de Supabase
+    if (entrega.archivo.includes('supabase.co')) {
+      // URL directa de Supabase
+      const link = document.createElement('a');
+      link.href = entrega.archivo;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Extraer nombre de archivo
+      const nombreArchivo = entrega.archivo.split('/').pop() || 
+                           `entrega_${entrega.id_entrega}.pdf`;
+      link.download = nombreArchivo;
 
-    // Crear enlace temporal
-    const link = document.createElement('a');
-    link.href = entrega.archivo;
-    link.download = nombreArchivo;
-    link.target = '_blank';
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    console.log('✅ Descarga de mi entrega iniciada');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (entrega.archivo_ruta) {
+      // Usar el servicio de descarga
+      this.entregaService.descargarArchivo(entrega.archivo_ruta).subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = entrega.archivo || `entrega_${entrega.id_entrega}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          console.error('❌ Error descargando archivo:', err);
+          alert('Error al descargar el archivo');
+        }
+      });
+    } else {
+      alert('❌ No se puede descargar esta entrega');
+    }
   }
 
-  //HASTA AQUI ES TEMPORAL
-
+  // ✅ MEJORADO: Abrir modal con verificación de intentos
   abrirModal(idActividad: number) {
     this.actividadSeleccionada = idActividad;
-    this.modalAbierto = true;
-
-    //Buscar la actividad en el array de actividades
+    
+    // Verificar intentos antes de abrir
+    this.verificarIntentosActividad(idActividad);
+    
     const actividadEncontrada = this.actividades.find(a => a.id_actividad === idActividad);
     if (actividadEncontrada) {
-      this.actividad = [actividadEncontrada]; //Temporal - deberías usar un objeto
+      this.actividad = [actividadEncontrada];
       console.log('📋 Actividad seleccionada:', actividadEncontrada);
     }
 
     this.getDatosActividadIDCurso(idActividad);
   }
 
+  // ✅ NUEVO: Verificar intentos disponibles
+  verificarIntentosActividad(idActividad: number): void {
+    this.entregaService.verificarIntentos(idActividad).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.infoIntentos = response.data;
+          console.log('✅ Intentos disponibles:', this.infoIntentos);
+          
+          if (this.infoIntentos.intentos_disponibles <= 0) {
+            alert('❌ Has alcanzado el máximo de intentos para esta actividad');
+            return;
+          }
+          
+          this.modalAbierto = true;
+        }
+      },
+      error: (err) => {
+        console.warn('⚠️ No se pudo verificar intentos:', err);
+        // Abrir modal igualmente
+        this.modalAbierto = true;
+      }
+    });
+  }
+
   cerrarModal() {
     this.actividadSeleccionada = null;
     this.modalAbierto = false;
-    this.limpiarFormulario(); //Limpiar también el archivo seleccionado
+    this.limpiarFormulario();
   }
 
-  //MÉTODO: Cuando se selecciona un archivo
+  // ✅ CORREGIDO: Validación de archivo
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];
 
     if (file) {
-      // Validar tamano (5MB máximo)
-      const maxSize = 5 * 1024 * 1024;
-
+      // Validar tamaño (10MB máximo)
+      const maxSize = 10 * 1024 * 1024;
+      
       if (file.size > maxSize) {
-        alert('El archivo es demasiado grande. Máximo 5MB.');
+        alert('El archivo es demasiado grande. Máximo 10MB.');
+        event.target.value = ''; // Limpiar input
+        return;
+      }
+
+      // Validar tipo de archivo
+      const tiposPermitidos = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+        'application/zip',
+        'application/x-rar-compressed'
+      ];
+      
+      if (!tiposPermitidos.includes(file.type)) {
+        alert('Tipo de archivo no permitido. Use PDF, Word, imágenes o archivos comprimidos.');
+        event.target.value = '';
         return;
       }
 
       this.archivoSeleccionado = file;
-      console.log('Archivo seleccionado:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      console.log('✅ Archivo válido:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)} MB)`);
     }
   }
 
-  //MÉTODO: Remover archivo seleccionado
   removerArchivo(): void {
     this.archivoSeleccionado = null;
-    console.log('Archivo removido');
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+    console.log('🗑️ Archivo removido');
   }
 
-  //MÉTODO: Enviar entrega
+  // ✅ MEJORADO: Enviar entrega con mejor manejo de errores
   enviarEntrega(): void {
     if (!this.archivoSeleccionado) {
       alert('Por favor selecciona un archivo');
@@ -141,59 +235,79 @@ export class EstudianteEntregas implements OnInit {
       return;
     }
 
+    // Verificar intentos nuevamente
+    if (this.infoIntentos.intentos_disponibles <= 0) {
+      alert('❌ No tienes intentos disponibles para esta actividad');
+      return;
+    }
+
     this.subiendo = true;
-    console.log('Iniciando subida...');
+    console.log('🚀 Enviando entrega...');
 
     this.entregaService.subirEntrega(
       this.archivoSeleccionado,
-      this.actividadSeleccionada, //Usamos el ID de la actividad seleccionada
+      this.actividadSeleccionada,
       this.comentario
     ).subscribe({
       next: (response: any) => {
-        console.log('Respuesta del servidor:', response);
+        console.log('✅ Respuesta del servidor:', response);
 
         if (response.success) {
-          alert('¡Entrega enviada correctamente!');
+          alert('¡✅ Entrega enviada correctamente!');
           this.limpiarFormulario();
           this.cerrarModal();
-          //Recargar actividades para ver la entrega
+          
+          // Recargar datos
           this.getActividades();
           this.getMisEntregas();
+          
+          // Actualizar contador de intentos
+          this.infoIntentos.intento_actual++;
+          this.infoIntentos.intentos_disponibles--;
         } else {
-          alert('Error: ' + response.error);
+          alert('❌ Error: ' + (response.error || response.message || 'Error desconocido'));
         }
 
         this.subiendo = false;
       },
       error: (error) => {
-        console.error('Error en la petición:', error);
-        // Si el backend devolvió un 400 por intentos -> mostrar mensaje específico
-        const msg = error?.error?.error || 'Error al enviar la entrega. Intenta nuevamente.';
-        alert(msg);
+        console.error('❌ Error en la petición:', error);
+        
+        let mensajeError = 'Error al enviar la entrega';
+        
+        if (error.status === 400) {
+          mensajeError = error.error?.error || 'Datos incorrectos';
+        } else if (error.status === 403) {
+          mensajeError = 'No tienes permisos para realizar esta acción';
+        } else if (error.status === 404) {
+          mensajeError = 'Actividad no encontrada';
+        } else if (error.status === 500) {
+          mensajeError = 'Error del servidor. Intenta más tarde.';
+        }
+        
+        alert('❌ ' + mensajeError);
         this.subiendo = false;
       }
     });
   }
 
-  //MÉTODO: Limpiar formulario
   private limpiarFormulario(): void {
     this.archivoSeleccionado = null;
     this.comentario = '';
-    // Limpiar input file
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   }
 
+  // ✅ RESTANTE DEL CÓDIGO (igual que antes)
   getIdEstudiante(): void {
     const token = localStorage.getItem('token');
     this.http.get<any>('http://localhost:4000/api/estudiante/mi-estudiante', {
       headers: { Authorization: `Bearer ${token}` }
     }).subscribe({
       next: (data) => {
-        console.log("📌 Respuesta de /mi-estudiante:", data);
+        console.log("📌 ID Estudiante:", data);
         this.id_estudiante_logueado = data.id_estudiante;
         this.getDatos();
-
       },
       error: (err) => {
         console.error("❌ Error obteniendo id_estudiante", err);
@@ -208,7 +322,7 @@ export class EstudianteEntregas implements OnInit {
     }).subscribe({
       next: (data) => {
         this.datos = data;
-        console.log("Datos del estudiante:", data);
+        console.log("👤 Datos del estudiante:", data);
       },
       error: (err) => console.error("Error obteniendo datos:", err)
     });
@@ -220,8 +334,8 @@ export class EstudianteEntregas implements OnInit {
       headers: { Authorization: `Bearer ${token}` }
     }).subscribe({
       next: (response) => {
-        this.actividades = response.data;
-        console.log("Datos de las actividades:", this.actividades);
+        this.actividades = response.data || [];
+        console.log("📚 Actividades cargadas:", this.actividades.length);
       },
       error: (err) => console.error("Error obteniendo actividad:", err)
     });
@@ -234,7 +348,7 @@ export class EstudianteEntregas implements OnInit {
     }).subscribe({
       next: (data) => {
         this.actividad = data;
-        console.log("Datos de la actividad seleccionada:", data);
+        console.log("📝 Detalles de la actividad:", data);
       },
       error: (err) => console.error("Error obteniendo datos:", err)
     });

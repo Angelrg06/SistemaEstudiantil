@@ -30,50 +30,63 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const getActividadByID = async (req, res) => {
+  try {
+    const id_actividad = parseInt(req.params.id);
 
-    try {
+    const actividad = await prisma.actividad.findUnique({
+      where: { id_actividad },
+      select: {
+        id_actividad: true,
+        titulo: true,
+        tipo: true,
+        descripcion: true,
+        max_intentos: true, // ✅ AGREGAR
+        fecha_inicio: true,
+        fecha_fin: true,
+        archivo: true,
+        archivo_ruta: true
+      }
+    });
 
-        const id_actividad = parseInt(req.params.id);
-
-        const actividad = await prisma.actividad.findUnique({
-            where: { id_actividad },
-            select: {
-                id_actividad: true,
-                titulo: true,
-                tipo: true,
-                descripcion: true,
-                fecha_inicio: true,
-                fecha_fin: true,
-                archivo: true
-            }
-        })
-
-        const resultado = [{
-            titulo: actividad.titulo,
-            tipo: actividad.tipo,
-            descripcion: actividad.descripcion,
-            fecha_inicio: actividad.fecha_inicio
-                ? new Date(actividad.fecha_inicio).toLocaleString('es-PE', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                })
-                : null,
-            fecha_fin: actividad.fecha_fin
-                ? new Date(actividad.fecha_fin).toLocaleString('es-PE', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                })
-                : null,
-            archivo: actividad.archivo,
-        }
-        ]
-
-        res.json(resultado)
-    } catch (error) {
-        console.error("Error al obtener actividad:", error);
-        res.status(500).json({ error: "Error al obtener actividad" });
+    if (!actividad) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Actividad no encontrada" 
+      });
     }
 
+    const resultado = {
+      titulo: actividad.titulo,
+      tipo: actividad.tipo,
+      descripcion: actividad.descripcion,
+      max_intentos: actividad.max_intentos || 3,
+      fecha_inicio: actividad.fecha_inicio
+        ? new Date(actividad.fecha_inicio).toLocaleString('es-PE', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })
+        : null,
+      fecha_fin: actividad.fecha_fin
+        ? new Date(actividad.fecha_fin).toLocaleString('es-PE', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })
+        : null,
+      archivo: actividad.archivo,
+      archivo_ruta: actividad.archivo_ruta
+    };
+
+    res.json({
+      success: true,
+      data: resultado
+    });
+  } catch (error) {
+    console.error("Error al obtener actividad:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Error al obtener actividad" 
+    });
+  }
 }
 
 export const getActividadesByCurso = async (req, res) => {

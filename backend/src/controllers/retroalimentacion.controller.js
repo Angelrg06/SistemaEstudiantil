@@ -180,16 +180,17 @@ export const obtenerEntregasParaCalificar = async (req, res) => {
   }
 };
 
-// 📝 Crear o actualizar retroalimentación (calificar entrega)
+// 📝 CORREGIR calificarEntrega - Versión mejorada
+// 📝 FUNCIÓN ÚNICA Y CORREGIDA calificarEntrega
 export const calificarEntrega = async (req, res) => {
   try {
     const { id_entrega } = req.params;
-    const { calificacion, comentario, id_actividad } = req.body;
+    const { calificacion, comentario } = req.body;
     const id_usuario = req.user.id_usuario;
 
-    console.log('📝 Calificando entrega:', id_entrega, 'Calificación:', calificacion);
+    console.log('📝 Calificando entrega:', id_entrega);
 
-    // 🟢 Validar datos
+    // 🟢 1. VALIDACIONES BÁSICAS
     if (!calificacion || isNaN(parseFloat(calificacion))) {
       return res.status(400).json(
         errorResponse('La calificación es requerida y debe ser un número')
@@ -203,7 +204,7 @@ export const calificarEntrega = async (req, res) => {
       );
     }
 
-    // 🟢 Verificar que el usuario es docente
+    // 🟢 2. VERIFICAR DOCENTE
     const docente = await prisma.docente.findFirst({
       where: { id_usuario }
     });
@@ -214,16 +215,19 @@ export const calificarEntrega = async (req, res) => {
       );
     }
 
-    // 🟢 Verificar que la entrega existe
+    // 🟢 3. OBTENER ENTREGA CON INFORMACIÓN BÁSICA
     const entrega = await prisma.entrega.findUnique({
       where: { id_entrega: parseInt(id_entrega) },
       include: {
         actividad: {
-          select: {
-            id_actividad: true,
-            titulo: true,
-            id_docente: true
-   
+          include: {
+            docente: true,
+            seccion: {
+              select: {
+                id_seccion: true,
+                nombre: true
+              }
+            }
           }
         },
         estudiante: {
@@ -231,8 +235,7 @@ export const calificarEntrega = async (req, res) => {
             id_estudiante: true,
             nombre: true,
             apellido: true,
-            codigo: true,
-            id_usuario: true
+            id_seccion: true
           }
         }
       }
@@ -244,88 +247,100 @@ export const calificarEntrega = async (req, res) => {
       );
     }
 
-    // 🟢 Verificar que la actividad pertenece al docente
+    // 🟢 4. VERIFICAR PERMISOS DETALLADOS
     if (entrega.actividad.id_docente !== docente.id_docente) {
       return res.status(403).json(
         errorResponse('No tienes permisos para calificar esta entrega')
       );
     }
 
-    // 🟢 Verificar si ya existe retroalimentación para esta entrega
-    const retroalimentacionExistente = await prisma.retroalimentacion.findFirst({
+    // Verificar que el estudiante pertenece a la sección de la actividad
+    // SOLO si la actividad tiene sección
+    if (entrega.actividad.seccion && entrega.actividad.seccion.id_seccion) {
+      const estudianteEnSeccion = await prisma.estudiante.findFirst({
+        where: {
+          id_estudiante: entrega.id_estudiante,
+          id_seccion: entrega.actividad.seccion.id_seccion
+        }
+      });
+
+      if (!estudianteEnSeccion) {
+        return res.status(403).json(
+          errorResponse('El estudiante no pertenece a la sección de esta actividad')
+        );
+      }
+    }
+
+    // 🟢 5. MANEJAR RETROALIMENTACIÓN EXISTENTE O NUEVA
+    let retroalimentacion;
+    
+    const retroExistente = await prisma.retroalimentacion.findUnique({
       where: { id_entrega: parseInt(id_entrega) }
     });
 
-    let retroalimentacion;
-
-    if (retroalimentacionExistente) {
-      // 🟢 Actualizar retroalimentación existente
+    if (retroExistente) {
+      // Actualizar existente
       retroalimentacion = await prisma.retroalimentacion.update({
-        where: { id_retroalimentacion: retroalimentacionExistente.id_retroalimentacion },
+        where: { id_retroalimentacion: retroExistente.id_retroalimentacion },
         data: {
           calificacion: calificacionNum,
-          comentario: comentario || null,
+          comentario: comentario || retroExistente.comentario,
           fecha: new Date()
         }
       });
     } else {
-      // 🟢 Crear nueva retroalimentación
+      // Crear nueva
       retroalimentacion = await prisma.retroalimentacion.create({
         data: {
           calificacion: calificacionNum,
           comentario: comentario || null,
           fecha: new Date(),
-          id_actividad: id_actividad || entrega.actividad.id_actividad,
+          id_actividad: entrega.actividad.id_actividad,
           id_docente: docente.id_docente,
           id_entrega: parseInt(id_entrega)
         }
       });
     }
 
-    // 🟢 Actualizar estado de la entrega
+    // 🟢 6. ACTUALIZAR ESTADO DE ENTREGA
     await prisma.entrega.update({
       where: { id_entrega: parseInt(id_entrega) },
-      data: {
-        estado_entrega: 'CALIFICADO'
-      }
+      data: { estado_entrega: 'CALIFICADO' }
     });
-// 🟢 Verificar si ya existe notificación para esta entrega
-const notificacionExistente = await prisma.notificacion.findUnique({
-  where: { id_entrega: parseInt(id_entrega) }
-});
 
-if (notificacionExistente) {
-  // 🟢 Actualizar notificación existente
-  await prisma.notificacion.update({
-    where: { id_notificacion: notificacionExistente.id_notificacion },
-    data: {
-      mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
-      tipo: 'calificacion',
-      fecha_envio: new Date()
+    // 🟢 7. MANEJAR NOTIFICACIÓN (con verificación de existencia)
+    const notificacionExistente = await prisma.notificacion.findUnique({
+      where: { id_entrega: parseInt(id_entrega) }
+    });
+
+    if (notificacionExistente) {
+      await prisma.notificacion.update({
+        where: { id_notificacion: notificacionExistente.id_notificacion },
+        data: {
+          mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
+          fecha_envio: new Date()
+        }
+      });
+    } else {
+      await prisma.notificacion.create({
+        data: {
+          mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
+          tipo: 'calificacion',
+          fecha_envio: new Date(),
+          id_actividad: entrega.actividad.id_actividad,
+          id_docente: docente.id_docente,
+          id_entrega: parseInt(id_entrega)
+        }
+      });
     }
-  });
-} else {
-    // 🟢 Crear notificación para el estudiante
-    await prisma.notificacion.create({
-      data: {
-        mensaje: `Tu entrega "${entrega.actividad.titulo}" ha sido calificada: ${calificacionNum}/20`,
-        tipo: 'calificacion',
-        fecha_envio: new Date(),
-        id_actividad: entrega.actividad.id_actividad,
-        id_docente: docente.id_docente,
-        id_entrega: parseInt(id_entrega)
-      }
-    });
-     }
 
-    console.log('✅ Entrega calificada exitosamente');
-
-    // 🟢 Obtener datos completos para la respuesta
-    const entregaActualizada = await prisma.entrega.findUnique({
+    // 🟢 8. OBTENER RESPUESTA COMPLETA
+    const respuesta = await prisma.entrega.findUnique({
       where: { id_entrega: parseInt(id_entrega) },
       include: {
         estudiante: {
           select: {
+            id_estudiante: true,
             nombre: true,
             apellido: true,
             codigo: true
@@ -333,7 +348,9 @@ if (notificacionExistente) {
         },
         actividad: {
           select: {
-            titulo: true
+            id_actividad: true,
+            titulo: true,
+            tipo: true
           }
         },
         retroalimentacion: true
@@ -341,12 +358,26 @@ if (notificacionExistente) {
     });
 
     res.json(successResponse(
-      entregaActualizada,
-      retroalimentacionExistente ? 'Calificación actualizada' : 'Entrega calificada correctamente'
+      respuesta,
+      retroExistente ? 'Calificación actualizada' : 'Entrega calificada correctamente'
     ));
 
   } catch (error) {
     console.error("❌ Error al calificar entrega:", error);
+    
+    // Manejar errores específicos de Prisma
+    if (error.code === 'P2002') {
+      return res.status(400).json(
+        errorResponse('Ya existe una retroalimentación para esta entrega')
+      );
+    }
+    
+    if (error.code === 'P2025') {
+      return res.status(404).json(
+        errorResponse('La entrega no existe')
+      );
+    }
+    
     res.status(500).json(
       errorResponse("Error al calificar la entrega", error)
     );

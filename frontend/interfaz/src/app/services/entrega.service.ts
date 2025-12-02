@@ -1,53 +1,70 @@
+// entrega.service.ts - VERSIÓN CORREGIDA
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class EntregasService {
+  private apiUrl = 'http://localhost:4000/api/entregas';
 
-    private apiUrl = 'http://localhost:4000/api/entregas';
+  constructor(private http: HttpClient) { }
 
-    constructor(private http: HttpClient) { }
-
-    //Método para subir entrega con archivo
-    subirEntrega(archivo: File, idActividad: number, comentario?: string): Observable<any> {
-
-        // FormData es una clase de JavaScript que permite enviar archivos
-        // mediante peticiones HTTP
-        const formData = new FormData();
-
-        //Construir FormData
-        formData.append('archivo', archivo); //Archivo
-        formData.append('id_actividad', idActividad.toString()); //ID Actividad
-        if (comentario) formData.append('comentario', comentario); 
-
-        //Verificar archivo e id
-        console.log('Enviando archivo:', archivo.name);
-        console.log('ID Actividad:', idActividad);
-
-        //Obtener token de autenticación
-        const token = localStorage.getItem('token');
-
-        // Enviar petición POST
-        return this.http.post(`${this.apiUrl}/subir`, formData, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-                //IMPORTANTE: NO agregar 'Content-Type'
-                //FormData establece automáticamente 'multipart/form-data'
-            }
-        });
+  // 🟢 MÉTODO CORREGIDO: Subir entrega
+  subirEntrega(archivo: File, idActividad: number, comentario?: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('id_actividad', idActividad.toString());
+    
+    if (comentario) {
+      formData.append('comentario_estudiante', comentario); // ✅ CORREGIDO: usar 'comentario_estudiante'
     }
 
-    //Método para descargar archivo
-    descargarArchivo(rutaArchivo: string): Observable<any> {
-        const token = localStorage.getItem('token');
+    console.log('📤 Subiendo entrega para actividad:', idActividad);
+    console.log('📁 Archivo:', archivo.name, `(${(archivo.size / 1024 / 1024).toFixed(2)} MB)`);
 
-        return this.http.get(`${this.apiUrl}/descargar/${rutaArchivo}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-    }
+    const token = localStorage.getItem('token');
+    
+    return this.http.post(`${this.apiUrl}/subir`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // NO agregar 'Content-Type' - FormData lo maneja automáticamente
+      }
+    });
+  }
+
+  // 🟢 MÉTODO MEJORADO: Descargar archivo
+  descargarArchivo(rutaArchivo: string): Observable<any> {
+    const token = localStorage.getItem('token');
+    
+    return this.http.get(`${this.apiUrl}/descargar/${encodeURIComponent(rutaArchivo)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      responseType: 'blob' // ✅ IMPORTANTE: Para descargar archivos
+    });
+  }
+
+  // 🟢 NUEVO: Obtener entregas del estudiante
+  getMisEntregas(id_curso: number): Observable<any> {
+    const token = localStorage.getItem('token');
+    
+    return this.http.get(`${this.apiUrl}/mis-entregas/${id_curso}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
+
+  // 🟢 NUEVO: Verificar intentos disponibles
+  verificarIntentos(id_actividad: number): Observable<any> {
+    const token = localStorage.getItem('token');
+    
+    return this.http.get(`${this.apiUrl}/verificar-intentos/${id_actividad}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  }
 }

@@ -19,6 +19,7 @@ interface Actividad {
   titulo: string;
   descripcion: string;
   tipo: string;
+  max_intentos?: number; // 🔹
   fecha_inicio: string;
   fecha_fin: string;
   estado: string;
@@ -547,6 +548,8 @@ onSeccionesActualizadas(secciones: any[]): void {
     console.log('✅ Datos de prueba cargados:', this.actividades.length, 'actividades');
   }
 
+  max_intentos_nuevo: number = 3;
+max_intentos_temporal: number = 3;
   // 🟢 MÉTODO MEJORADO: Crear actividad
   crearActividad(): void {
     // 🟢 Validaciones completas antes de crear
@@ -565,6 +568,7 @@ onSeccionesActualizadas(secciones: any[]): void {
     formData.append('estado', 'activo');
     formData.append('fecha_entrega', new Date(this.fecha_fini_nuevo).toISOString());
     formData.append('id_seccion', this.idSeccion.toString());
+    formData.append('max_intentos', this.max_intentos_nuevo.toString());
 
     // ✅ Cambiar aquí: usar archivoSeleccionado
     if (this.archivoSeleccionado) {
@@ -700,6 +704,7 @@ onSeccionesActualizadas(secciones: any[]): void {
       this.error = 'Actividad inválida';
       return;
     }
+    
 
     this.actividadSeleccionada = index;
     this.curso_temporal = actividad.curso || '';
@@ -707,7 +712,9 @@ onSeccionesActualizadas(secciones: any[]): void {
     this.descripcion_temporal = actividad.descripcion || '';
     this.tipo_actividad = actividad.tipo || 'Tarea';
     this.id_actual = actividad.id_actividad;
+    this.max_intentos_temporal = actividad.max_intentos || 3; // ✅ CARGAR DE LA BD
 
+    
     this.fecha_temporal_inicio = this.toDateTimeLocal(actividad.fecha_inicio);
     this.fecha_temporal_final = this.toDateTimeLocal(actividad.fecha_fin);
 
@@ -749,6 +756,7 @@ onSeccionesActualizadas(secciones: any[]): void {
     this.tipo_nuevo = '';
     this.fecha_ini_nuevo = '';
     this.fecha_fini_nuevo = '';
+    this.max_intentos_nuevo = 3;
   }
 
   private limpiarDatosTemporales(): void {
@@ -759,6 +767,7 @@ onSeccionesActualizadas(secciones: any[]): void {
     this.fecha_temporal_inicio = '';
     this.fecha_temporal_final = '';
     this.id_actual = null;
+    this.max_intentos_temporal = 3;
   }
 
   actualizarActividad(): void {
@@ -773,6 +782,7 @@ onSeccionesActualizadas(secciones: any[]): void {
     formData.append('titulo', this.titulo_temporal?.trim() || '');
     formData.append('descripcion', this.descripcion_temporal?.trim() || '');
     formData.append('tipo', this.tipo_actividad || '');
+    formData.append('max_intentos', this.max_intentos_temporal.toString());
     formData.append('fecha_inicio', this.fecha_temporal_inicio ? new Date(this.fecha_temporal_inicio).toISOString() : '');
     formData.append('fecha_fin', this.fecha_temporal_final ? new Date(this.fecha_temporal_final).toISOString() : '');
     formData.append('estado', 'activo');

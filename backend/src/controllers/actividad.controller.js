@@ -197,6 +197,7 @@ export const getActividadesBySeccion = async (req, res) => {
       titulo: act.titulo,
       descripcion: act.descripcion,
       tipo: act.tipo,
+      max_intentos: act.max_intentos || 3,
       fecha_inicio: act.fecha_inicio,
       fecha_fin: act.fecha_fin,
       estado: act.estado || 'activo',
@@ -227,10 +228,11 @@ export const crearActividad = async (req, res) => {
   try {
     const id_usuario = req.user.id_usuario;
     const archivo = req.file;
-    console.log('Archivo recibido:', archivo);
-    console.log('Body:', req.body);
     
-    // 🟢 OBTENER el ID del docente del usuario autenticado
+    console.log('📝 Creando actividad - Body:', req.body);
+    console.log('📁 Archivo recibido:', archivo?.originalname);
+
+    // 🟢 1. OBTENER Y VALIDAR DOCENTE
     const docente = await prisma.docente.findFirst({
       where: { id_usuario },
       include: {
@@ -248,53 +250,81 @@ export const crearActividad = async (req, res) => {
       );
     }
 
-    // 🟢 VERIFICAR que el docente tenga acceso a esta sección
     if (docente.secciones.length === 0) {
       return res.status(403).json(
         errorResponse('No tienes permisos para crear actividades en esta sección')
       );
     }
 
-    // 🟢 BUSCAR el curso por nombre
+    // 🟢 2. VALIDAR QUE EL CURSO PERTENECE A LA SECCIÓN
     const curso = await prisma.curso.findFirst({
       where: {
         nombre: {
           contains: req.body.curso,
           mode: 'insensitive'
+        },
+        seccionesCurso: {
+          some: {
+            id_seccion: parseInt(req.body.id_seccion)
+          }
         }
       }
     });
 
     if (!curso) {
       return res.status(400).json(
-        errorResponse(`Curso "${req.body.curso}" no encontrado`)
+        errorResponse(`Curso "${req.body.curso}" no encontrado o no está asignado a esta sección`)
       );
     }
 
-    // Subir archivo a Supabase si existe
+    // 🟢 3. VALIDAR FECHAS
+    const fecha_inicio = new Date(req.body.fecha_inicio);
+    const fecha_fin = new Date(req.body.fecha_fin);
+    const fecha_entrega = new Date(req.body.fecha_entrega);
+
+    if (fecha_inicio >= fecha_fin) {
+      return res.status(400).json(
+        errorResponse('La fecha de inicio debe ser anterior a la fecha de fin')
+      );
+    }
+
+    if (fecha_entrega > fecha_fin) {
+      return res.status(400).json(
+        errorResponse('La fecha de entrega no puede ser posterior a la fecha de fin')
+      );
+    }
+
+    // 🟢 4. SUBIR ARCHIVO SI EXISTE
     let archivo_url = null;
     let archivo_ruta = null;
 
     if (archivo) {
-      const resultado = await supabaseService.subirArchivo(
-        archivo.buffer,
-        archivo.originalname,
-        'actividades',
-        archivo.mimetype
-      );
-      archivo_ruta = resultado.ruta;
-      archivo_url = resultado.url;
+      try {
+        const resultado = await supabaseService.subirArchivo(
+          archivo.buffer,
+          archivo.originalname,
+          'actividades',
+          archivo.mimetype
+        );
+        archivo_ruta = resultado.ruta;
+        archivo_url = resultado.url;
+        console.log('✅ Archivo subido a:', archivo_ruta);
+      } catch (uploadError) {
+        console.error('❌ Error subiendo archivo:', uploadError);
+        // Continuar sin archivo
+      }
     }
 
-    // 🟢 CREAR la actividad SIN max_intentos (ya que no existe en la BD)
+    // 🟢 5. CREAR ACTIVIDAD (AHORA SÍ CON max_intentos)
     const nuevaActividad = await prisma.actividad.create({
       data: {
         titulo: req.body.titulo,
         descripcion: req.body.descripcion,
         tipo: req.body.tipo,
-        fecha_inicio: new Date(req.body.fecha_inicio),
-        fecha_fin: new Date(req.body.fecha_fin),
-        fecha_entrega: new Date(req.body.fecha_entrega),
+        max_intentos: req.body.max_intentos ? parseInt(req.body.max_intentos) : 3,
+        fecha_inicio: fecha_inicio,
+        fecha_fin: fecha_fin,
+        fecha_entrega: fecha_entrega,
         estado: 'activo',
         archivo: archivo_url,
         archivo_ruta: archivo_ruta,
@@ -309,8 +339,30 @@ export const crearActividad = async (req, res) => {
       }
     });
 
-    console.log('✅ Actividad creada:', nuevaActividad.id_actividad);
-    res.json({ success: true, message: 'Actividad creada correctamente', data: nuevaActividad });
+    console.log('✅ Actividad creada exitosamente ID:', nuevaActividad.id_actividad);
+    
+    // 🟢 6. CREAR NOTIFICACIÓN AUTOMÁTICA
+    try {
+      await prisma.notificacion.create({
+        data: {
+          mensaje: `Nueva actividad publicada: "${req.body.titulo}"`,
+          tipo: 'actividad_nueva',
+          fecha_envio: new Date(),
+          id_actividad: nuevaActividad.id_actividad,
+          id_docente: docente.id_docente,
+          // No incluir id_entrega porque es una notificación de actividad nueva
+        }
+      });
+      console.log('✅ Notificación creada para la nueva actividad');
+    } catch (notifError) {
+      console.warn('⚠️ No se pudo crear notificación:', notifError.message);
+      // Continuar aunque falle la notificación
+    }
+
+    res.json(successResponse(
+      nuevaActividad,
+      'Actividad creada correctamente'
+    ));
 
   } catch (error) {
     console.error("❌ Error en crearActividad:", error);
@@ -382,6 +434,7 @@ export const actualizarActividad = async (req, res) => {
     const id_usuario = req.user.id_usuario;
 
     console.log('✏️ Actualizando actividad:', id, 'Usuario:', id_usuario);
+    console.log('📝 Datos recibidos:', req.body);
 
     // 🟢 VERIFICAR permisos
     const docente = await prisma.docente.findFirst({
@@ -389,9 +442,7 @@ export const actualizarActividad = async (req, res) => {
     });
 
     if (!docente) {
-      return res.status(403).json(
-        errorResponse('No autorizado')
-      );
+      return res.status(403).json(errorResponse('No autorizado'));
     }
 
     const actividadExistente = await prisma.actividad.findFirst({
@@ -402,14 +453,36 @@ export const actualizarActividad = async (req, res) => {
     });
 
     if (!actividadExistente) {
-      return res.status(404).json(
-        errorResponse('Actividad no encontrada o no tienes permisos')
-      );
+      return res.status(404).json(errorResponse('Actividad no encontrada o no tienes permisos'));
     }
 
-    // 🟢 BUSCAR curso si se proporciona
-    let datosActualizacion = { ...req.body };
+    // 🟢 PREPARAR DATOS DE ACTUALIZACIÓN (forma segura)
+    const datosActualizacion = {};
 
+    // Solo actualizar campos que se proporcionan
+    if (req.body.titulo !== undefined) datosActualizacion.titulo = req.body.titulo;
+    if (req.body.descripcion !== undefined) datosActualizacion.descripcion = req.body.descripcion;
+    if (req.body.tipo !== undefined) datosActualizacion.tipo = req.body.tipo;
+    if (req.body.estado !== undefined) datosActualizacion.estado = req.body.estado;
+    
+    // 🟢 CRÍTICO: Actualizar max_intentos si se proporciona
+    if (req.body.max_intentos !== undefined) {
+      datosActualizacion.max_intentos = parseInt(req.body.max_intentos);
+      console.log('✅ Actualizando max_intentos a:', datosActualizacion.max_intentos);
+    }
+
+    // 🟢 Actualizar fechas si se proporcionan
+    if (req.body.fecha_inicio) {
+      datosActualizacion.fecha_inicio = new Date(req.body.fecha_inicio);
+    }
+    if (req.body.fecha_fin) {
+      datosActualizacion.fecha_fin = new Date(req.body.fecha_fin);
+    }
+    if (req.body.fecha_entrega) {
+      datosActualizacion.fecha_entrega = new Date(req.body.fecha_entrega);
+    }
+
+    // 🟢 BUSCAR curso si se proporciona (manejo separado)
     if (req.body.curso) {
       const curso = await prisma.curso.findFirst({
         where: {
@@ -422,22 +495,11 @@ export const actualizarActividad = async (req, res) => {
 
       if (curso) {
         datosActualizacion.id_curso = curso.id_curso;
-        delete datosActualizacion.curso;
+        console.log('✅ Actualizando curso a:', curso.nombre);
       }
     }
 
-    // 🟢 ACTUALIZAR fechas si se proporcionan
-    if (req.body.fecha_inicio) {
-      datosActualizacion.fecha_inicio = new Date(req.body.fecha_inicio);
-    }
-    if (req.body.fecha_fin) {
-      datosActualizacion.fecha_fin = new Date(req.body.fecha_fin);
-    }
-    if (req.body.fecha_entrega) {
-      datosActualizacion.fecha_entrega = new Date(req.body.fecha_entrega);
-    }
-
-    // Subir archivo si hay
+    // 🟢 Subir archivo si hay
     if (req.file) {
       const resultado = await supabaseService.subirArchivo(
         req.file.buffer,
@@ -447,13 +509,12 @@ export const actualizarActividad = async (req, res) => {
       );
       datosActualizacion.archivo = resultado.url;
       datosActualizacion.archivo_ruta = resultado.ruta;
+      console.log('✅ Archivo actualizado:', resultado.ruta);
     }
 
-    // 🟢 REMOVER max_intentos si existe (porque no está en la BD)
-    if (datosActualizacion.max_intentos !== undefined) {
-      delete datosActualizacion.max_intentos;
-    }
+    console.log('📦 Datos finales a actualizar:', datosActualizacion);
 
+    // 🟢 EJECUTAR ACTUALIZACIÓN
     const actividadActualizada = await prisma.actividad.update({
       where: { id_actividad: id },
       data: datosActualizacion,
@@ -464,6 +525,8 @@ export const actualizarActividad = async (req, res) => {
       }
     });
 
+    console.log('✅ Actividad actualizada ID:', actividadActualizada.id_actividad);
+
     res.json(successResponse(
       actividadActualizada,
       "Actividad actualizada correctamente"
@@ -471,9 +534,7 @@ export const actualizarActividad = async (req, res) => {
 
   } catch (error) {
     console.error("❌ Error en actualizarActividad:", error);
-    res.status(500).json(
-      errorResponse("Error al actualizar actividad", error)
-    );
+    res.status(500).json(errorResponse("Error al actualizar actividad", error));
   }
 };
 
@@ -670,5 +731,106 @@ export const actividadesEstudiante = async (req, res) => {
   } catch (error) {
     console.error("❌ Error:", error);
     res.status(500).json({ error: "Error obteniendo actividades" });
+  }
+};
+export const getActividadById = async (req, res) => {
+  try {
+    const id_actividad = parseInt(req.params.id);
+    const id_usuario = req.user.id_usuario;
+
+    console.log('🔍 Obteniendo actividad ID:', id_actividad);
+
+    const actividad = await prisma.actividad.findUnique({
+      where: { id_actividad },
+      include: {
+        docente: {
+          select: {
+            id_docente: true,
+            nombre: true,
+            apellido: true,
+            codigo: true
+          }
+        },
+        seccion: {
+          select: {
+            id_seccion: true,
+            nombre: true,
+            bimestre: {
+              select: {
+                nombre: true
+              }
+            }
+          }
+        },
+        curso: {
+          select: {
+            id_curso: true,
+            nombre: true
+          }
+        },
+        entregas: {
+          include: {
+            estudiante: {
+              select: {
+                id_estudiante: true,
+                nombre: true,
+                apellido: true,
+                codigo: true
+              }
+            },
+            retroalimentacion: true
+          }
+        },
+        _count: {
+          select: {
+            entregas: true,
+            retroalimentaciones: true
+          }
+        }
+      }
+    });
+
+    if (!actividad) {
+      return res.status(404).json(
+        errorResponse('Actividad no encontrada')
+      );
+    }
+
+    // Verificar permisos
+    const docente = await prisma.docente.findFirst({
+      where: { id_usuario }
+    });
+
+    if (!docente || actividad.id_docente !== docente.id_docente) {
+      return res.status(403).json(
+        errorResponse('No tienes permisos para ver esta actividad')
+      );
+    }
+
+    // Calcular estadísticas
+    const entregasCalificadas = actividad.entregas.filter(e => e.retroalimentacion).length;
+    const totalEstudiantesSeccion = await prisma.estudiante.count({
+      where: { id_seccion: actividad.id_seccion }
+    });
+
+    const actividadConEstadisticas = {
+      ...actividad,
+      estadisticas: {
+        total_entregas: actividad._count.entregas,
+        entregas_calificadas: entregasCalificadas,
+        total_estudiantes: totalEstudiantesSeccion,
+        porcentaje_entregado: totalEstudiantesSeccion > 0 
+          ? (actividad._count.entregas / totalEstudiantesSeccion * 100).toFixed(1)
+          : 0
+      }
+    };
+
+    res.json(successResponse(actividadConEstadisticas));
+
+  } catch (error) {
+    console.error("❌ Error en getActividadById:", error);
+    res.status(500).json(
+      errorResponse("Error al obtener actividad", error)
+    );
   }
 };

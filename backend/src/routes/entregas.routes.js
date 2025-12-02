@@ -1,24 +1,31 @@
+// routes/entregas.routes.js - VERSIÓN CORREGIDA
 import express from 'express';
-import { crearEntrega, descargarArchivo } from '../controllers/entrega.Controller.js';
-import upload from '../middlewares/uploadMiddleware.js';
+import { 
+  crearEntrega, 
+  descargarArchivo,
+  getMisEntregas,
+  verificarIntentos
+} from '../controllers/entrega.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { uploadEntrega } from '../config/multer.config.js'; // 🟢 USAR CONFIG UNIFICADA
-
+import upload from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
-// Ruta para subir entrega con archivo
+// 🟢 RUTA PARA SUBIR ENTREGA (POST con archivo)
 router.post('/subir',
-    authMiddleware, // Verificamos que el usuario está autenticado
-    upload.single('archivo'), // Subir archivo con Multer
-    crearEntrega // Ejecutar el controlador
+  authMiddleware,
+  upload.single('archivo'), // Solo en POST se usa multer
+  crearEntrega
 );
 
-// Ruta para descargar el archivo
+// 🟢 RUTA PARA DESCARGAR ARCHIVO (GET sin multer)
 router.get('/descargar/:ruta',
-    authMiddleware,
-    uploadEntrega,
-    descargarArchivo
+  authMiddleware,
+  descargarArchivo // NO necesita multer porque es GET
 );
 
-export default router; 
+// 🟢 NUEVAS RUTAS PARA ESTUDIANTES
+router.get('/mis-entregas/:id_curso', authMiddleware, getMisEntregas);
+router.get('/verificar-intentos/:id_actividad', authMiddleware, verificarIntentos);
+
+export default router;
