@@ -1,16 +1,9 @@
 // src/app/paneles/admin/admin.ts
-// Componente principal del panel de admin
-// Controla:
-// 1. Validación de usuario admin
-// 2. Carga de estadísticas
-// 3. Cambio entre secciones
-// 4. Control de header responsive (menú móvil y dropdown de usuario)
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { AdminService } from '../../services/admin.service';
+import { AdminService } from '../../services/admin/admin.service';
 
 // Subcomponentes del panel admin
 import { AdminDocentes } from './admin-docentes/admin-docentes';
@@ -26,7 +19,8 @@ import { AdminDashboard } from './admin-dashboard/admin-dashboard';
     AdminDashboard,
     AdminDocentes,
     AdminEstudiantes,
-    AdminUsuarios
+    AdminUsuarios,
+
   ],
   templateUrl: './admin.html'
 })

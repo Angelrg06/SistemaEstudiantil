@@ -76,7 +76,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
-  console.log(`💬 WebSocket Service: ACTIVO`);
+  console.log(`💬 WebSocket Service: ACTIVO`);  
 });
 
 export default app;

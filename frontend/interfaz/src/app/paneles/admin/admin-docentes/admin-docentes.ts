@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService } from '../../../services/admin.service';
-
+import { AdminService } from '../../../services/admin/admin.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 @Component({
   selector: 'app-admin-docentes',
   standalone: true,
@@ -21,7 +22,7 @@ export class AdminDocentes implements OnInit {
   searchTerm: string = '';
   selectedDepartamento: string = '';
   paginaActual: number = 1;
-  registrosPorPagina: number = 5;
+  registrosPorPagina: number = 10;
   totalPaginas: number = 1;
 
   mostrarPassword: boolean = false;
@@ -29,10 +30,17 @@ export class AdminDocentes implements OnInit {
 successMessage: string = '';
 highlightedDocenteId: number | null = null;
 
+seccionesDisponibles: any[] = [];
+seccionesSeleccionadas: number[] = [];
+
+
   constructor(private adminService: AdminService) { }
 
   ngOnInit() {
     this.loadDocentes();
+    this.adminService.getSecciones().subscribe({
+    next: (data) => this.seccionesDisponibles = data
+  });
   }
 
   loadDocentes() {
@@ -46,6 +54,15 @@ highlightedDocenteId: number | null = null;
       }
     });
   }
+
+  toggleSeccion(id: number) {
+  if (this.seccionesSeleccionadas.includes(id)) {
+    this.seccionesSeleccionadas =
+      this.seccionesSeleccionadas.filter(s => s !== id);
+  } else {
+    this.seccionesSeleccionadas = [...this.seccionesSeleccionadas, id];
+  }
+}
 
   // Lógica de filtros
   aplicarFiltros() {
@@ -116,28 +133,52 @@ highlightedDocenteId: number | null = null;
     return new Array(filasVaciasCount).fill(0);
   }
 
+openModal(docente?: any) {
+  this.isEditing = !!docente;
 
-  openModal(docente?: any) {
-    this.isEditing = !!docente;
+ if (docente) {
+  this.selectedDocente = JSON.parse(JSON.stringify(docente));
 
-    if (docente) {
-      // Copia profunda para evitar referencias
-      this.selectedDocente = JSON.parse(JSON.stringify(docente));
-    } else {
-      // Nuevo docente: inicializar todos los campos
-      this.selectedDocente = {
-        codigo: '',
-        dni: '',
-        nombre: '',
-        apellido: '',
-        usuario: { correo: '', password: '', rol: 'docente' }
-      };
-    }
-
-    this.errors = {};
-    this.showModal = true;
-    this.loading = false; // aseguramos que no bloquee
+  // Poblamos las secciones existentes
+  if (Array.isArray(docente.secciones)) {
+    this.seccionesSeleccionadas = docente.secciones.map((s: any) => s.id_seccion);
+  } else if (Array.isArray(docente.docenteSecciones)) {
+    this.seccionesSeleccionadas = docente.docenteSecciones.map((ds: any) => ds.id_seccion);
+  } else if (Array.isArray(docente.seccionesIds)) {
+    this.seccionesSeleccionadas = [...docente.seccionesIds];
+  } else {
+    this.seccionesSeleccionadas = [];
   }
+  } else {
+    // NUEVO DOCENTE
+    const randomNum = Math.floor(Math.random() * 9000) + 1000;
+    const generatedEmail = `doc${randomNum}@glo10oct.edu.pe`;
+
+    this.selectedDocente = {
+      codigo: '',
+      dni: '',
+      nombre: '',
+      apellido: '',
+      usuario: { correo: generatedEmail, password: '', rol: 'docente' }
+    };
+
+    this.seccionesSeleccionadas = [];
+  }
+
+  this.errors = {};
+  this.showModal = true;
+  this.loading = false;
+}
+
+
+onChangeSecciones(event: Event) {
+  const select = event.target as HTMLSelectElement;
+
+  this.seccionesSeleccionadas = Array.from(select.selectedOptions)
+    .map(opt => Number(opt.value));
+
+  console.log("Secciones seleccionadas:", this.seccionesSeleccionadas);
+}
 
   closeModal() {
     this.showModal = false;
@@ -189,73 +230,90 @@ highlightedDocenteId: number | null = null;
   return isValid;
 }
 
-  saveDocente() {
+ saveDocente() {
   if (!this.validateFields() || this.loading) return;
 
   this.loading = true;  // bloquea botones
 
   const { usuario, ...docenteData } = this.selectedDocente;
 
-  if (this.isEditing) {
-    // Editar docente existente
-    this.adminService.updateDocente(this.selectedDocente.id_docente, {
+ const request$ = this.isEditing
+  ? this.adminService.updateDocente(this.selectedDocente.id_docente, {
       ...docenteData,
       correo: usuario.correo,
-      password: usuario.password
-    }).subscribe({
-      next: () => {
-        this.loadDocentes();  // refresca la tabla
-        this.successMessage = 'Docente actualizado correctamente ✅';
+      password: usuario.password,
+       secciones: this.seccionesSeleccionadas 
+    })
+  : this.adminService.createDocente({
+      ...docenteData,
+      correo: usuario.correo,
+      password: usuario.password,
+      seccionesIds: this.seccionesSeleccionadas    // 👈 AQUI TAMBIÉN
+    });
 
-        // Dejamos que el usuario vea el mensaje un momento
-        setTimeout(() => {
-          this.showModal = false;       // cierra modal
-          this.successMessage = '';     // limpia mensaje
-          this.resetModal();            // limpia campos
-          this.loading = false;         // desbloquea botones
-        }, 1500); // 1.5 segundos
-      },
-      error: (err) => {
-        console.error('Error updating docente:', err);
-        this.loading = false; // desbloquea botones
-        if (err?.error?.error) {
-          const msg = err.error.error.toLowerCase();
-          if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
-          else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
-          else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
-          else this.successMessage = err.error.error; // mostramos mensaje en modal
-        } else this.successMessage = 'Ocurrió un error inesperado';
+
+  request$.subscribe({
+    next: () => {
+      this.loadDocentes();
+      this.successMessage = this.isEditing
+        ? 'Docente actualizado correctamente ✅'
+        : 'Docente registrado correctamente ✅';
+
+      // ANIMACIÓN idéntica a estudiantes
+      setTimeout(() => {
+        this.closeModal();      // cierra modal y resetea campos
+        this.loading = false;   // desbloquea botones
+        this.successMessage = ''; // limpia mensaje
+      }, 1500); // 1.5 segundos
+    },
+    error: (err) => {
+      console.error('Error docente:', err);
+      this.loading = false;
+      if (err?.error?.error) {
+        const msg = err.error.error.toLowerCase();
+        if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
+        else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
+        else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
+        else this.successMessage = err.error.error;
+      } else {
+        this.successMessage = 'Ocurrió un error inesperado';
       }
-    });
-  } else {
-    // Crear nuevo docente
-    this.adminService.createDocente({
-      ...docenteData,
-      correo: usuario.correo,
-      password: usuario.password
-    }).subscribe({
-      next: () => {
-        this.loadDocentes();
-        this.resetModal();               // limpio campos para otro registro
-        this.successMessage = 'Docente registrado correctamente ✅';
-        this.loading = false;
-        setTimeout(() => this.successMessage = '', 3000);
-      },
-      error: (err) => {
-        console.error('Error creating docente:', err);
-        this.loading = false;
-        if (err?.error?.error) {
-          const msg = err.error.error.toLowerCase();
-          if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
-          else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
-          else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
-          else alert(err.error.error);
-        } else alert('Ocurrió un error inesperado');
-      }
-    });
-  }
+    }
+  });
 }
 
+exportarPDF() {
+  const doc = new jsPDF('p', 'pt', 'a4'); // orientación vertical, tamaño A4
+
+  // Encabezado del PDF
+  doc.setFontSize(16);
+  doc.text('Listado de Docentes', 40, 30);
+  doc.setFontSize(10);
+  doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 400, 30);
+
+  // Columnas y datos
+  const columns = ['Código', 'DNI', 'Nombre', 'Apellido'];
+  const rows = this.docentesFiltrados.map(d => [
+    d.codigo,
+    d.dni,
+    d.nombre,
+    d.apellido
+  ]);
+
+  // Genera la tabla
+  autoTable(doc, {
+    head: [columns],
+    body: rows,
+    startY: 50,
+    theme: 'grid',
+    headStyles: { fillColor: [22, 119, 255] },
+    styles: { fontSize: 10 },
+    margin: { left: 20, right: 20 }
+  });
+
+  // Guardar PDF
+  doc.save('docentes.pdf');
+}
 
 
   deleteDocente(id: number) {
@@ -266,5 +324,11 @@ highlightedDocenteId: number | null = null;
       error: (err) => console.error('Error deleting docente:', err)
     });
   }
-
+// ✅ NUEVO MÉTODO: permite solo números en DNI
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    if (!/[0-9]/.test(key) && key !== 'Backspace' && key !== 'ArrowLeft' && key !== 'ArrowRight') {
+      event.preventDefault();
+    }
+  }
 }

@@ -1,6 +1,6 @@
 // src/app/paneles/admin/admin-dashboard/admin-dashboard.ts
 import { Component, OnInit } from '@angular/core';
-import { AdminService } from '../../../services/admin.service';
+import { AdminService } from '../../../services/admin/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -11,8 +11,7 @@ export class AdminDashboard implements OnInit {
 
   stats: any = {};
 
-  expandedCard: 'docentes' | 'estudiantes' | 'notificaciones' | 'actividades' | null = null;
-  showNotificacionModal: boolean = false;
+  expandedCard: 'docentes' | 'estudiantes' | 'administradores' | 'secciones' | 'bimestres' | null = null;
 
   constructor(private adminService: AdminService) { }
 
@@ -23,7 +22,13 @@ export class AdminDashboard implements OnInit {
   loadStats(): void {
     this.adminService.getDashboardStats().subscribe({
       next: (data) => {
-        this.stats = data;
+        this.stats = {
+          docentes: data.docentes || 0,
+          estudiantes: data.estudiantes || 0,
+          administradores: data.administradores || 0,
+          secciones: data.secciones || 0,
+          bimestres: data.bimestres || 0
+        };
       },
       error: (err) => {
         console.error('Error cargando estadísticas del dashboard:', err);

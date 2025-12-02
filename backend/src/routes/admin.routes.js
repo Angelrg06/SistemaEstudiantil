@@ -16,25 +16,27 @@ router.get('/docentes', adminController.getDocentes);
 router.put('/docentes/:id', adminController.updateDocente);
 router.delete('/docentes/:id', adminController.deleteDocente);
 
-
-
 // Rutas de estudiantes
 router.post('/estudiantes', adminController.createEstudiante);
 router.get('/estudiantes', adminController.getEstudiantes);
 router.put('/estudiantes/:id', adminController.updateEstudiante);
 router.delete('/estudiantes/:id', adminController.deleteEstudiante);
 
-// Rutas de secciones
-router.get('/secciones', adminController.getSecciones);
-router.post('/secciones', adminController.createSeccion);
 
-// Rutas de notificaciones
-router.post('/notificaciones', adminController.createNotificacion);
-router.get('/notificaciones', adminController.getNotificaciones);
+
 
 // Dashboard stats
 router.get('/stats', adminController.getDashboardStats);
 
-//Rutas de usuarios 
+
+
+// Rutas de secciones
+router.get('/secciones', adminController.getSecciones);
+router.post('/secciones', adminController.createSeccion);
+router.put('/secciones/:id', adminController.updateSeccion);
+router.delete('/secciones/:id', adminController.deleteSeccion);
+
+
+
 
 export default router;

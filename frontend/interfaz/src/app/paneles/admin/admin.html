@@ -68,7 +68,9 @@
             class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10">
             <i class="fas fa-users mr-2 text-sm"></i> Usuarios
           </button>
+
         </nav>
+
         <!-- Usuario -->
         <div class="flex items-center space-x-3 relative">
           <button (click)="toggleUserMenu()"
@@ -78,54 +80,66 @@
           </button>
 
           <!-- Overlay: bloquea el body -->
-          <div *ngIf="showUserMenu" class="fixed inset-0 z-40 bg-black/20" (click)="closeUserMenu()">
-          </div>
+          @if (showUserMenu) {
+            <div class="fixed inset-0 z-40 bg-black/20" (click)="closeUserMenu()"></div>
+          }
 
           <!-- Dropdown usuario -->
-          <div *ngIf="showUserMenu"
-            class="absolute right-0 top-12 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl py-4 z-50 border border-white/20">
-            <div class="px-4 py-3 border-b border-gray-100">
-              <p class="font-bold text-gray-800 text-lg flex items-center">
-                <i class="fas fa-user-shield mr-2 text-blue-600"></i> Administrador
-              </p>
-              <p class="text-xs text-gray-600 mt-1">
-                {{ currentUser?.correo || 'usuario@sistema.com' }}
-              </p>
+          @if (showUserMenu) {
+            <div class="absolute right-0 top-12 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl py-4 z-50 border border-white/20">
+              <div class="px-4 py-3 border-b border-gray-100">
+                <p class="font-bold text-gray-800 text-lg flex items-center">
+                  <i class="fas fa-user-shield mr-2 text-blue-600"></i> Administrador
+                </p>
+                <p class="text-xs text-gray-600 mt-1">
+                  {{ currentUser?.correo || 'usuario@sistema.com' }}
+                </p>
+              </div>
+              <div class="py-2 px-4">
+                <button (click)="logout()"
+                  class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg">
+                  <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> Cerrar sesión
+                </button>
+              </div>
             </div>
-            <div class="py-2 px-4">
-              <button (click)="logout()"
-                class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg">
-                <i class="fas fa-sign-out-alt mr-3 text-red-400"></i> Cerrar sesión
-              </button>
-            </div>
-          </div>
+          }
         </div>
 
       </div>
     </div>
+
     <!-- Overlay menú móvil -->
-    <div *ngIf="showMobileMenu" class="fixed inset-0 z-40 bg-black/20" (click)="closeMobileMenu()"></div>
+    @if (showMobileMenu) {
+      <div class="fixed inset-0 z-40 bg-black/20" (click)="closeMobileMenu()"></div>
+    }
 
     <!-- Menú móvil desplegable -->
-    <div *ngIf="showMobileMenu"
-      class="md:hidden absolute top-16 w-56 bg-gradient-to-b from-blue-500/95 to-blue-400/95 text-white flex flex-col space-y-2 p-4 z-50 backdrop-blur-md shadow-lg">
-      <button (click)="loadSection('dashboard')"
-        class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Dashboard</button>
-      <button (click)="loadSection('docentes')"
-        class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Docentes</button>
-      <button (click)="loadSection('estudiantes')"
-        class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Estudiantes</button>
-      <button (click)="loadSection('usuarios')"
-        class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Usuarios</button>
-    </div>
-
+    @if (showMobileMenu) {
+      <div class="md:hidden absolute top-16 w-56 bg-gradient-to-b from-blue-500/95 to-blue-400/95 text-white flex flex-col space-y-2 p-4 z-50 backdrop-blur-md shadow-lg">
+        <button (click)="loadSection('dashboard')"
+          class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Dashboard</button>
+        <button (click)="loadSection('docentes')"
+          class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Docentes</button>
+        <button (click)="loadSection('estudiantes')"
+          class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Estudiantes</button>
+        <button (click)="loadSection('usuarios')"
+          class="text-left px-4 py-3 rounded hover:bg-blue-600/70 transition-colors font-medium">Usuarios</button>
+        
+      </div>
+    }
 
   </header>
+
   <!-- Contenido principal -->
   <main class="flex-1 pt-6 w-full px-4 sm:px-6 lg:px-8 relative z-10">
-    <app-admin-dashboard *ngIf="currentSection === 'dashboard'"></app-admin-dashboard>
-    <app-admin-docentes *ngIf="currentSection === 'docentes'"></app-admin-docentes>
-    <app-admin-estudiantes *ngIf="currentSection === 'estudiantes'"></app-admin-estudiantes>
-    <app-admin-usuarios *ngIf="currentSection === 'usuarios'"></app-admin-usuarios>
+    @if (currentSection === 'dashboard') {
+      <app-admin-dashboard></app-admin-dashboard>
+    } @else if (currentSection === 'docentes') {
+      <app-admin-docentes></app-admin-docentes>
+    } @else if (currentSection === 'estudiantes') {
+      <app-admin-estudiantes></app-admin-estudiantes>
+    } @else if (currentSection === 'usuarios') {
+      <app-admin-usuarios></app-admin-usuarios>
+    }
   </main>
 </div>

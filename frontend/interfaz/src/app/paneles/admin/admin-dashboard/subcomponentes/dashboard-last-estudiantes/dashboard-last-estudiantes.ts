@@ -1,7 +1,7 @@
 // src/app/paneles/admin/admin-dashboard/subcomponentes/dashboard-last-estudiantes/dashboard-last-estudiantes.ts
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AdminService } from '../../../../../services/admin.service';
+import { AdminService } from '../../../../../services/admin/admin.service';
 
 interface Estudiante {
   id: number;

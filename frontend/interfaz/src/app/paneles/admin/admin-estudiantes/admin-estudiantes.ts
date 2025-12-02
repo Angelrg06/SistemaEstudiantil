@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService } from '../../../services/admin.service';
+import { AdminService } from '../../../services/admin/admin.service';
 
 @Component({
   selector: 'app-admin-estudiantes',
@@ -18,54 +18,42 @@ export class AdminEstudiantes implements OnInit {
   showModal = false;
   secciones: any[] = [];
 
-  // AGREGADO: Variables para filtros y paginación
+  // Filtros y paginación
   searchTerm: string = '';
   selectedSeccion: string = '';
   paginaActual: number = 1;
-  registrosPorPagina: number = 5;
+  registrosPorPagina: number = 10;
   totalPaginas: number = 1;
+
   errors: any = {};
   mostrarPassword: boolean = false;
   loading: boolean = false;
-
   successMessage: string = '';
- highlightedEstudianteId: number | null = null;
-
+  highlightedEstudianteId: number | null = null;
 
   constructor(private adminService: AdminService) { }
 
   ngOnInit() {
     this.loadEstudiantes();
-    this.loadSecciones();
+ 
   }
 
   loadEstudiantes() {
     this.adminService.getEstudiantes().subscribe({
       next: (data) => {
         this.estudiantes = data;
-        this.aplicarFiltros(); // AGREGADO: Aplicar filtros después de cargar
+        this.aplicarFiltros();
       },
-      error: (error) => {
-        console.error('Error loading estudiantes:', error);
-      }
+      error: (err) => console.error('Error loading estudiantes:', err)
     });
   }
 
-  loadSecciones() {
-    this.adminService.getSecciones().subscribe({
-      next: (data) => {
-        this.secciones = data; // [{id_seccion: 1, nombre: 'A'}, ...]
-      },
-      error: (error) => {
-        console.error('Error cargando secciones:', error);
-      }
-    });
-  }
-  // AGREGADO: Lógica de filtros
+  
+
+  // FILTROS Y PAGINACIÓN
   aplicarFiltros() {
     let filtrados = [...this.estudiantes];
 
-    // Buscar por código, DNI, nombre, apellido o correo
     if (this.searchTerm.trim() !== '') {
       const termino = this.searchTerm.toLowerCase().trim();
       filtrados = filtrados.filter(e =>
@@ -77,27 +65,19 @@ export class AdminEstudiantes implements OnInit {
       );
     }
 
-    // Filtrar por sección
     if (this.selectedSeccion.trim() !== '') {
       filtrados = filtrados.filter(e =>
         e.seccion?.nombre === this.selectedSeccion
       );
     }
 
-    // Calcular paginación
-    this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina);
-    if (this.totalPaginas === 0) this.totalPaginas = 1;
-
-    if (this.paginaActual > this.totalPaginas) {
-      this.paginaActual = this.totalPaginas;
-    }
+    this.totalPaginas = Math.ceil(filtrados.length / this.registrosPorPagina) || 1;
+    if (this.paginaActual > this.totalPaginas) this.paginaActual = this.totalPaginas;
 
     const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
-    const fin = inicio + this.registrosPorPagina;
-    this.estudiantesFiltrados = filtrados.slice(inicio, fin);
+    this.estudiantesFiltrados = filtrados.slice(inicio, inicio + this.registrosPorPagina);
   }
 
-  // AGREGADO: Métodos de filtro
   buscarEstudiantes() {
     this.paginaActual = 1;
     this.aplicarFiltros();
@@ -108,50 +88,49 @@ export class AdminEstudiantes implements OnInit {
     this.aplicarFiltros();
   }
 
-  // AGREGADO: Navegación de páginas
   paginaAnterior() {
-    if (this.paginaActual > 1) {
-      this.paginaActual--;
-      this.aplicarFiltros();
-    }
+    if (this.paginaActual > 1) { this.paginaActual--; this.aplicarFiltros(); }
   }
 
   paginaSiguiente() {
-    if (this.paginaActual < this.totalPaginas) {
-      this.paginaActual++;
-      this.aplicarFiltros();
-    }
+    if (this.paginaActual < this.totalPaginas) { this.paginaActual++; this.aplicarFiltros(); }
   }
 
-  // AGREGADO: Filas vacías para altura fija
   filasVacias(): number[] {
-    const usuariosEnPagina = this.estudiantesFiltrados.length;
-    const filasVaciasCount = Math.max(0, this.registrosPorPagina - usuariosEnPagina);
-    return new Array(filasVaciasCount).fill(0);
+    return new Array(Math.max(0, this.registrosPorPagina - this.estudiantesFiltrados.length)).fill(0);
   }
+openModal(estudiante?: any) {
+  this.isEditing = !!estudiante;
 
-  // TUS MÉTODOS ORIGINALES (sin cambios)
-  openModal(estudiante?: any) {
-    this.isEditing = !!estudiante;
-    this.selectedEstudiante = estudiante ? { ...estudiante } : {
+  if (estudiante) {
+    this.selectedEstudiante = JSON.parse(JSON.stringify(estudiante));
+  } else {
+    const randomNum = Math.floor(Math.random() * 9000) + 1000; // ejemplo 1000-9999
+    const generatedEmail = `est${randomNum}@glo10oct.edu.pe`;
+
+    this.selectedEstudiante = {
       codigo: '',
       dni: '',
       nombre: '',
       apellido: '',
       id_seccion: null,
-      usuario: {
-        correo: '',
-        password: '',
-        rol: 'estudiante'
-      }
+      usuario: { correo: generatedEmail, password: '', rol: 'estudiante' }
     };
-    this.showModal = true;
   }
+
+  this.showModal = true;
+  this.errors = {};
+  this.loading = false;
+}
+
 
   closeModal() {
     this.showModal = false;
     this.selectedEstudiante = null;
+    this.errors = {};
+    this.loading = false;
   }
+
   resetModal() {
     this.selectedEstudiante = {
       codigo: '',
@@ -165,6 +144,8 @@ export class AdminEstudiantes implements OnInit {
     this.errors = {};
     this.successMessage = '';
   }
+
+  // VALIDACIÓN
   validateEstudiante(): boolean {
     this.errors = {};
     const { dni, nombre, apellido, usuario, id_seccion } = this.selectedEstudiante;
@@ -173,17 +154,17 @@ export class AdminEstudiantes implements OnInit {
 
     const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
     const maxWords = 3;
+const nombreWords = nombre?.trim().split(/\s+/) || [];
+if (nombreWords.length > maxWords || !nombreWords.every((w: string) => nameRegex.test(w))) {
+  this.errors.nombre = '* Nombre inválido';
+}
 
-    const nombreWords = nombre?.trim().split(/\s+/) || [];
-    if (nombreWords.length > maxWords || !nombreWords.every((w: string) => nameRegex.test(w))) {
-      this.errors.nombre = '* Nombre inválido';
-    }
+const apellidoWords = apellido?.trim().split(/\s+/) || [];
+if (apellidoWords.length > maxWords || !apellidoWords.every((w: string) => nameRegex.test(w))) {
+  this.errors.apellido = '* Apellido inválido';
+}
 
-    const apellidoWords = apellido?.trim().split(/\s+/) || [];
-    if (apellidoWords.length > maxWords || !apellidoWords.every((w: string) => nameRegex.test(w))) {
-      this.errors.apellido = '* Apellido inválido';
-    }
-    // Corregido: convertir id_seccion a número antes de comparar
+
     const selectedId = Number(id_seccion);
     if (!selectedId || !this.secciones.find(s => s.id_seccion === selectedId)) {
       this.errors.id_seccion = '* Sección inválida';
@@ -192,14 +173,10 @@ export class AdminEstudiantes implements OnInit {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!usuario?.correo || !emailRegex.test(usuario.correo)) {
-      this.errors.correo = '* Correo inválido';
-    }
+    if (!usuario?.correo || !emailRegex.test(usuario.correo)) this.errors.correo = '* Correo inválido';
 
     const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!this.isEditing && (!usuario?.password || !passRegex.test(usuario.password))) {
-      this.errors.password = '* Contraseña inválida';
-    }
+    if (!this.isEditing && (!usuario?.password || !passRegex.test(usuario.password))) this.errors.password = '* Contraseña inválida';
 
     const isValid = Object.keys(this.errors).length === 0;
 
@@ -212,14 +189,8 @@ export class AdminEstudiantes implements OnInit {
 
     return isValid;
   }
-  validateName(str: string): boolean {
-    if (!str) return false;
-    const spaceCount = (str.match(/\s/g) || []).length;
-    if (spaceCount > 2) return false; // máximo 2 espacios
-    const words = str.trim().split(/\s+/);
-    const nameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/;
-    return words.every(w => nameRegex.test(w));
-  }
+  
+// GUARDAR ESTUDIANTE
 saveEstudiante() {
   if (!this.selectedEstudiante || this.loading) return;
   if (!this.validateEstudiante()) return;
@@ -227,60 +198,63 @@ saveEstudiante() {
   this.loading = true;
   const { usuario, ...estudianteData } = this.selectedEstudiante;
 
-  const dataToSend: any = {
-    ...estudianteData,
-    id_seccion: estudianteData.id_seccion
-  };
-
-  // Solo enviar usuario si hay datos reales
-  if (usuario) {
-    dataToSend.usuario = {};
-    if (usuario.correo?.trim() !== '') dataToSend.usuario.correo = usuario.correo.trim();
-    if (!this.isEditing && usuario.password?.trim() !== '') dataToSend.usuario.password = usuario.password;
-  }
-
-  if (this.isEditing) {
-    this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, dataToSend)
-      .subscribe({
-        next: () => {
-          this.loadEstudiantes();
-          this.successMessage = 'Estudiante actualizado correctamente ✅';
-          setTimeout(() => { this.successMessage = ''; this.loading = false; }, 1500);
-        },
-        error: (error) => {
-          console.error('Error updating estudiante:', error);
-          this.successMessage = error.error?.error || 'Ocurrió un error al actualizar';
-          this.loading = false;
-        }
+  const request$ = this.isEditing
+    ? this.adminService.updateEstudiante(this.selectedEstudiante.id_estudiante, {
+        ...estudianteData,
+        correo: usuario.correo,
+        password: usuario.password
+      })
+    : this.adminService.createEstudiante({
+        ...estudianteData,
+        correo: usuario.correo,
+        password: usuario.password
       });
-  } else {
-    this.adminService.createEstudiante(dataToSend)
-      .subscribe({
-        next: () => {
-          this.loadEstudiantes();
-          this.successMessage = 'Estudiante registrado correctamente ✅';
-          setTimeout(() => { this.resetModal(); this.successMessage = ''; this.loading = false; }, 1500);
-        },
-        error: (error) => {
-          console.error('Error creating estudiante:', error);
-          this.successMessage = error.error?.error || 'Ocurrió un error al registrar';
-          this.loading = false;
-        }
-      });
-  }
+
+  request$.subscribe({
+    next: () => {
+      this.loadEstudiantes();
+      this.successMessage = this.isEditing
+        ? 'Estudiante actualizado correctamente ✅'
+        : 'Estudiante registrado correctamente ✅';
+
+      setTimeout(() => {
+        this.closeModal();
+        this.loading = false;
+        this.successMessage = '';
+      }, 1500);
+    },
+    error: (err) => {
+      console.error('Error estudiante:', err);
+      this.loading = false;
+      if (err?.error?.error) {
+        const msg = err.error.error.toLowerCase();
+        if (msg.includes('dni')) this.errors.dni = '* ' + err.error.error;
+        else if (msg.includes('correo')) this.errors.correo = '* ' + err.error.error;
+        else if (msg.includes('codigo')) this.errors.codigo = '* ' + err.error.error;
+        else this.successMessage = err.error.error;
+      } else {
+        this.successMessage = 'Ocurrió un error inesperado';
+      }
+    }
+  });
 }
 
 
   deleteEstudiante(id: number) {
-    if (confirm('¿Está seguro de eliminar este estudiante?')) {
-      this.adminService.deleteEstudiante(id).subscribe({
-        next: () => {
-          this.loadEstudiantes(); // Esto llamará aplicarFiltros()
-        },
-        error: (error) => {
-          console.error('Error deleting estudiante:', error);
-        }
-      });
+    if (!confirm('¿Está seguro de eliminar este estudiante?')) return;
+    this.adminService.deleteEstudiante(id).subscribe({
+      next: () => this.loadEstudiantes(),
+      error: (err) => console.error('Error deleting estudiante:', err)
+    });
+  }
+onDniInput() {
+    if(this.selectedEstudiante?.dni) this.selectedEstudiante.dni=this.selectedEstudiante.dni.replace(/\D/g,'');
+  }
+  // Solo números en DNI
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    if (!/[0-9]/.test(key) && key !== 'Backspace' && key !== 'ArrowLeft' && key !== 'ArrowRight') {
+      event.preventDefault();
     }
   }
 }

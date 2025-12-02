@@ -5,10 +5,12 @@ import { prisma } from '../config/db.js';
 // ===============================
 // CONTROLADORES DE DOCENTES
 // ===============================
+
 export const createDocente = async (req, res) => {
   try {
-    const { dni, nombre, apellido, correo, password } = req.body;
+    const { dni, nombre, apellido, correo, password, seccionesIds } = req.body;
 
+    // Validaciones básicas
     if (!dni || !nombre || !apellido) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
@@ -32,27 +34,44 @@ export const createDocente = async (req, res) => {
     const existingCorreo = await prisma.usuario.findUnique({ where: { correo: correoFinal } });
     if (existingCorreo) return res.status(400).json({ error: 'Correo ya registrado' });
 
+    // Inicia transacción
     const docente = await prisma.$transaction(async (tx) => {
+      // Crear usuario
       const usuario = await tx.usuario.create({
         data: { correo: correoFinal, password: passwordFinal, rol: 'docente' }
       });
 
+      // Procesar secciones
+      let seccionesFinal = [];
+      if (seccionesIds && Array.isArray(seccionesIds)) {
+        seccionesFinal = seccionesIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+      }
+
+      // Verificar que existan las secciones
+      const seccionesExistentes = await tx.seccion.findMany({
+        where: { id_seccion: { in: seccionesFinal } }
+      });
+      const seccionesValidas = seccionesExistentes.map(s => ({ id_seccion: s.id_seccion }));
+
+      // Crear docente
       let docenteCreado = await tx.docente.create({
         data: { 
-          dni, 
-          nombre: nombreFormatted, 
-          apellido: apellidoFormatted, 
+          dni,
+          nombre: nombreFormatted,
+          apellido: apellidoFormatted,
           id_usuario: usuario.id_usuario,
-          codigo: 'TEMP' // obligatorio temporal
-        }
+          codigo: 'TEMP',
+          secciones: seccionesValidas.length > 0 ? { connect: seccionesValidas } : undefined
+        },
+        include: { usuario: true, secciones: true }
       });
 
-      // Generar código único basado en id_docente
+      // Generar código único
       const codigo = `DOC${String(docenteCreado.id_docente).padStart(3,'0')}`;
       docenteCreado = await tx.docente.update({
         where: { id_docente: docenteCreado.id_docente },
         data: { codigo },
-        include: { usuario: true }
+        include: { usuario: true, secciones: true }
       });
 
       return docenteCreado;
@@ -66,11 +85,11 @@ export const createDocente = async (req, res) => {
   }
 };
 
-
 // Obtener todos los docentes
 export const getDocentes = async (req, res) => {
   try {
-    const docentes = await prisma.docente.findMany({ include: { usuario: true } });
+    const docentes = await prisma.docente.findMany({ include: { usuario: true, secciones: true } });
+
     res.json(docentes);
   } catch (error) {
     console.error('Error en getDocentes:', error);
@@ -82,15 +101,36 @@ export const getDocentes = async (req, res) => {
 export const updateDocente = async (req, res) => {
   try {
     const { id } = req.params;
-    const { codigo, dni, nombre, apellido, correo, password } = req.body;
+    const { codigo, dni, nombre, apellido, correo, password, secciones } = req.body;
 
+    // Procesar secciones: convertir a números y filtrar inválidos
+    let seccionesFinal = [];
+    if (secciones && Array.isArray(secciones)) {
+      seccionesFinal = secciones
+        .map(s => parseInt(s))
+        .filter(id => !isNaN(id));
+    }
+
+    // Verificar que existan las secciones en la DB
+    const seccionesExistentes = await prisma.seccion.findMany({
+      where: { id_seccion: { in: seccionesFinal } }
+    });
+    const seccionesValidas = seccionesExistentes.map(s => ({ id_seccion: s.id_seccion }));
+
+    // Actualizar docente
     const docente = await prisma.docente.update({
       where: { id_docente: parseInt(id) },
-      data: { codigo, dni, nombre, apellido },
-      include: { usuario: true }
+      data: {
+        codigo,
+        dni,
+        nombre,
+        apellido,
+        secciones: seccionesValidas.length > 0 ? { set: seccionesValidas } : { set: [] } // reemplaza todas las secciones
+      },
+      include: { usuario: true, secciones: true }
     });
 
-    // Actualizar correo y contraseña del usuario asociado
+    // Actualizar usuario si se envía correo o password
     const updateUsuarioData = {};
     if (correo) updateUsuarioData.correo = correo;
     if (password) updateUsuarioData.password = password;
@@ -103,10 +143,14 @@ export const updateDocente = async (req, res) => {
     }
 
     res.json({ message: 'Docente actualizado', docente });
+
   } catch (error) {
+    console.error('Error en updateDocente:', error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 // Eliminar docente en cascada
 export const deleteDocente = async (req, res) => {
@@ -307,27 +351,72 @@ export const deleteEstudiante = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };  
-// ===============================
-// CONTROLADORES DE SECCIONES
-// ===============================
-// Obtener todas las secciones
-export const getSecciones = async (req, res) => {
+
+export const getDashboardStats = async (req, res) => {
   try {
-    const secciones = await prisma.seccion.findMany({
-      orderBy: { nombre: 'asc' } // opcional: ordenarlas por nombre
-    });
-    res.status(200).json(secciones);
+    res.json({ message: "Dashboard funcionando" });
   } catch (error) {
-    console.error('Error al obtener secciones:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Crear nueva sección
+
+export const getSecciones = async (req, res) => {
+  try {
+    const secciones = await prisma.seccion.findMany(); // todas las secciones
+    res.json(secciones);
+  } catch (error) {
+    console.error('Error cargando secciones', error);
+    res.status(500).json({ error: 'Error cargando secciones' });
+  }
+};
+// backend/src/controllers/admin.controller.js
+export const asignarSeccionesADocente = async (req, res) => {
+  try {
+    const { id_docente } = req.params;
+    let { seccionesIds } = req.body; // array de IDs de secciones
+
+    if (!Array.isArray(seccionesIds)) {
+      return res.status(400).json({ error: 'Debe enviar un array de IDs de secciones' });
+    }
+
+    // Convertir a números y filtrar inválidos
+    seccionesIds = seccionesIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+
+    // Verificar que existan las secciones en la DB
+    const seccionesExistentes = await prisma.seccion.findMany({
+      where: { id_seccion: { in: seccionesIds } }
+    });
+    const seccionesValidas = seccionesExistentes.map(s => ({ id_seccion: s.id_seccion }));
+
+    // Actualizar docente con secciones válidas
+    const docenteActualizado = await prisma.docente.update({
+      where: { id_docente: parseInt(id_docente) },
+      data: {
+        secciones: seccionesValidas.length > 0 ? { set: seccionesValidas } : { set: [] }
+      },
+      include: { secciones: true }
+    });
+
+    res.json({ message: 'Secciones asignadas correctamente', docente: docenteActualizado });
+
+  } catch (error) {
+    console.error('Error asignando secciones:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ===============================
+// CONTROLADORES DE SECCIONES
+// ===============================
+
+// Crear sección
 export const createSeccion = async (req, res) => {
   try {
     const { nombre } = req.body;
-    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
+
+    if (!nombre || nombre.trim() === "")
+      return res.status(400).json({ error: "El nombre es obligatorio" });
 
     const seccion = await prisma.seccion.create({
       data: { nombre }
@@ -335,56 +424,41 @@ export const createSeccion = async (req, res) => {
 
     res.status(201).json(seccion);
   } catch (error) {
-    console.error('Error al crear sección:', error);
+    console.error("Error creando sección:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// ===============================
-// CONTROLADORES DE NOTIFICACIONES
-// ===============================
-export const createNotificacion = async (req, res) => {
+// Actualizar sección
+export const updateSeccion = async (req, res) => {
   try {
-    const { mensaje, tipo, id_destinatario, tipo_destinatario } = req.body;
-    
-    const notificacion = await prisma.notificacion.create({
-      data: {
-        mensaje,
-        tipo,
-        fecha_envio: new Date(),
-      }
+    const { id } = req.params;
+    const { nombre } = req.body;
+
+    const seccion = await prisma.seccion.update({
+      where: { id_seccion: parseInt(id) },
+      data: { nombre }
     });
-    
-    res.status(201).json(notificacion);
+
+    res.json(seccion);
   } catch (error) {
+    console.error("Error actualizando sección:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getNotificaciones = async (req, res) => {
+// Eliminar sección
+export const deleteSeccion = async (req, res) => {
   try {
-    const notificaciones = await prisma.notificacion.findMany({
-      orderBy: { fecha_envio: 'desc' }
+    const { id } = req.params;
+
+    await prisma.seccion.delete({
+      where: { id_seccion: parseInt(id) }
     });
-    res.json(notificaciones);
+
+    res.json({ message: "Sección eliminada correctamente" });
   } catch (error) {
+    console.error("Error eliminando sección:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
-// ===============================
-// ESTADÍSTICAS DEL DASHBOARD
-// ===============================
-export const getDashboardStats = async (req, res) => {
-  try {
-    const docentes = await prisma.docente.count();
-    const estudiantes = await prisma.estudiante.count();
-    const notificaciones = await prisma.notificacion.count();
-    const actividades = await prisma.actividad.count();
-
-    res.json({ docentes, estudiantes, notificaciones, actividades });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-

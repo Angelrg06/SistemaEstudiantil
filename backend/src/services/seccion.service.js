@@ -1,3 +1,4 @@
+//sección.service.js:
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
@@ -221,7 +222,7 @@ export const getSeccionesByDocente = async (id_docente) => {
       }
     });
 
-    console.log(`📋 Secciones REALES encontradas para ${docenteExiste.nombre}:`, secciones.length);
+    console.log(`📋 Secciones REALES encontradas para ${docenteExiste.nombre}:, secciones.length`);
     
     // ✅ LOG DETALLADO para diagnóstico
     secciones.forEach(sec => {
@@ -586,7 +587,7 @@ export const getSeccionesConEstadisticas = async (id_docente) => {
             }
           };
         } catch (error) {
-          console.error(`❌ Error procesando sección ${seccion.id_seccion}:`, error);
+          console.error(`❌ Error procesando sección ${seccion.id_seccion}:, error`);
           return {
             ...seccion,
             estadisticas: {
@@ -783,5 +784,5 @@ export const getResumenDashboard = async (id_docente) => {
   } catch (error) {
     console.error("❌ Error al obtener resumen del dashboard:", error);
     throw new Error(`No se pudo obtener el resumen del dashboard: ${error.message}`);
-  }
+  }
 };

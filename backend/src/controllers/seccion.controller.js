@@ -1,3 +1,4 @@
+//seccion.controller:
 import * as seccionesService from "../services/seccion.service.js";
 
 // 🟢 Formato estándar de respuesta exitosa
@@ -44,7 +45,7 @@ export const getSeccionById = async (req, res) => {
 
     res.json(successResponse(
       seccion,
-      `Información de la sección "${seccion.nombre}" cargada correctamente`,
+     ` Información de la sección "${seccion.nombre}" cargada correctamente`,
       {
         seccion_id: id_seccion,
         docente_id: id_usuario,
@@ -219,7 +220,7 @@ export const obtenerDetalleSeccion = async (req, res) => {
     
     res.json(successResponse(
       seccion,
-      `Detalles de la sección "${seccion.nombre}" cargados correctamente`,
+     ` Detalles de la sección "${seccion.nombre}" cargados correctamente`,
       {
         seccion_id: id_seccion,
         informacion_general: informacionGeneral
@@ -304,6 +305,6 @@ export const validarDocente = (req, res, next) => {
       errorResponse("ID de docente requerido", "Se debe proporcionar un ID de docente válido", 400)
     );
   }
-  
-  next();
+  
+  next();
 };

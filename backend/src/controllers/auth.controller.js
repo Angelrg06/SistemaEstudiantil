@@ -122,7 +122,7 @@ export const register = async (req, res) => {
           dni, 
           nombre, 
           apellido, 
-          id_usuario: nuevoUsuario.id_usuario,
+          id_usuario: nuevoUsuario.id_usuario 
         } 
       });
     } else if (rol === 'estudiante') {
