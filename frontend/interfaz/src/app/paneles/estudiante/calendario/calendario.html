@@ -1,212 +1,373 @@
-<!-- Cabecera -->
-<header class="sticky top-0 z-50 border-b border-white/20 shadow-lg bg-gradient-to-tr from-blue-900 to-sky-500">
-
+<!-- Cabecera Mejorada -->
+<header class="sticky top-0 z-50 border-b border-white/20 shadow-xl bg-gradient-to-tr from-blue-900 to-sky-600">
   <div class="w-full px-4 sm:px-6 lg:px-8">
-
-    <!-- Elementos -->
     <div class="flex justify-between h-16 items-center">
-
-      <div class="flex items-center space-x-3">
-        <!-- Logo -->
-        <div class="flex-shrink-0 flex items-center">
-          <div
-            class="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg mr-3">
-            <i class="fas fa-graduation-cap text-2xl text-white"></i>
+      
+      <!-- Logo y botón volver -->
+      <div class="flex items-center space-x-4">
+        <button [routerLink]="['/estudiante']"
+          class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all duration-300 group">
+          <i class="fas fa-arrow-left text-white text-sm group-hover:-translate-x-1 transition-transform"></i>
+        </button>
+        
+        <div class="flex items-center space-x-3">
+          <div class="flex-shrink-0 flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-calendar-alt text-2xl text-white"></i>
+            </div>
+          </div>
+          <div class="hidden md:block">
+            <h1 class="text-white font-bold text-xl tracking-tight">Calendario Académico</h1>
+            <p class="text-blue-100 text-xs mt-0.5">Colegio 10 de Octubre</p>
           </div>
         </div>
-
-        <!-- Nombre -->
-        <div class="hidden md:block">
-          <h1 class="text-white font-extrabold text-xl tracking-wide drop-shadow-lg">Col. 10 Oct.</h1>
-        </div>
-        <div class="block md:hidden">
-          <h1 class="text-white font-bold text-lg tracking-tight"></h1>
-        </div>
       </div>
-
-
-      <!-- Menú -->
-      <nav class="hidden sm:flex space-x-4">
-
-        <!-- Cursos -->
-        <button
-          class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
-          <i class="fas fa-book mr-2 text-sm"></i> Cursos
-        </button>
-
-        <!-- Actividades -->
-        <button
-          class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
-          <i class="fas fa-newspaper mr-2 text-sm"></i> Actividades
-        </button>
-
-        <!-- Calendario -->
-        <button [routerLink]="['/calendario']"
-          class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition hover:bg-white/20">
-          <i class="fas fa-calendar mr-2 text-sm"></i> Calendario
-        </button>
-
-        <!-- Chat -->
-        <button [routerLink]="['/estudiante/chat']"
-          class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition hover:bg-white/20">
-          <i class="fas fa-comment mr-2 text-sm"></i> Chat
-        </button>
-
-        <!-- Notificaciones -->
-        <button
-          class="flex-1 px-6 py-3 rounded-xl text-sm font-medium flex justify-center items-center border border-white/10 text-white transition">
-          <i class="fas fa-bell mr-2 text-sm"></i> Notificaciones
-        </button>
-
-      </nav>
 
       <!-- Usuario -->
       <div *ngFor="let dat of datos; let i = index" class="flex items-center space-x-3 relative">
         <button (click)="toggleUserMenu()"
-          class="flex items-center text-white transition-all duration-300 rounded-xl px-3 py-2 hover:bg-white/20 border border-white/30 backdrop-blur-sm">
-          <i class="fas fa-circle-user"></i>
-          <span class="hidden md:inline ml-2">{{ dat.nombre }} {{ dat.apellido }}</span>
-        </button>
-
-        <div *ngIf="showUserMenu"
-          class="absolute right-0 top-12 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl py-4 z-50 border border-white/20">
-          <div class="px-4 py-3 border-b border-gray-100">
-            <p class="font-bold text-gray-800 text-lg flex items-center">
-              <i class="fas fa-circle-user mr-2 text-blue-600"></i> {{ dat.nombre }} {{ dat.apellido
-              }}
-            </p>
-            <p class="text-xs text-gray-600 mt-1">
-              {{ dat.correo || 'usuario@sistema.com' }}
+          class="flex items-center text-sm text-white transition-all duration-300 rounded-xl px-4 py-2.5 hover:bg-white/10 border border-white/20"
+          [class.bg-white/20]="showUserMenu">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm">
+            {{ dat.nombre?.charAt(0) || 'E' }}
+          </div>
+          <div class="hidden md:block text-left ml-3">
+            <p class="font-medium text-sm">{{ dat.nombre }} {{ dat.apellido }}</p>
+            <p class="text-xs text-blue-100 truncate max-w-32">
+              {{ dat.correo || 'estudiante@colegio.com' }}
             </p>
           </div>
-          <div class="py-2 px-4">
+          <i class="fas fa-chevron-down ml-2 text-xs transition-transform duration-300"
+             [class.rotate-180]="showUserMenu"></i>
+        </button>
+
+        <!-- Menú desplegable -->
+        <div *ngIf="showUserMenu"
+          class="absolute right-0 top-14 w-72 bg-white rounded-xl shadow-2xl py-4 z-[9999] border border-gray-200 animate-fade-in">
+          
+          <div class="flex items-center w-full px-5 py-4 bg-blue-50 rounded-lg border border-blue-100 mx-2 mb-3">
+            <div class="flex-shrink-0 mr-3">
+              <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-user-graduate text-white text-base"></i>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-semibold text-gray-900 truncate">
+                {{ dat.nombre }} {{ dat.apellido }}
+              </h3>
+              <p class="text-xs text-gray-600 truncate mt-1">
+                {{ dat.correo || 'estudiante@colegio.com' }}
+              </p>
+              <p class="text-xs text-blue-600 font-medium mt-1">
+                Estudiante
+              </p>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 my-2"></div>
+          
+          <div class="px-5 py-2">
             <button (click)="logout()"
-              class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-200 transition-all duration-300 rounded-lg">
-              <i class="fas fa-sign-out-alt mr-3 text-red-500"></i> Cerrar sesión
+              class="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-all duration-300 rounded-lg font-medium">
+              <i class="fas fa-sign-out-alt mr-3 text-red-400"></i>
+              Cerrar sesión
             </button>
           </div>
         </div>
       </div>
 
     </div>
-
+    
+    <!-- Navegación móvil -->
+    <div class="md:hidden border-t border-white/10 py-3">
+      <nav class="flex justify-around">
+        <button [routerLink]="['/estudiante']"
+          class="flex flex-col items-center text-white/80 hover:text-white transition-all duration-300 text-xs py-1">
+          <i class="fas fa-home text-sm mb-1"></i>
+          <span>Inicio</span>
+        </button>
+        <button [routerLink]="['/estudiante/chat']"
+          class="flex flex-col items-center text-white/80 hover:text-white transition-all duration-300 text-xs py-1">
+          <i class="fas fa-comment text-sm mb-1"></i>
+          <span>Chat</span>
+        </button>
+        <button [routerLink]="['/calendario']"
+          class="flex flex-col items-center text-white hover:text-white transition-all duration-300 text-xs py-1">
+          <i class="fas fa-calendar text-sm mb-1"></i>
+          <span>Calendario</span>
+        </button>
+      </nav>
+    </div>
   </div>
-
 </header>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-900 to-sky-600 p-6">
+<!-- Contenido Principal -->
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-6">
 
-  <!-- CONTENEDOR CENTRADO -->
-  <div class="max-w-6xl mx-auto">
-
-    <!-- TÍTULO -->
-    <h1 class="text-white text-3xl text-center font-extrabold mb-6 drop-shadow">
-      📅 Calendario de Actividades
-    </h1>
-
-    <!-- CARD DEL CALENDARIO -->
-    <div class="bg-white backdrop-blur-xl shadow-2xl rounded-3xl p-6 border border-white/20">
-
-      <full-calendar #calendar [options]="calendarOptions" class="rounded-xl overflow-hidden shadow-xl">
-      </full-calendar>
-
+  <!-- Contenedor Principal -->
+  <div class="max-w-7xl mx-auto">
+    
+    <!-- Encabezado con título y controles -->
+    <div class="mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Calendario de Actividades</h1>
+          <p class="text-gray-600 text-lg">
+            Visualiza y organiza todas tus tareas y fechas importantes
+          </p>
+        </div>
+        
+        <!-- Controles del calendario -->
+        <div class="flex items-center space-x-3">
+          <button class="px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-all duration-300 shadow-sm flex items-center gap-2">
+            <i class="fas fa-print text-sm"></i>
+            <span class="hidden sm:inline">Imprimir</span>
+          </button>
+          <button (click)="cargarActividades()"
+            class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all duration-300 shadow-md flex items-center gap-2">
+            <i class="fas fa-sync-alt text-sm"></i>
+            <span class="hidden sm:inline">Actualizar</span>
+          </button>
+        </div>
+      </div>
     </div>
 
+    <!-- Tarjeta del Calendario -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+      
+      <!-- Cabecera del calendario -->
+      <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-cyan-50">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-calendar-check text-2xl text-white"></i>
+            </div>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">Vista Mensual</h2>
+              <p class="text-gray-600 text-sm">Actividades organizadas por fecha</p>
+            </div>
+          </div>
+          
+          <!-- Indicadores -->
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">Activas</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">Pendientes</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">Vencidas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendario FullCalendar -->
+      <div class="p-4 sm:p-6">
+        <full-calendar #calendar [options]="calendarOptions" class="rounded-xl overflow-hidden shadow-lg border border-gray-200">
+        </full-calendar>
+      </div>
+      
+      <!-- Pie del calendario -->
+      <div class="p-4 sm:p-6 border-t border-gray-100 bg-gray-50/50">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-gray-600">
+          <div class="flex items-center space-x-2 mb-2 sm:mb-0">
+            <i class="fas fa-info-circle text-blue-500"></i>
+            <span>Haz clic en cualquier actividad para ver los detalles</span>
+          </div>
+          <div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel lateral de resumen (opcional) -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2">
+        <!-- Puedes agregar gráficos o estadísticas aquí -->
+        <div class="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-lightbulb text-yellow-500"></i>
+            Consejos para organizarte
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check text-blue-600 text-xs"></i>
+              </div>
+              <p class="text-gray-600">Revisa tu calendario diariamente para no perder fechas importantes</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check text-blue-600 text-xs"></i>
+              </div>
+              <p class="text-gray-600">Las actividades se actualizan automáticamente según las fechas de entrega</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check text-blue-600 text-xs"></i>
+              </div>
+              <p class="text-gray-600">Usa los colores para identificar rápidamente el estado de cada actividad</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-6">
+        <!-- Resumen de actividades -->
+        <div class="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-pie text-blue-500"></i>
+            ¿Cómo usar el calendario?
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start gap-2">
+              <i class="fas fa-mouse-pointer text-blue-500 mt-1"></i>
+              <p class="text-sm text-gray-600">Haz clic en cualquier actividad para ver detalles completos</p>
+            </div>
+            <div class="flex items-start gap-2">
+              <i class="fas fa-sync-alt text-green-500 mt-1"></i>
+              <p class="text-sm text-gray-600">Usa el botón "Actualizar" para obtener las últimas actividades</p>
+            </div>
+            <div class="flex items-start gap-2">
+              <i class="fas fa-arrow-left text-purple-500 mt-1"></i>
+              <p class="text-sm text-gray-600">Presiona la flecha ← para volver al panel principal</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Botones de acción rápida -->
+        <div class="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-bolt text-orange-500"></i>
+            Acciones Rápidas
+          </h3>
+          <div class="space-y-3">
+            <button [routerLink]="['/estudiante']"
+              class="w-full px-4 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border border-blue-200 rounded-xl text-blue-700 font-medium transition-all duration-300 flex items-center justify-center gap-2">
+              <i class="fas fa-home"></i>
+              Volver al Inicio
+            </button>
+            <button (click)="cargarActividades()"
+              class="w-full px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 rounded-xl text-green-700 font-medium transition-all duration-300 flex items-center justify-center gap-2">
+              <i class="fas fa-sync-alt"></i>
+              Actualizar Actividades
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- MODAL MEJORADO -->
-<div *ngIf="showModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+<!-- Modal Mejorado -->
+<div *ngIf="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[9999] p-4"
   (click)="cerrarModal()">
 
-  <!-- CUADRO DEL MODAL -->
-  <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fadeIn"
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in"
     (click)="$event.stopPropagation()">
 
-    <!-- ICONO Y TÍTULO -->
-    <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-        <span class="text-blue-600 text-lg">📚</span>
+    <!-- Header del modal -->
+    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 p-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+            <i class="fas fa-tasks text-white text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-white">{{ actividadSeleccionada?.titulo || 'Detalles de Actividad' }}</h2>
+            <p class="text-blue-100 text-sm">{{ actividadSeleccionada?.curso || 'Curso no especificado' }}</p>
+          </div>
+        </div>
+        <button (click)="cerrarModal()"
+          class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-xl transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
       </div>
-      <h2 class="text-2xl font-bold text-blue-900">
-        {{ actividadSeleccionada?.titulo || 'Actividad' }}
-      </h2>
     </div>
 
-    <!-- CONTENIDO -->
-    <div class="space-y-4 text-gray-700">
-
-      <div class="grid grid-cols-1 gap-3">
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">📘</span>
+    <!-- Contenido del modal -->
+    <div class="p-6 space-y-6">
+      
+      <!-- Información principal -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
           <div>
-            <p class="text-sm text-gray-500">Curso</p>
-            <p class="font-medium">{{ actividadSeleccionada?.curso || 'No especificado' }}</p>
+            <p class="text-sm text-gray-500 mb-1">📘 Curso</p>
+            <p class="font-medium text-gray-800">{{ actividadSeleccionada?.curso || 'No especificado' }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 mb-1">👨‍🏫 Docente</p>
+            <p class="font-medium text-gray-800">{{ actividadSeleccionada?.docente || 'No especificado' }}</p>
           </div>
         </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">👨‍🏫</span>
+        
+        <div class="space-y-4">
           <div>
-            <p class="text-sm text-gray-500">Docente</p>
-            <p class="font-medium">{{ actividadSeleccionada?.docente || 'No especificado' }}</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">📌</span>
-          <div>
-            <p class="text-sm text-gray-500">Estado</p>
-            <span class="px-3 py-1 rounded-xl text-white text-sm font-medium" [ngClass]="{
+            <p class="text-sm text-gray-500 mb-1">📌 Estado</p>
+            <span class="inline-flex items-center px-4 py-2 rounded-full text-white text-sm font-medium" [ngClass]="{
                   'bg-green-500': actividadSeleccionada?.estado === 'activo',
                   'bg-yellow-500': actividadSeleccionada?.estado === 'pendiente',
                   'bg-red-500': actividadSeleccionada?.estado === 'vencido',
                   'bg-gray-500': !actividadSeleccionada?.estado
                 }">
+              <i class="fas fa-circle mr-2 text-xs"></i>
               {{ actividadSeleccionada?.estado || 'sin estado' }}
             </span>
           </div>
         </div>
+      </div>
 
-        <!-- MEJORA: Fechas formateadas -->
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">📅</span>
-          <div>
-            <p class="text-sm text-gray-500">Fecha Inicio</p>
-            <p class="font-medium">
-              {{ formatearFecha(actividadSeleccionada?.fecha_inicio) }}
-            </p>
-          </div>
+      <!-- Fechas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+          <p class="text-sm text-gray-500 mb-2 flex items-center gap-2">
+            <i class="fas fa-calendar-plus text-blue-500"></i>
+            Fecha de Inicio
+          </p>
+          <p class="font-medium text-gray-800 text-lg">
+            {{ actividadSeleccionada?.fecha_inicio ? formatearFecha(actividadSeleccionada.fecha_inicio) : 'No especificada' }}
+          </p>
         </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">⏰</span>
-          <div>
-            <p class="text-sm text-gray-500">Fecha Fin</p>
-            <p class="font-medium">
-              {{ formatearFecha(actividadSeleccionada?.fecha_fin) }}
-            </p>
-          </div>
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+          <p class="text-sm text-gray-500 mb-2 flex items-center gap-2">
+            <i class="fas fa-calendar-check text-blue-500"></i>
+            Fecha de Entrega
+          </p>
+          <p class="font-medium text-gray-800 text-lg">
+            {{ actividadSeleccionada?.fecha_fin ? formatearFecha(actividadSeleccionada.fecha_fin) : 'No especificada' }}
+          </p>
         </div>
       </div>
 
-      <!-- DESCRIPCIÓN -->
-      <div class="border-t pt-4">
-        <p class="text-sm text-gray-500 mb-2">📝 Descripción</p>
-        <p class="bg-gray-50 p-4 rounded-xl text-sm border">
-          {{ actividadSeleccionada?.descripcion || 'No hay descripción disponible para esta actividad.' }}
+      <!-- Descripción -->
+      <div>
+        <p class="text-sm text-gray-500 mb-3 flex items-center gap-2">
+          <i class="fas fa-align-left text-blue-500"></i>
+          Descripción
         </p>
+        <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 min-h-[120px]">
+          <p class="text-gray-700 leading-relaxed">
+            {{ actividadSeleccionada?.descripcion || 'No hay descripción disponible para esta actividad.' }}
+          </p>
+        </div>
       </div>
 
+      <!-- Acciones -->
+      <div class="flex justify-end space-x-3 pt-4 border-t">
+        <button (click)="cerrarModal()"
+          class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-all duration-300">
+          Cerrar
+        </button>
+        <button *ngIf="actividadSeleccionada?.estado === 'activo'"
+          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+          Ir a Actividad
+        </button>
+      </div>
     </div>
-
-    <!-- BOTÓN CERRAR -->
-    <div class="flex justify-end mt-6 pt-4 border-t">
-      <button (click)="cerrarModal()"
-        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow transition-colors duration-200">
-        Cerrar
-      </button>
-    </div>
-
   </div>
 </div>

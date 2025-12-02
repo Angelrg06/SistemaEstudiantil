@@ -254,52 +254,85 @@ export const getDatosEstudiantes = async (req, res) => {
 
 }
 
+// estudiante.controller.js - FUNCIÓN CORREGIDA
 export const notificacionesByEstudiante = async (req, res) => {
-
     try {
-
         const id_estudiante = parseInt(req.params.id);
 
-        const estudiante = await prisma.estudiante.findUnique({
-            where: { id_estudiante },
-            select: {
-                entregas: {
+        console.log("📢 Obteniendo notificaciones para estudiante ID:", id_estudiante);
+
+        // 🟢 OPCIÓN 1: Usando entrega para encontrar notificaciones
+        const entregasConNotificaciones = await prisma.entrega.findMany({
+            where: {
+                id_estudiante: id_estudiante,
+                notificacion: { // Relación con Notificacion
+                    isNot: null
+                }
+            },
+            include: {
+                notificacion: {
                     select: {
-                        notificacion: {
+                        id_notificacion: true,
+                        mensaje: true,
+                        tipo: true,
+                        fecha_envio: true,
+                        docente: {
                             select: {
-                                mensaje: true,
-                                tipo: true,
-                                fecha_envio: true
+                                nombre: true,
+                                apellido: true
                             }
                         }
                     }
+                },
+                actividad: {
+                    select: {
+                        titulo: true,
+                        tipo: true
+                    }
+                }
+            },
+            orderBy: {
+                notificacion: {
+                    fecha_envio: 'desc'
                 }
             }
-        })
+        });
 
-        if (!estudiante) {
-            return res.status(404).json({ error: "Estudiante no encontrado" });
-        }
-
-        const resultado = estudiante.entregas.map((e) => ({
-            mensaje: e.notificacion.mensaje,
-            tipo: e.notificacion.tipo,
-            fecha: e.notificacion?.fecha_envio
-                ? new Date(e.notificacion.fecha_envio).toLocaleString('es-PE', {
+        // 🟢 Formatear respuesta
+        const notificaciones = entregasConNotificaciones
+            .filter(entrega => entrega.notificacion !== null)
+            .map(entrega => ({
+                id_notificacion: entrega.notificacion.id_notificacion,
+                mensaje: entrega.notificacion.mensaje,
+                tipo: entrega.notificacion.tipo || 'sistema',
+                fecha_envio: entrega.notificacion.fecha_envio.toLocaleString('es-PE', {
                     dateStyle: 'medium',
                     timeStyle: 'short'
-                })
-                : null
+                }),
+                docente: entrega.notificacion.docente 
+                    ? `${entrega.notificacion.docente.nombre} ${entrega.notificacion.docente.apellido}`
+                    : 'Sistema',
+                actividad: entrega.actividad.titulo,
+                id_entrega: entrega.id_entrega,
+                intento: entrega.intento
+            }));
 
-        }));
+        console.log(`✅ Encontradas ${notificaciones.length} notificaciones para estudiante ${id_estudiante}`);
 
-        res.json(resultado);
+        res.json({
+            success: true,
+            data: notificaciones,
+            count: notificaciones.length
+        });
 
     } catch (error) {
-        console.error("Error al obtener notificaciones:", error);
-        res.status(500).json({ error: "Error al obtener notificaciones" });
+        console.error("❌ Error al obtener notificaciones del estudiante:", error);
+        res.status(500).json({ 
+            success: false,
+            error: "Error al obtener notificaciones",
+            details: error.message 
+        });
     }
-
 }
 
 //Temporal

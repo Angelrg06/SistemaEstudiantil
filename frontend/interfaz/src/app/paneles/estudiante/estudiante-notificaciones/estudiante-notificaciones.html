@@ -1,1 +1,69 @@
-<p>estudiante-notificaciones works!</p>
+<!-- estudiante-notificaciones.html -->
+<div class="notificaciones-container">
+  <div class="notificaciones-header">
+    <h3>📢 Mis Notificaciones</h3>
+    <div class="notificaciones-actions">
+      <button class="btn-refresh" (click)="actualizar()" [disabled]="cargando">
+        🔄 {{ cargando ? 'Cargando...' : 'Actualizar' }}
+      </button>
+      <button class="btn-clear" (click)="limpiarTodas()" [disabled]="total === 0">
+        🗑️ Limpiar todas
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado de carga/error -->
+  <div *ngIf="cargando" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando notificaciones...</p>
+  </div>
+
+  <div *ngIf="error && !cargando" class="error-state">
+    <p>❌ {{ error }}</p>
+    <button (click)="actualizar()">Reintentar</button>
+  </div>
+
+  <!-- Lista de notificaciones -->
+  <div *ngIf="!cargando && !error" class="notificaciones-list">
+    <div *ngIf="total === 0" class="empty-state">
+      <p>🎉 No tienes notificaciones nuevas</p>
+      <small>Todas las notificaciones importantes aparecerán aquí</small>
+    </div>
+
+    <div *ngFor="let notif of notificaciones" class="notificacion-item" 
+         [class.unread]="true" [class.type-{{notif.tipo}}]="notif.tipo">
+      
+      <div class="notificacion-icon">
+        {{ getIconoTipo(notif.tipo) }}
+      </div>
+      
+      <div class="notificacion-content">
+        <div class="notificacion-header">
+          <strong>{{ notif.mensaje }}</strong>
+          <small class="notificacion-time">{{ formatearFecha(notif.fecha_envio) }}</small>
+        </div>
+        
+        <div class="notificacion-details">
+          <span *ngIf="notif.docente" class="badge docente">
+            📚 {{ notif.docente }}
+          </span>
+          <span *ngIf="notif.actividad" class="badge actividad">
+            📝 {{ notif.actividad }}
+          </span>
+          <span class="badge tipo" [class]="'tipo-' + notif.tipo">
+            {{ notif.tipo }}
+          </span>
+        </div>
+      </div>
+
+      <button class="btn-mark-read" (click)="marcarComoLeida(notif.id_notificacion)" 
+              title="Marcar como leída">
+        ✓
+      </button>
+    </div>
+  </div>
+
+  <div class="notificaciones-footer" *ngIf="total > 0">
+    <p><small>Mostrando {{ notificaciones.length }} de {{ total }} notificaciones</small></p>
+  </div>
+</div>
