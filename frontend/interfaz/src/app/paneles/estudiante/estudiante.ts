@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterModule, Router, RouterLink } from '@angular/route
 import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms'; // ✅ IMPORTAR FormsModule
 import { AuthService } from '../../services/auth.service';
 import { EstudianteNotificaciones } from './estudiante-notificaciones/estudiante-notificaciones'; // ✅ IMPORTAR EL COMPONENTE
 
@@ -14,6 +15,7 @@ import { EstudianteNotificaciones } from './estudiante-notificaciones/estudiante
     CommonModule, 
     RouterLink, 
     RouterModule,
+    FormsModule, // ✅ AGREGAR FormsModule
     EstudianteNotificaciones // ✅ AGREGAR AL IMPORTS
   ],
   templateUrl: './estudiante.html',
@@ -21,6 +23,9 @@ import { EstudianteNotificaciones } from './estudiante-notificaciones/estudiante
 })
 export class Estudiante {
   cursos: any[] = [];
+  cursosFiltrados: any[] = []; // ✅ NUEVO: Para almacenar cursos filtrados
+  bimestres: any[] = []; // ✅ NUEVO: Lista de bimestres disponibles
+  bimestreSeleccionado: string = ''; // ✅ NUEVO: Bimestre seleccionado
   notificaciones: any[] = [];
   datos: any[] = [];
   id_estudiante_logueado: number = 0;
@@ -59,7 +64,19 @@ export class Estudiante {
     }).subscribe({
       next: (data) => {
         this.cursos = data;
+        this.cursosFiltrados = data; // ✅ Inicializar con todos los cursos
+        
+        // ✅ Extraer bimestres únicos
+        const bimestresUnicos = new Set<string>();
+        data.forEach((curso: any) => {
+          if (curso.bimestre_nombre && curso.bimestre_nombre !== 'Sin bimestre') {
+            bimestresUnicos.add(curso.bimestre_nombre);
+          }
+        });
+        this.bimestres = Array.from(bimestresUnicos).map(nombre => ({ nombre }));
+        
         console.log("Cursos del estudiante:", data);
+        console.log("Bimestres disponibles:", this.bimestres);
       },
       error: (err) => console.error("Error obteniendo cursos:", err)
     });
@@ -129,5 +146,19 @@ export class Estudiante {
         alert('Error al eliminar notificación');
       }
     });
+  }
+
+  // ✅ NUEVO: Filtrar cursos por bimestre
+  filtrarPorBimestre(): void {
+    if (!this.bimestreSeleccionado || this.bimestreSeleccionado === '') {
+      // Si no hay bimestre seleccionado, mostrar todos
+      this.cursosFiltrados = this.cursos;
+    } else {
+      // Filtrar por bimestre seleccionado
+      this.cursosFiltrados = this.cursos.filter(
+        curso => curso.bimestre_nombre === this.bimestreSeleccionado
+      );
+    }
+    console.log("Cursos filtrados:", this.cursosFiltrados);
   }
 }

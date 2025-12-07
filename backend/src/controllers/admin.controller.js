@@ -55,7 +55,7 @@ export const createDocente = async (req, res) => {
 
       // Crear docente
       let docenteCreado = await tx.docente.create({
-        data: { 
+        data: {
           dni,
           nombre: nombreFormatted,
           apellido: apellidoFormatted,
@@ -67,7 +67,7 @@ export const createDocente = async (req, res) => {
       });
 
       // Generar código único
-      const codigo = `DOC${String(docenteCreado.id_docente).padStart(3,'0')}`;
+      const codigo = `DOC${String(docenteCreado.id_docente).padStart(3, '0')}`;
       docenteCreado = await tx.docente.update({
         where: { id_docente: docenteCreado.id_docente },
         data: { codigo },
@@ -350,12 +350,32 @@ export const deleteEstudiante = async (req, res) => {
     console.error('Error en deleteEstudiante:', error);
     res.status(500).json({ error: error.message });
   }
-};  
+};
 
 export const getDashboardStats = async (req, res) => {
   try {
-    res.json({ message: "Dashboard funcionando" });
+    // Contar registros en paralelo para mejor rendimiento
+    const [docentes, estudiantes, secciones, bimestres] = await Promise.all([
+      prisma.docente.count(),
+      prisma.estudiante.count(),
+      prisma.seccion.count(),
+      prisma.bimestre.count()
+    ]);
+
+    // Contar administradores desde la tabla Usuario con rol 'admin'
+    const administradores = await prisma.usuario.count({
+      where: { rol: 'admin' }
+    });
+
+    res.json({
+      docentes,
+      estudiantes,
+      administradores,
+      secciones,
+      bimestres
+    });
   } catch (error) {
+    console.error('Error obteniendo estadísticas del dashboard:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -483,7 +503,7 @@ export const getCursos = async (req, res) => {
       },
       orderBy: { nombre: 'asc' }
     });
-    
+
     // Formatear la respuesta
     const cursosFormateados = cursos.map(curso => ({
       id_curso: curso.id_curso,
@@ -495,9 +515,9 @@ export const getCursos = async (req, res) => {
         bimestre: sc.seccion.bimestre
       }))
     }));
-    
+
     res.json(cursosFormateados);
-    
+
   } catch (error) {
     console.error('Error en getCursos:', error);
     res.status(500).json({ error: error.message });
@@ -510,33 +530,33 @@ export const getCursos = async (req, res) => {
 export const createCurso = async (req, res) => {
   try {
     const { nombre, seccionesIds = [] } = req.body; // Remover descripcion
-    
+
     console.log('📝 Creando curso:', { nombre, seccionesIds });
-    
+
     if (!nombre || nombre.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'El nombre del curso es obligatorio' 
+      return res.status(400).json({
+        success: false,
+        error: 'El nombre del curso es obligatorio'
       });
     }
-    
+
     // Verificar si ya existe
     const cursoExistente = await prisma.curso.findFirst({
-      where: { 
-        nombre: { 
-          equals: nombre.trim(), 
-          mode: 'insensitive' 
-        } 
+      where: {
+        nombre: {
+          equals: nombre.trim(),
+          mode: 'insensitive'
+        }
       }
     });
-    
+
     if (cursoExistente) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Ya existe un curso con ese nombre' 
+      return res.status(400).json({
+        success: false,
+        error: 'Ya existe un curso con ese nombre'
       });
     }
-    
+
     const curso = await prisma.$transaction(async (tx) => {
       // Crear curso SIN descripcion
       const cursoCreado = await tx.curso.create({
@@ -545,13 +565,13 @@ export const createCurso = async (req, res) => {
           // NO incluir descripcion
         }
       });
-      
+
       // Asignar secciones
       if (Array.isArray(seccionesIds) && seccionesIds.length > 0) {
         const idsNumericos = seccionesIds
           .map(id => parseInt(id))
           .filter(id => !isNaN(id) && id > 0);
-        
+
         if (idsNumericos.length > 0) {
           for (const idSeccion of idsNumericos) {
             await tx.seccionCurso.create({
@@ -563,7 +583,7 @@ export const createCurso = async (req, res) => {
           }
         }
       }
-      
+
       return await tx.curso.findUnique({
         where: { id_curso: cursoCreado.id_curso },
         include: {
@@ -577,18 +597,18 @@ export const createCurso = async (req, res) => {
         }
       });
     });
-    
+
     res.status(201).json({
       success: true,
       message: 'Curso creado exitosamente',
       data: curso
     });
-    
+
   } catch (error) {
     console.error('❌ Error en createCurso:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -598,29 +618,29 @@ export const updateCurso = async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, seccionesIds = [] } = req.body; // Remover descripcion
-    
+
     console.log('✏️ Actualizando curso ID:', id, { nombre, seccionesIds });
-    
+
     const idCurso = parseInt(id);
     if (isNaN(idCurso)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'ID de curso inválido' 
+      return res.status(400).json({
+        success: false,
+        error: 'ID de curso inválido'
       });
     }
-    
+
     // Verificar que existe
     const cursoExistente = await prisma.curso.findUnique({
       where: { id_curso: idCurso }
     });
-    
+
     if (!cursoExistente) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Curso no encontrado' 
+      return res.status(404).json({
+        success: false,
+        error: 'Curso no encontrado'
       });
     }
-    
+
     const curso = await prisma.$transaction(async (tx) => {
       // Actualizar datos SIN descripcion
       const cursoActualizado = await tx.curso.update({
@@ -630,19 +650,19 @@ export const updateCurso = async (req, res) => {
           // NO incluir descripcion
         }
       });
-      
+
       // Actualizar secciones
       if (Array.isArray(seccionesIds)) {
         // Eliminar relaciones existentes
         await tx.seccionCurso.deleteMany({
           where: { id_curso: idCurso }
         });
-        
+
         // Crear nuevas
         const idsNumericos = seccionesIds
           .map(id => parseInt(id))
           .filter(id => !isNaN(id) && id > 0);
-        
+
         if (idsNumericos.length > 0) {
           for (const idSeccion of idsNumericos) {
             await tx.seccionCurso.create({
@@ -654,7 +674,7 @@ export const updateCurso = async (req, res) => {
           }
         }
       }
-      
+
       return await tx.curso.findUnique({
         where: { id_curso: idCurso },
         include: {
@@ -668,18 +688,18 @@ export const updateCurso = async (req, res) => {
         }
       });
     });
-    
+
     res.json({
       success: true,
       message: 'Curso actualizado exitosamente',
       data: curso
     });
-    
+
   } catch (error) {
     console.error('❌ Error en updateCurso:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -689,16 +709,16 @@ export const deleteCurso = async (req, res) => {
   try {
     const { id } = req.params;
     const idCurso = parseInt(id);
-    
+
     console.log('🗑️ Intentando eliminar curso ID:', idCurso);
-    
+
     if (isNaN(idCurso)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'ID de curso inválido' 
+      return res.status(400).json({
+        success: false,
+        error: 'ID de curso inválido'
       });
     }
-    
+
     // Verificar que existe
     const cursoExistente = await prisma.curso.findUnique({
       where: { id_curso: idCurso },
@@ -713,58 +733,58 @@ export const deleteCurso = async (req, res) => {
         }
       }
     });
-    
+
     if (!cursoExistente) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Curso no encontrado' 
+      return res.status(404).json({
+        success: false,
+        error: 'Curso no encontrado'
       });
     }
-    
+
     // Verificar si tiene relaciones que impidan la eliminación
     if (cursoExistente.actividades.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No se puede eliminar el curso porque tiene actividades asignadas. Primero elimine las actividades relacionadas.' 
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede eliminar el curso porque tiene actividades asignadas. Primero elimine las actividades relacionadas.'
       });
     }
-    
+
     if (cursoExistente.chats.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No se puede eliminar el curso porque tiene chats asociados.' 
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede eliminar el curso porque tiene chats asociados.'
       });
     }
-    
+
     // Primero eliminar relaciones en seccionesCurso (si existen)
     await prisma.seccionCurso.deleteMany({
       where: { id_curso: idCurso }
     });
-    
+
     // Luego eliminar el curso
     await prisma.curso.delete({
       where: { id_curso: idCurso }
     });
-    
+
     res.json({
       success: true,
       message: 'Curso eliminado exitosamente'
     });
-    
+
   } catch (error) {
     console.error('❌ Error en deleteCurso:', error);
-    
+
     // Manejar error de restricción de clave foránea
     if (error.code === 'P2003') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No se puede eliminar el curso porque tiene elementos relacionados (actividades, chats, etc.). Elimine primero los elementos relacionados.' 
+      return res.status(400).json({
+        success: false,
+        error: 'No se puede eliminar el curso porque tiene elementos relacionados (actividades, chats, etc.). Elimine primero los elementos relacionados.'
       });
     }
-    
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };

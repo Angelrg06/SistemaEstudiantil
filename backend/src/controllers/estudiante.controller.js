@@ -30,63 +30,63 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const getActividadByID = async (req, res) => {
-  try {
-    const id_actividad = parseInt(req.params.id);
+    try {
+        const id_actividad = parseInt(req.params.id);
 
-    const actividad = await prisma.actividad.findUnique({
-      where: { id_actividad },
-      select: {
-        id_actividad: true,
-        titulo: true,
-        tipo: true,
-        descripcion: true,
-        max_intentos: true, // ✅ AGREGAR
-        fecha_inicio: true,
-        fecha_fin: true,
-        archivo: true,
-        archivo_ruta: true
-      }
-    });
+        const actividad = await prisma.actividad.findUnique({
+            where: { id_actividad },
+            select: {
+                id_actividad: true,
+                titulo: true,
+                tipo: true,
+                descripcion: true,
+                max_intentos: true, // ✅ AGREGAR
+                fecha_inicio: true,
+                fecha_fin: true,
+                archivo: true,
+                archivo_ruta: true
+            }
+        });
 
-    if (!actividad) {
-      return res.status(404).json({ 
-        success: false,
-        error: "Actividad no encontrada" 
-      });
+        if (!actividad) {
+            return res.status(404).json({
+                success: false,
+                error: "Actividad no encontrada"
+            });
+        }
+
+        const resultado = {
+            titulo: actividad.titulo,
+            tipo: actividad.tipo,
+            descripcion: actividad.descripcion,
+            max_intentos: actividad.max_intentos || 3,
+            fecha_inicio: actividad.fecha_inicio
+                ? new Date(actividad.fecha_inicio).toLocaleString('es-PE', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                })
+                : null,
+            fecha_fin: actividad.fecha_fin
+                ? new Date(actividad.fecha_fin).toLocaleString('es-PE', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                })
+                : null,
+            archivo: actividad.archivo,
+            archivo_ruta: actividad.archivo_ruta
+        };
+
+        res.json({
+            success: true,
+            data: resultado
+        });
+    } catch (error) {
+        console.error("Error al obtener actividad:", error);
+        res.status(500).json({
+            success: false,
+            error: "Error al obtener actividad"
+        });
     }
-
-    const resultado = {
-      titulo: actividad.titulo,
-      tipo: actividad.tipo,
-      descripcion: actividad.descripcion,
-      max_intentos: actividad.max_intentos || 3,
-      fecha_inicio: actividad.fecha_inicio
-        ? new Date(actividad.fecha_inicio).toLocaleString('es-PE', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
-          })
-        : null,
-      fecha_fin: actividad.fecha_fin
-        ? new Date(actividad.fecha_fin).toLocaleString('es-PE', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
-          })
-        : null,
-      archivo: actividad.archivo,
-      archivo_ruta: actividad.archivo_ruta
-    };
-
-    res.json({
-      success: true,
-      data: resultado
-    });
-  } catch (error) {
-    console.error("Error al obtener actividad:", error);
-    res.status(500).json({ 
-      success: false,
-      error: "Error al obtener actividad" 
-    });
-  }
 }
 
 export const getActividadesByCurso = async (req, res) => {
@@ -178,6 +178,12 @@ export const getCursosByEstudiante = async (req, res) => {
                 seccion: {
                     select: {
                         id_seccion: true,
+                        bimestre: {
+                            select: {
+                                id_bimestre: true,
+                                nombre: true
+                            }
+                        },
                         seccionesCurso: {
                             select: {
                                 curso: {
@@ -206,6 +212,8 @@ export const getCursosByEstudiante = async (req, res) => {
             id_seccion: estudiante.seccion.id_seccion,
             id_curso: sc.curso.id_curso,
             curso: sc.curso.nombre,
+            id_bimestre: estudiante.seccion.bimestre?.id_bimestre || null,
+            bimestre_nombre: estudiante.seccion.bimestre?.nombre || 'Sin bimestre',
         }));
 
         res.json(resultado);
@@ -306,7 +314,7 @@ export const notificacionesByEstudiante = async (req, res) => {
                 dateStyle: 'medium',
                 timeStyle: 'short'
             }),
-            docente: notif.docente 
+            docente: notif.docente
                 ? `${notif.docente.nombre} ${notif.docente.apellido}`
                 : 'Sistema',
             actividad: notif.actividad?.titulo || 'Actividad no disponible',
@@ -328,48 +336,48 @@ export const notificacionesByEstudiante = async (req, res) => {
 
     } catch (error) {
         console.error("❌ Error al obtener notificaciones del estudiante:", error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             error: "Error al obtener notificaciones",
-            details: error.message 
+            details: error.message
         });
     }
 }
 
 //Temporal
 export const getMisEntregas = async (req, res) => {
-  try {
-    const id_curso = parseInt(req.params.id_curso);
-    const id_estudiante = req.user.id_estudiante; // Del token
+    try {
+        const id_curso = parseInt(req.params.id_curso);
+        const id_estudiante = req.user.id_estudiante; // Del token
 
-    const entregas = await prisma.entrega.findMany({
-      where: {
-        id_estudiante: id_estudiante,
-        actividad: {
-          id_curso: id_curso
-        }
-      },
-      include: {
-        actividad: {
-          select: {
-            id_actividad: true,
-            titulo: true,
-            tipo: true
-          }
-        }
-      },
-      orderBy: {
-        fecha_entrega: 'desc'
-      }
-    });
+        const entregas = await prisma.entrega.findMany({
+            where: {
+                id_estudiante: id_estudiante,
+                actividad: {
+                    id_curso: id_curso
+                }
+            },
+            include: {
+                actividad: {
+                    select: {
+                        id_actividad: true,
+                        titulo: true,
+                        tipo: true
+                    }
+                }
+            },
+            orderBy: {
+                fecha_entrega: 'desc'
+            }
+        });
 
-    res.json({
-      success: true,
-      data: entregas
-    });
+        res.json({
+            success: true,
+            data: entregas
+        });
 
-  } catch (error) {
-    console.error('Error obteniendo mis entregas:', error);
-    res.status(500).json({ error: 'Error al obtener entregas' });
-  }
+    } catch (error) {
+        console.error('Error obteniendo mis entregas:', error);
+        res.status(500).json({ error: 'Error al obtener entregas' });
+    }
 };

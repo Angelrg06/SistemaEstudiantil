@@ -168,7 +168,8 @@
                             </div>
                             <div>
                                 <h3 class="text-xl sm:text-2xl font-bold text-gray-800">Mis Cursos</h3>
-                                <p class="text-gray-600 text-xs sm:text-sm">{{ cursos.length }} cursos asignados</p>
+                                <p class="text-gray-600 text-xs sm:text-sm">{{ cursosFiltrados.length }} cursos
+                                    asignados</p>
                             </div>
                         </div>
 
@@ -176,18 +177,21 @@
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 w-full sm:w-auto">
                             <label class="text-sm font-medium text-gray-700" for="filtrarBimestre">Filtrar por
                                 bimestre</label>
-                            <select
+                            <select id="filtrarBimestre" [(ngModel)]="bimestreSeleccionado"
+                                (change)="filtrarPorBimestre()"
                                 class="sm:ml-3 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 text-sm">
-                                <option value="" disabled selected>Seleccionar bimestre</option>
+                                <option value="">Todos los bimestres</option>
+                                <option *ngFor="let bimestre of bimestres" [value]="bimestre.nombre">{{ bimestre.nombre
+                                    }}</option>
                             </select>
                         </div>
                     </div>
 
                     <!-- Lista de cursos -->
-                    <div *ngIf="cursos.length > 0; else SinCursos"
+                    <div *ngIf="cursosFiltrados.length > 0; else SinCursos"
                         class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
-                        <div *ngFor="let curso of cursos; let i = index"
+                        <div *ngFor="let curso of cursosFiltrados; let i = index"
                             class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg border border-gray-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group">
                             <div class="space-y-3 sm:space-y-4">
                                 <img class="w-full h-36 sm:h-40 md:h-48 object-cover rounded-xl shadow-md group-hover:scale-[1.02] transition-transform duration-500"
@@ -195,8 +199,6 @@
                                     alt="Imagen del curso {{curso.curso}}">
                                 <div class="text-center">
                                     <h4 class="text-lg sm:text-xl font-bold text-gray-800">{{ curso.curso }}</h4>
-                                    <p class="text-gray-600 text-xs sm:text-sm mt-1">Código: {{ curso.codigo || 'N/A' }}
-                                    </p>
                                 </div>
                             </div>
 
