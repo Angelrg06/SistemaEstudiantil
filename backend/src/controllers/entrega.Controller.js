@@ -15,12 +15,12 @@ export const crearEntrega = async (req, res) => {
         // Obtener datos de la petición
         const { id_actividad } = req.body;
         if (!id_actividad) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: "ID de actividad requerido" 
+                error: "ID de actividad requerido"
             });
         }
-        
+
         const comentario_estudiante = req.body.comentario_estudiante || null;
         const archivo = req.file; // Archivo procesado para Multer
         const id_usuario = req.user.id_usuario; // ID del usuario desde el token
@@ -50,9 +50,9 @@ export const crearEntrega = async (req, res) => {
         // ✅ MOVER ESTO: Validar existencia de la actividad y obtener max_intentos
         const actividad = await prisma.actividad.findUnique({
             where: { id_actividad: Number(id_actividad) },
-            select: { 
-                id_actividad: true, 
-                titulo: true, 
+            select: {
+                id_actividad: true,
+                titulo: true,
                 max_intentos: true,
                 fecha_fin: true // Para validar fecha límite
             }
@@ -80,9 +80,9 @@ export const crearEntrega = async (req, res) => {
 
         // Determinar el siguiente intento para este estudiante y actividad
         const ultimaEntrega = await prisma.entrega.findFirst({
-            where: { 
-                id_estudiante, 
-                id_actividad: Number(id_actividad) 
+            where: {
+                id_estudiante,
+                id_actividad: Number(id_actividad)
             },
             orderBy: { intento: 'desc' },
             select: { intento: true }
@@ -111,70 +111,70 @@ export const crearEntrega = async (req, res) => {
 
         console.log('💾 Guardando en PostgreSQL...');
 
-       const nuevaEntrega = await prisma.entrega.create({
-    data: {
-        archivo: archivoData.url,
-        archivo_ruta: archivoData.ruta,
-        fecha_entrega: new Date(),
-        comentario_estudiante: comentario_estudiante,
-        intento: nextIntento,
-        id_actividad: parseInt(id_actividad),
-        id_estudiante: id_estudiante,
-        estado_entrega: 'ENTREGADO'
-    },
-    include: {
-        actividad: {
-            select: { 
-                id_actividad: true, 
-                titulo: true, 
-                tipo: true, 
-                descripcion: true,
-                docente: {
+        const nuevaEntrega = await prisma.entrega.create({
+            data: {
+                archivo: archivoData.url,
+                archivo_ruta: archivoData.ruta,
+                fecha_entrega: new Date(),
+                comentario_estudiante: comentario_estudiante,
+                intento: nextIntento,
+                id_actividad: parseInt(id_actividad),
+                id_estudiante: id_estudiante,
+                estado_entrega: 'ENTREGADO'
+            },
+            include: {
+                actividad: {
                     select: {
-                        id_docente: true,
+                        id_actividad: true,
+                        titulo: true,
+                        tipo: true,
+                        descripcion: true,
+                        docente: {
+                            select: {
+                                id_docente: true,
+                                nombre: true,
+                                apellido: true
+                            }
+                        }
+                    }
+                },
+                estudiante: {
+                    select: {
+                        id_estudiante: true,
                         nombre: true,
-                        apellido: true
+                        apellido: true,
+                        codigo: true
                     }
                 }
             }
-        },
-        estudiante: {
-            select: { 
-                id_estudiante: true, 
-                nombre: true, 
-                apellido: true, 
-                codigo: true 
-            }
+        });
+
+        console.log('✅ Entrega creada exitosamente - ID:', nuevaEntrega.id_entrega);
+
+        // 🟢 GENERAR NOTIFICACIÓN AUTOMÁTICA PARA EL DOCENTE
+        try {
+            await NotificacionesService.crearNotificacionDocente(
+                nuevaEntrega.id_entrega,
+                nuevaEntrega.actividad.docente.id_docente,
+                `Nueva entrega de ${nuevaEntrega.estudiante.nombre} ${nuevaEntrega.estudiante.apellido} en "${nuevaEntrega.actividad.titulo}" - Intento ${nuevaEntrega.intento}`
+            );
+            console.log('🔔 Notificación enviada al docente');
+        } catch (notifError) {
+            console.error('⚠️ Error al crear notificación:', notifError);
+            // No fallamos la entrega si la notificación falla
         }
-    }
-});
-
-console.log('✅ Entrega creada exitosamente - ID:', nuevaEntrega.id_entrega);
-
-// 🟢 GENERAR NOTIFICACIÓN AUTOMÁTICA PARA EL DOCENTE
-try {
-    await NotificacionesService.crearNotificacionDocente(
-        nuevaEntrega.id_entrega,
-        nuevaEntrega.actividad.docente.id_docente,
-        `Nueva entrega de ${nuevaEntrega.estudiante.nombre} ${nuevaEntrega.estudiante.apellido} en "${nuevaEntrega.actividad.titulo}" - Intento ${nuevaEntrega.intento}`
-    );
-    console.log('🔔 Notificación enviada al docente');
-} catch (notifError) {
-    console.error('⚠️ Error al crear notificación:', notifError);
-    // No fallamos la entrega si la notificación falla
-}
 
 
         // Enviar respuesta
         res.json({
             success: true,
             message: 'Entrega enviada correctamente',
-            data: entrega
+            data: nuevaEntrega
         });
 
     } catch (error) {
         console.error('🔥 ERROR DETECTADO EN crearEntrega:', error);
-        
+
         // Manejar errores específicos de Prisma
         if (error.code === 'P2002') {
             return res.status(400).json({

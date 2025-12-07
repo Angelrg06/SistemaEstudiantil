@@ -25,8 +25,8 @@ export const obtenerNotificacionesDocente = async (req, res) => {
   try {
     console.log('🎯 Obteniendo notificaciones para docente ID:', req.params.id);
     const id_docente = Number(req.params.id);
-    
-     // 🟢 VALIDACIÓN DE SEGURIDAD: El docente solo puede ver sus propias notificaciones
+
+    // 🟢 VALIDACIÓN DE SEGURIDAD: El docente solo puede ver sus propias notificaciones
     if (req.docente && req.docente.id_docente !== id_docente) {
       return res.status(403).json(
         errorResponse("Acceso denegado", "No puedes ver notificaciones de otros docentes", 403)
@@ -135,7 +135,7 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
         errorResponse("Acceso denegado", "No puedes ver notificaciones de otros estudiantes", 403)
       );
     }
-    
+
     if (!id_estudiante || isNaN(id_estudiante)) {
       return res.status(400).json(
         errorResponse("ID de estudiante inválido", "El ID del estudiante debe ser un número válido", 400)
@@ -146,7 +146,8 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
       where: {
         entrega: {
           id_estudiante: id_estudiante
-        }
+        },
+        tipo: 'calificacion' // Solo mostrar calificaciones
       },
       include: {
         actividad: {
@@ -179,13 +180,8 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
         dateStyle: 'medium',
         timeStyle: 'short'
       }),
-      actividad: notif.actividad ? {
-        id_actividad: notif.actividad.id_actividad,
-        titulo: notif.actividad.titulo
-      } : null,
-      docente: notif.docente ? {
-        nombre: `${notif.docente.nombre} ${notif.docente.apellido}`
-      } : null,
+      actividad: notif.actividad?.titulo || null,
+      docente: notif.docente ? `${notif.docente.nombre} ${notif.docente.apellido}` : null,
       metadata: {
         es_reciente: new Date() - new Date(notif.fecha_envio) < 24 * 60 * 60 * 1000,
         tiene_actividad: !!notif.actividad,
@@ -220,13 +216,13 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
 export const crearNotificacion = async (req, res) => {
   try {
     const { mensaje, tipo, id_actividad, id_docente, id_entrega } = req.body;
-    
-    console.log('🆕 Creando nueva notificación:', { 
-      tipo, 
-      id_actividad, 
-      id_docente, 
+
+    console.log('🆕 Creando nueva notificación:', {
+      tipo,
+      id_actividad,
+      id_docente,
       id_entrega,
-      longitud_mensaje: mensaje?.length 
+      longitud_mensaje: mensaje?.length
     });
 
     // Validaciones
@@ -279,7 +275,7 @@ export const crearNotificacion = async (req, res) => {
     ));
   } catch (error) {
     console.error("❌ Error al crear notificación:", error);
-    
+
     // Manejar errores específicos de Prisma
     if (error.code === 'P2003') {
       return res.status(400).json(
@@ -299,7 +295,7 @@ export const crearNotificacion = async (req, res) => {
 export const eliminarNotificacion = async (req, res) => {
   try {
     const id_notificacion = Number(req.params.id);
-    
+
     console.log('🗑️ Eliminando notificación ID:', id_notificacion);
 
     if (!id_notificacion || isNaN(id_notificacion)) {
@@ -346,7 +342,7 @@ export const eliminarNotificacion = async (req, res) => {
 export const obtenerEstadisticasNotificaciones = async (req, res) => {
   try {
     const id_docente = Number(req.params.id);
-    
+
     if (!id_docente || isNaN(id_docente)) {
       return res.status(400).json(
         errorResponse("ID de docente inválido", "El ID del docente debe ser un número válido", 400)
@@ -414,10 +410,10 @@ export const obtenerEstadisticasNotificaciones = async (req, res) => {
 export const healthCheck = async (req, res) => {
   try {
     console.log('🏥 Health check del servicio de notificaciones');
-    
+
     // Verificar conexión a la base de datos
     await prisma.$queryRaw`SELECT 1`;
-    
+
     // Obtener estadísticas básicas
     const [totalNotificaciones, totalDocentes, totalEstudiantes] = await Promise.all([
       prisma.notificacion.count(),
@@ -446,7 +442,7 @@ export const healthCheck = async (req, res) => {
     };
 
     console.log('✅ Health check completado, estado:', healthStatus.status);
-    
+
     res.json(successResponse(
       healthStatus,
       "Servicio de notificaciones operativo",

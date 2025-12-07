@@ -346,10 +346,11 @@ export class EstudianteEntregas implements OnInit {
     this.http.get<any>(`http://localhost:4000/api/estudiante/actividades/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     }).subscribe({
-      next: (data) => {
-        this.actividad = data;
-        console.log("📝 Detalles de la actividad:", data);
-      },
+     next: (response) => {
+  const actividadData = response.data || response;
+  this.actividad = Array.isArray(actividadData) ? actividadData : [actividadData];
+  console.log("📝 Detalles de la actividad:", this.actividad);
+},
       error: (err) => console.error("Error obteniendo datos:", err)
     });
   }
