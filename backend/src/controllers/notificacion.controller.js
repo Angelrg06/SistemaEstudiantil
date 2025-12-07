@@ -176,10 +176,7 @@ export const obtenerNotificacionesEstudiante = async (req, res) => {
       id_notificacion: notif.id_notificacion,
       mensaje: notif.mensaje,
       tipo: notif.tipo,
-      fecha_envio: notif.fecha_envio.toLocaleString('es-PE', {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-      }),
+      fecha_envio: notif.fecha_envio.toISOString(),
       actividad: notif.actividad?.titulo || null,
       docente: notif.docente ? `${notif.docente.nombre} ${notif.docente.apellido}` : null,
       metadata: {

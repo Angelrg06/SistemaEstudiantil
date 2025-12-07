@@ -1,81 +1,85 @@
-<!-- estudiante-notificaciones.html - VERSIÓN CORREGIDA -->
-<div class="notificaciones-container">
-  <div class="notificaciones-header">
-    <h3>📢 Mis Notificaciones</h3>
-    <div class="notificaciones-actions">
-      <button class="btn-refresh" (click)="actualizar()" [disabled]="cargando">
-        🔄 {{ cargando ? 'Cargando...' : 'Actualizar' }}
-      </button>
-      <button class="btn-clear" (click)="limpiarTodas()" [disabled]="total === 0">
-        🗑️ Limpiar todas
-      </button>
-    </div>
-  </div>
+<!-- 🔔 Notificaciones Responsivas con Scroll -->
+<div class="w-full h-full flex flex-col">
 
-  <!-- Estado de carga/error -->
-  <div *ngIf="cargando" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando notificaciones...</p>
-  </div>
-
-  <div *ngIf="error && !cargando" class="error-state">
-    <p>❌ {{ error }}</p>
-    <button (click)="actualizar()">Reintentar</button>
-  </div>
-
-  <!-- Lista de notificaciones -->
-  <div *ngIf="!cargando && !error" class="notificaciones-list">
-    <div *ngIf="total === 0" class="empty-state">
-      <p>🎉 No tienes notificaciones nuevas</p>
-      <small>Todas las notificaciones importantes aparecerán aquí</small>
-    </div>
-
-    <div *ngFor="let notif of notificaciones; trackBy: trackById" 
-    [ngClass]="getNotificacionClasses(notif.tipo)"
-         class="notificacion-item"
-         [class.unread]="true"
-         [class.type-calificacion]="notif.tipo === 'calificacion'"
-         [class.type-entrega_nueva]="notif.tipo === 'entrega_nueva' || notif.tipo === 'entrega'"
-         [class.type-actividad]="notif.tipo === 'actividad'"
-         [class.type-sistema]="notif.tipo === 'sistema' || !notif.tipo"
-         [class.type-mensaje]="notif.tipo === 'mensaje'"
-         [class.type-recordatorio]="notif.tipo === 'recordatorio'">
-      
-      <div class="notificacion-icon">
-        {{ getIconoTipo(notif.tipo) }}
-      </div>
-      
-      <div class="notificacion-content">
-        <div class="notificacion-header">
-          <strong>{{ notif.mensaje }}</strong>
-          <small class="notificacion-time">{{ formatearFecha(notif.fecha_envio) }}</small>
+  <!-- Header compacto -->
+  <div class="bg-white rounded-xl shadow-md mb-3 border border-gray-200 flex-shrink-0">
+    <div class="bg-gradient-to-r from-blue-600 to-cyan-500 px-3 sm:px-4 py-3 rounded-t-xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-bell text-white text-lg"></i>
+          <h3 class="text-base sm:text-lg font-bold text-white">Notificaciones</h3>
         </div>
-        
-        <div class="notificacion-details">
-          <span *ngIf="notif.docente" class="badge docente">
-            📚 {{ notif.docente }}
-          </span>
-          <span *ngIf="notif.actividad" class="badge actividad">
-            📝 {{ notif.actividad }}
-          </span>
-          <span class="badge tipo" 
-                [class.tipo-calificacion]="notif.tipo === 'calificacion'"
-                [class.tipo-entrega]="notif.tipo === 'entrega_nueva' || notif.tipo === 'entrega'"
-                [class.tipo-actividad]="notif.tipo === 'actividad'"
-                [class.tipo-sistema]="notif.tipo === 'sistema' || !notif.tipo">
-            {{ getTipoTexto(notif.tipo) }}
-          </span>
-        </div>
+        <span class="px-2 py-0.5 bg-white/20 backdrop-blur text-white rounded-full text-xs font-bold">
+          {{ total }}
+        </span>
       </div>
-
-      <button class="btn-mark-read" (click)="marcarComoLeida(notif.id_notificacion)" 
-              title="Marcar como leída">
-        ✓
-      </button>
     </div>
   </div>
 
-  <div class="notificaciones-footer" *ngIf="total > 0">
-    <p><small>Mostrando {{ notificaciones.length }} de {{ total }} notificaciones</small></p>
+  <!-- Contenedor con scroll automático -->
+  <div class="flex-1 min-h-0 overflow-y-auto pr-1" style="max-height: calc(100vh - 300px);">
+
+    <!-- Estado de carga -->
+    <div *ngIf="cargando" class="text-center py-8">
+      <div class="w-8 h-8 border-3 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
+      <p class="text-sm text-gray-500">Cargando...</p>
+    </div>
+
+    <!-- Estado de error -->
+    <div *ngIf="!cargando && error" class="bg-red-50 border-l-3 border-red-400 p-3 rounded">
+      <p class="text-sm text-red-700">{{ error }}</p>
+      <button (click)="actualizar()" class="text-xs text-red-600 hover:text-red-800 mt-2 underline">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Estado vacío -->
+    <div *ngIf="!cargando && !error && total === 0" class="text-center py-8">
+      <i class="fas fa-bell-slash text-3xl text-gray-300 mb-2"></i>
+      <p class="text-sm text-gray-500">Sin notificaciones</p>
+    </div>
+
+    <!-- Lista de notificaciones con scroll -->
+    <div *ngIf="!cargando && !error && total > 0" class="space-y-2">
+      <div *ngFor="let notif of notificaciones; trackBy: trackById"
+        class="bg-white border-l-3 p-2.5 sm:p-3 rounded shadow-sm hover:shadow transition-all"
+        [class.border-yellow-400]="notif.tipo === 'calificacion'"
+        [class.border-blue-400]="notif.tipo === 'entrega_nueva' || notif.tipo === 'entrega'"
+        [class.border-green-400]="notif.tipo === 'actividad'"
+        [class.border-purple-400]="notif.tipo === 'sistema' || !notif.tipo">
+
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm font-semibold text-gray-800 mb-1 line-clamp-2">{{ notif.mensaje }}</p>
+
+            <div class="flex flex-wrap gap-1.5 text-xs text-gray-600">
+              <span *ngIf="notif.docente" class="flex items-center gap-0.5 truncate max-w-[120px]">
+                <i class="fas fa-user text-blue-500 text-[10px]"></i>
+                <span class="truncate">{{ notif.docente }}</span>
+              </span>
+              <span *ngIf="notif.actividad" class="flex items-center gap-0.5 truncate max-w-[120px]">
+                <i class="fas fa-book text-green-500 text-[10px]"></i>
+                <span class="truncate">{{ notif.actividad }}</span>
+              </span>
+              <span class="text-gray-400">•</span>
+              <span class="text-[11px]">{{ formatearFecha(notif.fecha_envio) }}</span>
+            </div>
+          </div>
+
+          <button (click)="marcarComoLeida(notif.id_notificacion)"
+            class="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-gray-400 hover:text-green-600 transition-colors"
+            title="Marcar como leída">
+            <i class="fas fa-check text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Footer con info (solo si hay notificaciones) -->
+  <div *ngIf="total > 5" class="mt-2 text-center py-1.5 bg-gray-50 rounded text-xs text-gray-500 flex-shrink-0">
+    <i class="fas fa-info-circle mr-1"></i>
+    Mostrando {{ notificaciones.length }} de {{ total }}
+  </div>
+
 </div>
